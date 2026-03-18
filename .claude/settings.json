@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "A file was just modified in the humand-school project. Hook input: $ARGUMENTS\n\nInstructions:\n1. Extract the file path from tool_input.file_path (for Write/Edit tools).\n2. If the modified file IS the AGENT.md itself, do nothing and stop.\n3. If the file is outside the humand-school project directory, do nothing and stop.\n4. Otherwise, read the modified file and the current AGENT.md at '/Users/alvaroleguizamon/Documents/hu campus/humand-school/AGENT.md'.\n5. Determine if the change affects anything documented in AGENT.md, such as:\n   - New or removed dependencies (package.json changes)\n   - New screens, components, or routes\n   - Changes to the architecture or folder structure\n   - New or modified features\n   - Changes to the color scheme or design system\n   - Changes to data models or Zustand stores\n   - Changes to how the project is run or built\n6. If the change is relevant, update AGENT.md to accurately reflect the new state. Preserve the existing format and structure.\n7. If the change is not relevant to the documentation (e.g., a minor bug fix or style tweak), do nothing.",
+            "timeout": 90,
+            "statusMessage": "Actualizando AGENT.md..."
+          }
+        ]
+      }
+    ]
+  }
+}
