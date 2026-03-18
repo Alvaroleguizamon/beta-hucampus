@@ -80,10 +80,17 @@ const appsByRole: Record<Role, AppItem[]> = {
   ],
 };
 
+const rolLabel: Record<Role, string> = {
+  alumno: 'Alumno',
+  docente: 'Docente',
+  padre: 'Padre / Tutor',
+};
+
 export default function DesktopSidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const role = useAuthStore((s) => s.user?.role ?? 'alumno');
+  const user = useAuthStore((s) => s.user);
+  const role = user?.role ?? 'alumno';
   const tabs = tabsByRole[role].filter((t) => t.name !== 'grades');
   const apps = appsByRole[role];
 
@@ -143,6 +150,18 @@ export default function DesktopSidebar() {
           })}
         </View>
       </ScrollView>
+
+      <View style={styles.userCard}>
+        <View style={styles.userAvatar}>
+          <Text style={styles.userAvatarText}>
+            {(user?.name ?? 'U').charAt(0).toUpperCase()}
+          </Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.userName} numberOfLines={1}>{user?.name ?? '—'}</Text>
+          <Text style={styles.userRole}>{rolLabel[role]}</Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -223,5 +242,41 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    marginHorizontal: -12,
+  },
+  userAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+  },
+  userName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  userRole: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontFamily: 'Inter_400Regular',
+    marginTop: 1,
   },
 });

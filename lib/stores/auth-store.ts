@@ -25,8 +25,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     });
   },
   selectRole: (role: Role) => {
+    const nameByRole: Record<Role, string> = {
+      alumno: 'Lucía Martínez',
+      docente: 'Prof. Carlos Romero',
+      padre: 'Martín González',
+    };
     set((state) => ({
-      user: state.user ? { ...state.user, role } : null,
+      user: state.user ? { ...state.user, role, name: nameByRole[role] } : null,
     }));
   },
   logout: () => {

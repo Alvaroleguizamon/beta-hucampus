@@ -7,6 +7,7 @@ import { Colors } from '../../constants/colors';
 import { Role } from '../../lib/types';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import DesktopSidebar from '../../components/layout/DesktopSidebar';
+import UserTopBar from '../../components/layout/UserTopBar';
 
 type TabConfig = {
   name: string;
@@ -51,6 +52,7 @@ export default function TabsLayout() {
     <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column' }}>
       {isDesktop && <DesktopSidebar />}
       <View style={{ flex: 1 }}>
+        {!isDesktop && <UserTopBar />}
         <Tabs
           screenOptions={{
             tabBarActiveTintColor: Colors.primary,
