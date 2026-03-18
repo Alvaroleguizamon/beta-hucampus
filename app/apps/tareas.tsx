@@ -53,6 +53,13 @@ interface StudentDelivery {
   submissionContent?: string;
 }
 
+interface TaskAttachment {
+  id: string;
+  type: 'archivo' | 'link';
+  name: string;
+  url?: string;
+}
+
 interface DocenteTask {
   id: string;
   title: string;
@@ -60,6 +67,7 @@ interface DocenteTask {
   dueDate: string;
   priority: 'alta' | 'media' | 'baja';
   description?: string;
+  attachments?: TaskAttachment[];
   deliveries: StudentDelivery[];
 }
 
@@ -67,6 +75,10 @@ const initialDocenteTasks: DocenteTask[] = [
   {
     id: 'dt1', title: 'Resolver ejercicios pág. 45-48', courseId: 'c1', dueDate: '2026-03-20', priority: 'alta',
     description: 'Resolver todos los ejercicios de las páginas 45 a 48. Mostrar procedimiento completo.',
+    attachments: [
+      { id: 'att1', type: 'archivo', name: 'Guía_ejercicios_U3.pdf' },
+      { id: 'att2', type: 'link', name: 'Video explicativo - Ecuaciones', url: 'https://example.com/video' },
+    ],
     deliveries: [
       { studentId: 'st1', studentName: 'Juan Pérez', status: 'entregado', submissionDate: '2026-03-18', submissionContent: 'Ejercicios resueltos.' },
       { studentId: 'st2', studentName: 'María González', status: 'entregado', submissionDate: '2026-03-19', submissionContent: 'Adjunto PDF con resolución.' },
@@ -140,7 +152,7 @@ export default function TareasScreen() {
   // ─── Docente state ───
   const [docenteTasks, setDocenteTasks] = useState(initialDocenteTasks);
   const [selectedCourseId, setSelectedCourseId] = useState(mockCourses[0]?.id ?? '');
-  const [studentFilter, setStudentFilter] = useState<string | null>(null);
+  const [studentFilters, setStudentFilters] = useState<string[]>([]);
   const [selectedDocenteTask, setSelectedDocenteTask] = useState<DocenteTask | null>(null);
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
@@ -152,20 +164,31 @@ export default function TareasScreen() {
     id: string;
     title: string;
     courseId: string;
+    assignTo: 'curso' | 'alumnos';
+    selectedStudentIds: string[];
     dueDate: string;
     priority: 'alta' | 'media' | 'baja';
     description: string;
+    attachments: TaskAttachment[];
   }
   const [drafts, setDrafts] = useState<DraftTask[]>([
-    { id: 'draft1', title: 'Ejercicios de funciones', courseId: 'c1', dueDate: '2026-04-01', priority: 'media', description: 'Resolver ejercicios 1 a 15 de la guía de funciones lineales.' },
+    { id: 'draft1', title: 'Ejercicios de funciones', courseId: 'c1', assignTo: 'curso', selectedStudentIds: [], dueDate: '2026-04-01', priority: 'media', description: 'Resolver ejercicios 1 a 15 de la guía de funciones lineales.', attachments: [] },
   ]);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftCourseId, setDraftCourseId] = useState(mockCourses[0]?.id ?? '');
+  const [draftAssignTo, setDraftAssignTo] = useState<'curso' | 'alumnos'>('curso');
+  const [draftStudentIds, setDraftStudentIds] = useState<string[]>([]);
+  const [draftStudentSearch, setDraftStudentSearch] = useState('');
   const [draftDueDate, setDraftDueDate] = useState('');
   const [draftPriority, setDraftPriority] = useState<'alta' | 'media' | 'baja'>('media');
   const [draftDescription, setDraftDescription] = useState('');
+  const [draftAttachments, setDraftAttachments] = useState<TaskAttachment[]>([]);
+  const [draftLinkName, setDraftLinkName] = useState('');
+  const [draftLinkUrl, setDraftLinkUrl] = useState('');
+  const [showAddLink, setShowAddLink] = useState(false);
   const [showDraftCalendar, setShowDraftCalendar] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState<string | null>(null);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
   // ─── Docente view ───
   if (role === 'docente') {
@@ -173,16 +196,17 @@ export default function TareasScreen() {
     const selectedCourse = mockCourses.find((c) => c.id === selectedCourseId);
     const courseStudents = selectedCourse?.students ?? [];
 
-    const filteredCourseTasks = studentFilter
+    const filteredCourseTasks = studentFilters.length > 0
       ? courseTasks.map((t) => ({
           ...t,
-          deliveries: t.deliveries.filter((d) => d.studentId === studentFilter),
+          deliveries: t.deliveries.filter((d) => studentFilters.includes(d.studentId)),
         }))
       : courseTasks;
 
     // Detail view for a docente task
     if (selectedDocenteTask) {
       const freshDT = docenteTasks.find((t) => t.id === selectedDocenteTask.id) ?? selectedDocenteTask;
+      const taskCourse = mockCourses.find((c) => c.id === freshDT.courseId);
       const totalStudents = freshDT.deliveries.length;
       const deliveredCount = freshDT.deliveries.filter((d) => d.status === 'entregado').length;
       const pendingCount = totalStudents - deliveredCount;
@@ -206,7 +230,7 @@ export default function TareasScreen() {
 
             <Text style={styles.detailTitle}>{freshDT.title}</Text>
             <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 16 }}>
-              {selectedCourse?.name} — {selectedCourse?.grade}
+              {taskCourse?.name} — {taskCourse?.grade}
             </Text>
 
             <View style={styles.detailInfoCard}>
@@ -231,6 +255,25 @@ export default function TareasScreen() {
               <View style={styles.descriptionCard}>
                 <Text style={styles.descriptionTitle}>Consigna</Text>
                 <Text style={styles.descriptionText}>{freshDT.description}</Text>
+              </View>
+            )}
+
+            {freshDT.attachments && freshDT.attachments.length > 0 && (
+              <View style={styles.descriptionCard}>
+                <Text style={styles.descriptionTitle}>Material adjunto</Text>
+                {freshDT.attachments.map((att) => (
+                  <View key={att.id} style={docenteStyles.attachmentRow}>
+                    <MaterialCommunityIcons
+                      name={att.type === 'link' ? 'link-variant' : 'file-document-outline'}
+                      size={20}
+                      color={att.type === 'link' ? Colors.primary : '#E74C3C'}
+                    />
+                    <Text style={docenteStyles.attachmentName} numberOfLines={1}>{att.name}</Text>
+                    {att.type === 'link' && att.url && (
+                      <Text style={docenteStyles.attachmentUrl} numberOfLines={1}>{att.url}</Text>
+                    )}
+                  </View>
+                ))}
               </View>
             )}
 
@@ -282,14 +325,14 @@ export default function TareasScreen() {
 
     // ─── Docente main list ───
     const renderCourseTabs = () => (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={docenteStyles.courseTabs}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border }} contentContainerStyle={docenteStyles.courseTabs}>
         {mockCourses.map((c) => {
           const active = selectedCourseId === c.id;
           return (
             <Pressable
               key={c.id}
               style={[docenteStyles.courseTab, active && docenteStyles.courseTabActive]}
-              onPress={() => { setSelectedCourseId(c.id); setStudentFilter(null); setShowStudentDropdown(false); setStudentSearch(''); }}
+              onPress={() => { setSelectedCourseId(c.id); setStudentFilters([]); setShowStudentDropdown(false); setStudentSearch(''); }}
             >
               <Text style={[docenteStyles.courseTabText, active && docenteStyles.courseTabTextActive]}>
                 {c.name} — {c.grade}
@@ -306,32 +349,59 @@ export default function TareasScreen() {
       return courseStudents.filter((s) => s.name.toLowerCase().includes(q));
     }, [studentSearch, courseStudents]);
 
+    const toggleStudent = (id: string) => {
+      setStudentFilters((prev) =>
+        prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+      );
+    };
+
+    const isAllSelected = studentFilters.length === 0;
+
     const renderStudentFilter = () => {
-      const selectedStudent = courseStudents.find((s) => s.id === studentFilter);
+      const selectedStudents = courseStudents.filter((s) => studentFilters.includes(s.id));
 
       return (
-        <View style={docenteStyles.searchContainer}>
-          {/* Selected student chip */}
-          {studentFilter && selectedStudent && (
-            <View style={docenteStyles.selectedStudentRow}>
-              <View style={docenteStyles.selectedStudentChip}>
-                <View style={docenteStyles.studentAvatar}>
-                  <Text style={docenteStyles.studentAvatarText}>{selectedStudent.name[0]}</Text>
-                </View>
-                <Text style={docenteStyles.selectedStudentName}>{selectedStudent.name}</Text>
-                <Pressable onPress={() => { setStudentFilter(null); setStudentSearch(''); }} hitSlop={8}>
-                  <MaterialCommunityIcons name="close-circle" size={18} color={Colors.textSecondary} />
-                </Pressable>
-              </View>
-            </View>
+        <>
+          {/* Backdrop to close dropdown on outside click */}
+          {showStudentDropdown && (
+            <Pressable
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9 }}
+              onPress={() => { setShowStudentDropdown(false); setStudentSearch(''); }}
+            />
           )}
+          <View style={docenteStyles.searchContainer}>
+            {/* Selected students chips */}
+            {selectedStudents.length > 0 && (
+              <View style={docenteStyles.selectedStudentRow}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                  <Pressable
+                    style={docenteStyles.clearAllChip}
+                    onPress={() => setStudentFilters([])}
+                  >
+                    <MaterialCommunityIcons name="account-group" size={14} color={Colors.textSecondary} />
+                    <Text style={docenteStyles.clearAllText}>Ver todos</Text>
+                    <MaterialCommunityIcons name="close" size={14} color={Colors.textSecondary} />
+                  </Pressable>
+                  {selectedStudents.map((s) => (
+                    <View key={s.id} style={docenteStyles.selectedStudentChip}>
+                      <View style={docenteStyles.studentAvatarSmall}>
+                        <Text style={docenteStyles.studentAvatarSmallText}>{s.name[0]}</Text>
+                      </View>
+                      <Text style={docenteStyles.selectedStudentName}>{s.name}</Text>
+                      <Pressable onPress={() => toggleStudent(s.id)} hitSlop={8}>
+                        <MaterialCommunityIcons name="close-circle" size={16} color={Colors.textSecondary} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
-          {/* Search input */}
-          {!studentFilter && (
+            {/* Search input */}
             <View style={docenteStyles.searchInputWrapper}>
               <MaterialCommunityIcons name="magnify" size={20} color={Colors.textSecondary} />
               <TextInput
-                placeholder="Buscar alumno..."
+                placeholder={isAllSelected ? 'Buscar alumno...' : `${selectedStudents.length} alumno${selectedStudents.length > 1 ? 's' : ''} seleccionado${selectedStudents.length > 1 ? 's' : ''}`}
                 placeholderTextColor={Colors.textSecondary}
                 value={studentSearch}
                 onChangeText={(text) => { setStudentSearch(text); setShowStudentDropdown(true); }}
@@ -348,38 +418,50 @@ export default function TareasScreen() {
                 </Pressable>
               )}
             </View>
-          )}
 
-          {/* Dropdown results */}
-          {!studentFilter && showStudentDropdown && (
-            <View style={docenteStyles.searchDropdown}>
-              <Pressable
-                style={[styles.dropdownItem, !studentFilter && styles.dropdownItemActive]}
-                onPress={() => { setStudentFilter(null); setShowStudentDropdown(false); setStudentSearch(''); }}
-              >
-                <MaterialCommunityIcons name="account-group" size={16} color={Colors.primary} />
-                <Text style={[styles.dropdownItemText, { color: Colors.primary, fontWeight: '600' }]}>Todos los alumnos</Text>
-              </Pressable>
-              {filteredStudents.map((s) => (
+            {/* Dropdown results */}
+            {showStudentDropdown && (
+              <View style={docenteStyles.searchDropdown}>
                 <Pressable
-                  key={s.id}
-                  style={styles.dropdownItem}
-                  onPress={() => { setStudentFilter(s.id); setShowStudentDropdown(false); setStudentSearch(''); }}
+                  style={[docenteStyles.selectAllItem, isAllSelected && { backgroundColor: Colors.primary + '10' }]}
+                  onPress={() => { setStudentFilters([]); setShowStudentDropdown(false); setStudentSearch(''); }}
                 >
-                  <View style={docenteStyles.studentAvatar}>
-                    <Text style={docenteStyles.studentAvatarText}>{s.name[0]}</Text>
+                  <MaterialCommunityIcons name="account-group" size={18} color={Colors.primary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.primary }}>Todos los alumnos</Text>
+                    <Text style={{ fontSize: 11, color: Colors.textSecondary }}>Mostrar entregas de todo el curso</Text>
                   </View>
-                  <Text style={styles.dropdownItemText}>{s.name}</Text>
+                  {isAllSelected && <MaterialCommunityIcons name="check-circle" size={18} color={Colors.primary} />}
                 </Pressable>
-              ))}
-              {filteredStudents.length === 0 && (
-                <View style={{ padding: 16, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 13, color: Colors.textSecondary }}>No se encontraron alumnos</Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
+                {filteredStudents.map((s) => {
+                  const isSelected = studentFilters.includes(s.id);
+                  return (
+                    <Pressable
+                      key={s.id}
+                      style={[styles.dropdownItem, isSelected && { backgroundColor: Colors.primary + '08' }]}
+                      onPress={() => { toggleStudent(s.id); setStudentSearch(''); }}
+                    >
+                      <MaterialCommunityIcons
+                        name={isSelected ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                        size={20}
+                        color={isSelected ? Colors.primary : Colors.border}
+                      />
+                      <View style={docenteStyles.studentAvatar}>
+                        <Text style={docenteStyles.studentAvatarText}>{s.name[0]}</Text>
+                      </View>
+                      <Text style={[styles.dropdownItemText, isSelected && { color: Colors.primary, fontWeight: '600' }]}>{s.name}</Text>
+                    </Pressable>
+                  );
+                })}
+                {filteredStudents.length === 0 && (
+                  <View style={{ padding: 16, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13, color: Colors.textSecondary }}>No se encontraron alumnos</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        </>
       );
     };
 
@@ -429,22 +511,52 @@ export default function TareasScreen() {
     const resetDraftForm = () => {
       setDraftTitle('');
       setDraftCourseId(mockCourses[0]?.id ?? '');
+      setDraftAssignTo('curso');
+      setDraftStudentIds([]);
+      setDraftStudentSearch('');
       setDraftDueDate('');
       setDraftPriority('media');
       setDraftDescription('');
+      setDraftAttachments([]);
+      setDraftLinkName('');
+      setDraftLinkUrl('');
+      setShowAddLink(false);
       setShowDraftCalendar(false);
+      setEditingDraftId(null);
+    };
+
+    const editDraft = (draft: DraftTask) => {
+      setEditingDraftId(draft.id);
+      setDraftTitle(draft.title);
+      setDraftCourseId(draft.courseId);
+      setDraftAssignTo(draft.assignTo);
+      setDraftStudentIds(draft.selectedStudentIds);
+      setDraftDueDate(draft.dueDate);
+      setDraftPriority(draft.priority);
+      setDraftDescription(draft.description);
+      setDraftAttachments(draft.attachments);
+      setShowDocenteAddModal(true);
     };
 
     const saveDraft = () => {
       if (!draftTitle.trim()) return;
-      setDrafts((prev) => [{
-        id: `draft${Date.now()}`,
+      const draftData = {
         title: draftTitle,
         courseId: draftCourseId,
+        assignTo: draftAssignTo,
+        selectedStudentIds: draftAssignTo === 'alumnos' ? draftStudentIds : [],
         dueDate: draftDueDate || new Date().toISOString().split('T')[0],
         priority: draftPriority,
         description: draftDescription,
-      }, ...prev]);
+        attachments: draftAttachments,
+      };
+      if (editingDraftId) {
+        setDrafts((prev) => prev.map((d) =>
+          d.id === editingDraftId ? { ...d, ...draftData } : d
+        ));
+      } else {
+        setDrafts((prev) => [{ id: `draft${Date.now()}`, ...draftData }, ...prev]);
+      }
       resetDraftForm();
       setShowDocenteAddModal(false);
     };
@@ -455,6 +567,10 @@ export default function TareasScreen() {
       const course = mockCourses.find((c) => c.id === draft.courseId);
       if (!course) return;
 
+      const targetStudents = draft.assignTo === 'alumnos' && draft.selectedStudentIds.length > 0
+        ? course.students.filter((s) => draft.selectedStudentIds.includes(s.id))
+        : course.students;
+
       const newTask: DocenteTask = {
         id: `dt${Date.now()}`,
         title: draft.title,
@@ -462,7 +578,8 @@ export default function TareasScreen() {
         dueDate: draft.dueDate,
         priority: draft.priority,
         description: draft.description || undefined,
-        deliveries: course.students.map((s) => ({
+        attachments: draft.attachments.length > 0 ? draft.attachments : undefined,
+        deliveries: targetStudents.map((s) => ({
           studentId: s.id,
           studentName: s.name,
           status: 'pendiente' as const,
@@ -472,7 +589,7 @@ export default function TareasScreen() {
       setDocenteTasks((prev) => [newTask, ...prev]);
       setDrafts((prev) => prev.filter((d) => d.id !== draftId));
       setShowSendConfirm(null);
-      Alert.alert('Tarea enviada', `La tarea fue asignada a ${course.students.length} alumnos de ${course.name} — ${course.grade}.`);
+      Alert.alert('Tarea enviada', `La tarea fue asignada a ${targetStudents.length} alumno${targetStudents.length > 1 ? 's' : ''} de ${course.name} — ${course.grade}.`);
     };
 
     const deleteDraft = (draftId: string) => {
@@ -494,26 +611,28 @@ export default function TareasScreen() {
               const course = mockCourses.find((c) => c.id === draft.courseId);
               const dl = getDaysLeft(draft.dueDate);
               return (
-                <View key={draft.id} style={docenteStyles.draftCard}>
+                <Pressable key={draft.id} style={docenteStyles.draftCard} onPress={() => editDraft(draft)}>
                   <View style={docenteStyles.draftHeader}>
                     <View style={docenteStyles.draftBadge}>
                       <MaterialCommunityIcons name="file-edit-outline" size={12} color={Colors.warning} />
                       <Text style={docenteStyles.draftBadgeText}>Borrador</Text>
                     </View>
-                    <Pressable onPress={() => deleteDraft(draft.id)} hitSlop={8}>
+                    <Pressable onPress={(e) => { e.stopPropagation(); deleteDraft(draft.id); }} hitSlop={8}>
                       <MaterialCommunityIcons name="close" size={18} color={Colors.textSecondary} />
                     </Pressable>
                   </View>
                   <Text style={docenteStyles.draftTitle} numberOfLines={2}>{draft.title}</Text>
-                  <Text style={docenteStyles.draftMeta}>{course?.name} — {course?.grade}</Text>
+                  <Text style={docenteStyles.draftMeta}>
+                    {course?.name} — {course?.grade} · {draft.assignTo === 'alumnos' && draft.selectedStudentIds.length > 0 ? `${draft.selectedStudentIds.length} alumno${draft.selectedStudentIds.length > 1 ? 's' : ''}` : 'Curso entero'}
+                  </Text>
                   <View style={docenteStyles.draftFooter}>
                     <Text style={[docenteStyles.draftDate, { color: dl.color }]}>{formatDate(draft.dueDate)} · {dl.text}</Text>
-                    <Pressable style={docenteStyles.sendBtn} onPress={() => setShowSendConfirm(draft.id)}>
+                    <Pressable style={docenteStyles.sendBtn} onPress={(e) => { e.stopPropagation(); setShowSendConfirm(draft.id); }}>
                       <MaterialCommunityIcons name="send" size={14} color="#FFFFFF" />
                       <Text style={docenteStyles.sendBtnText}>Enviar</Text>
                     </Pressable>
                   </View>
-                </View>
+                </Pressable>
               );
             })
           )}
@@ -533,7 +652,11 @@ export default function TareasScreen() {
                 {(() => {
                   const draft = drafts.find((d) => d.id === showSendConfirm);
                   const course = mockCourses.find((c) => c.id === draft?.courseId);
-                  return draft ? `"${draft.title}" será asignada a todos los alumnos de ${course?.name} — ${course?.grade}.` : '';
+                  if (!draft) return '';
+                  const targetCount = draft.assignTo === 'alumnos' && draft.selectedStudentIds.length > 0
+                    ? `${draft.selectedStudentIds.length} alumno${draft.selectedStudentIds.length > 1 ? 's' : ''}`
+                    : 'todos los alumnos';
+                  return `"${draft.title}" será asignada a ${targetCount} de ${course?.name} — ${course?.grade}.`;
                 })()}
               </Text>
               <View style={styles.confirmButtons}>
@@ -554,9 +677,9 @@ export default function TareasScreen() {
     const renderDocenteAddModal = () => (
       <Modal visible={showDocenteAddModal} transparent animationType="fade">
         <View style={styles.addModalOverlay}>
-          <View style={[styles.addModalCard, isWide && { maxWidth: 520 }]}>
+          <View style={[styles.addModalCard, isWide && { maxWidth: 900 }]}>
             <View style={styles.addHeader}>
-              <Text style={styles.addTitle}>Nueva tarea (borrador)</Text>
+              <Text style={styles.addTitle}>{editingDraftId ? 'Editar tarea' : 'Nueva tarea'}</Text>
               <IconButton icon="close" iconColor={Colors.textSecondary} size={20} onPress={() => { resetDraftForm(); setShowDocenteAddModal(false); }} />
             </View>
 
@@ -594,7 +717,7 @@ export default function TareasScreen() {
                     <Pressable
                       key={c.id}
                       style={[styles.subjectSelectRow, selected && { backgroundColor: Colors.primary + '10', borderColor: Colors.primary }]}
-                      onPress={() => setDraftCourseId(c.id)}
+                      onPress={() => { setDraftCourseId(c.id); setDraftStudentIds([]); }}
                     >
                       <MaterialCommunityIcons name="google-classroom" size={16} color={selected ? Colors.primary : Colors.textSecondary} style={{ marginRight: 8 }} />
                       <Text style={[styles.subjectSelectText, selected && { color: Colors.primary, fontWeight: '600' }]}>{c.name} — {c.grade}</Text>
@@ -603,6 +726,91 @@ export default function TareasScreen() {
                   );
                 })}
               </View>
+
+              <Text style={styles.formLabel}>Asignar a</Text>
+              <View style={docenteStyles.assignToggle}>
+                <Pressable
+                  style={[docenteStyles.assignOption, draftAssignTo === 'curso' && docenteStyles.assignOptionActive]}
+                  onPress={() => { setDraftAssignTo('curso'); setDraftStudentIds([]); }}
+                >
+                  <MaterialCommunityIcons name="account-group" size={16} color={draftAssignTo === 'curso' ? Colors.primary : Colors.textSecondary} />
+                  <Text style={[docenteStyles.assignOptionText, draftAssignTo === 'curso' && docenteStyles.assignOptionTextActive]}>Curso entero</Text>
+                </Pressable>
+                <Pressable
+                  style={[docenteStyles.assignOption, draftAssignTo === 'alumnos' && docenteStyles.assignOptionActive]}
+                  onPress={() => setDraftAssignTo('alumnos')}
+                >
+                  <MaterialCommunityIcons name="account-check" size={16} color={draftAssignTo === 'alumnos' ? Colors.primary : Colors.textSecondary} />
+                  <Text style={[docenteStyles.assignOptionText, draftAssignTo === 'alumnos' && docenteStyles.assignOptionTextActive]}>Alumnos específicos</Text>
+                </Pressable>
+              </View>
+
+              {draftAssignTo === 'alumnos' && (() => {
+                const draftCourse = mockCourses.find((c) => c.id === draftCourseId);
+                const draftCourseStudents = draftCourse?.students ?? [];
+                const filteredDraftStudents = draftStudentSearch.trim()
+                  ? draftCourseStudents.filter((s) => s.name.toLowerCase().includes(draftStudentSearch.toLowerCase()))
+                  : draftCourseStudents;
+                const selectedDraftStudents = draftCourseStudents.filter((s) => draftStudentIds.includes(s.id));
+
+                return (
+                  <View style={{ marginBottom: 12 }}>
+                    {selectedDraftStudents.length > 0 && (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                        {selectedDraftStudents.map((s) => (
+                          <View key={s.id} style={docenteStyles.selectedStudentChip}>
+                            <View style={docenteStyles.studentAvatarSmall}>
+                              <Text style={docenteStyles.studentAvatarSmallText}>{s.name[0]}</Text>
+                            </View>
+                            <Text style={docenteStyles.selectedStudentName}>{s.name}</Text>
+                            <Pressable onPress={() => setDraftStudentIds((prev) => prev.filter((id) => id !== s.id))} hitSlop={8}>
+                              <MaterialCommunityIcons name="close-circle" size={16} color={Colors.textSecondary} />
+                            </Pressable>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                    <TextInput
+                      label="Buscar alumno..."
+                      value={draftStudentSearch}
+                      onChangeText={setDraftStudentSearch}
+                      mode="outlined"
+                      dense
+                      style={styles.formInput}
+                      outlineColor={Colors.border}
+                      activeOutlineColor={Colors.primary}
+                      left={<TextInput.Icon icon="magnify" />}
+                    />
+                    <View style={docenteStyles.draftStudentList}>
+                      {filteredDraftStudents.map((s) => {
+                        const isSelected = draftStudentIds.includes(s.id);
+                        return (
+                          <Pressable
+                            key={s.id}
+                            style={[docenteStyles.draftStudentRow, isSelected && { backgroundColor: Colors.primary + '08' }]}
+                            onPress={() => setDraftStudentIds((prev) =>
+                              prev.includes(s.id) ? prev.filter((id) => id !== s.id) : [...prev, s.id]
+                            )}
+                          >
+                            <MaterialCommunityIcons
+                              name={isSelected ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                              size={20}
+                              color={isSelected ? Colors.primary : Colors.border}
+                            />
+                            <View style={docenteStyles.studentAvatar}>
+                              <Text style={docenteStyles.studentAvatarText}>{s.name[0]}</Text>
+                            </View>
+                            <Text style={[{ flex: 1, fontSize: 14, color: Colors.textPrimary }, isSelected && { color: Colors.primary, fontWeight: '600' }]}>{s.name}</Text>
+                          </Pressable>
+                        );
+                      })}
+                      {filteredDraftStudents.length === 0 && (
+                        <Text style={{ padding: 12, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' }}>No se encontraron alumnos</Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })()}
 
               <Text style={styles.formLabel}>Fecha de entrega</Text>
               <Pressable style={styles.datePickerBtn} onPress={() => setShowDraftCalendar(!showDraftCalendar)}>
@@ -653,10 +861,129 @@ export default function TareasScreen() {
                 })}
               </View>
 
-              <Pressable style={[styles.submitFormBtn, !draftTitle.trim() && styles.submitFormBtnDisabled]} onPress={saveDraft}>
-                <MaterialCommunityIcons name="content-save-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.submitFormBtnText}>Guardar borrador</Text>
-              </Pressable>
+              <Text style={styles.formLabel}>Material adjunto</Text>
+              {draftAttachments.length > 0 && (
+                <View style={{ marginBottom: 10, gap: 6 }}>
+                  {draftAttachments.map((att) => (
+                    <View key={att.id} style={docenteStyles.attachmentChip}>
+                      <MaterialCommunityIcons
+                        name={att.type === 'link' ? 'link-variant' : 'file-document-outline'}
+                        size={16}
+                        color={att.type === 'link' ? Colors.primary : '#E74C3C'}
+                      />
+                      <Text style={docenteStyles.attachmentChipText} numberOfLines={1}>{att.name}</Text>
+                      <Pressable onPress={() => setDraftAttachments((prev) => prev.filter((a) => a.id !== att.id))} hitSlop={8}>
+                        <MaterialCommunityIcons name="close-circle" size={16} color={Colors.textSecondary} />
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <View style={docenteStyles.attachBtns}>
+                <Pressable
+                  style={docenteStyles.attachOptionBtn}
+                  onPress={() => {
+                    setDraftAttachments((prev) => [...prev, {
+                      id: `att${Date.now()}`,
+                      type: 'archivo',
+                      name: `Archivo_${prev.filter((a) => a.type === 'archivo').length + 1}.pdf`,
+                    }]);
+                  }}
+                >
+                  <MaterialCommunityIcons name="paperclip" size={16} color={Colors.primary} />
+                  <Text style={docenteStyles.attachOptionText}>Adjuntar archivo</Text>
+                </Pressable>
+                <Pressable
+                  style={docenteStyles.attachOptionBtn}
+                  onPress={() => setShowAddLink(!showAddLink)}
+                >
+                  <MaterialCommunityIcons name="link-variant" size={16} color={Colors.primary} />
+                  <Text style={docenteStyles.attachOptionText}>Agregar link</Text>
+                </Pressable>
+              </View>
+              {showAddLink && (
+                <View style={docenteStyles.addLinkBox}>
+                  <TextInput
+                    label="Nombre del enlace"
+                    value={draftLinkName}
+                    onChangeText={setDraftLinkName}
+                    mode="outlined"
+                    dense
+                    style={styles.formInput}
+                    outlineColor={Colors.border}
+                    activeOutlineColor={Colors.primary}
+                  />
+                  <TextInput
+                    label="URL"
+                    value={draftLinkUrl}
+                    onChangeText={setDraftLinkUrl}
+                    mode="outlined"
+                    dense
+                    style={styles.formInput}
+                    outlineColor={Colors.border}
+                    activeOutlineColor={Colors.primary}
+                    autoCapitalize="none"
+                    keyboardType="url"
+                  />
+                  <Pressable
+                    style={[docenteStyles.addLinkBtn, (!draftLinkName.trim() || !draftLinkUrl.trim()) && { opacity: 0.5 }]}
+                    onPress={() => {
+                      if (!draftLinkName.trim() || !draftLinkUrl.trim()) return;
+                      setDraftAttachments((prev) => [...prev, {
+                        id: `att${Date.now()}`,
+                        type: 'link',
+                        name: draftLinkName,
+                        url: draftLinkUrl,
+                      }]);
+                      setDraftLinkName('');
+                      setDraftLinkUrl('');
+                      setShowAddLink(false);
+                    }}
+                  >
+                    <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" />
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>Agregar</Text>
+                  </Pressable>
+                </View>
+              )}
+
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+                <Pressable style={[docenteStyles.modalDraftBtn, !draftTitle.trim() && { opacity: 0.5 }]} onPress={saveDraft}>
+                  <MaterialCommunityIcons name="content-save-outline" size={18} color={Colors.primary} />
+                  <Text style={docenteStyles.modalDraftBtnText}>Guardar borrador</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.submitFormBtn, { flex: 1, marginTop: 0 }, !draftTitle.trim() && styles.submitFormBtnDisabled]}
+                  onPress={() => {
+                    if (!draftTitle.trim()) return;
+                    // Save first, then send
+                    const id = editingDraftId || `draft${Date.now()}`;
+                    const draftData: DraftTask = {
+                      id,
+                      title: draftTitle,
+                      courseId: draftCourseId,
+                      assignTo: draftAssignTo,
+                      selectedStudentIds: draftAssignTo === 'alumnos' ? draftStudentIds : [],
+                      dueDate: draftDueDate || new Date().toISOString().split('T')[0],
+                      priority: draftPriority,
+                      description: draftDescription,
+                      attachments: draftAttachments,
+                    };
+                    // Add to drafts temporarily so sendDraft can find it
+                    if (!editingDraftId) {
+                      setDrafts((prev) => [draftData, ...prev]);
+                    } else {
+                      setDrafts((prev) => prev.map((d) => d.id === id ? draftData : d));
+                    }
+                    resetDraftForm();
+                    setShowDocenteAddModal(false);
+                    // Use setTimeout to let state update before sending
+                    setTimeout(() => setShowSendConfirm(id), 100);
+                  }}
+                >
+                  <MaterialCommunityIcons name="send" size={18} color="#FFFFFF" />
+                  <Text style={styles.submitFormBtnText}>Enviar</Text>
+                </Pressable>
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -1936,9 +2263,6 @@ const docenteStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   courseTab: {
     paddingHorizontal: 16,
@@ -2029,19 +2353,45 @@ const docenteStyles = StyleSheet.create({
   selectedStudentChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     backgroundColor: Colors.primary + '12',
     borderWidth: 1,
     borderColor: Colors.primary + '40',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignSelf: 'flex-start',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   selectedStudentName: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: Colors.primary,
+  },
+  studentAvatarSmall: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  studentAvatarSmallText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.primary,
+  },
+  clearAllChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.border + '60',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  clearAllText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.textSecondary,
   },
   searchInputWrapper: {
     flexDirection: 'row',
@@ -2091,6 +2441,62 @@ const docenteStyles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.primary,
   },
+  assignToggle: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  assignOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: '#FFFFFF',
+  },
+  assignOptionActive: {
+    backgroundColor: Colors.primary + '12',
+    borderColor: Colors.primary,
+  },
+  assignOptionText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  assignOptionTextActive: {
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  draftStudentList: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    maxHeight: 200,
+  },
+  draftStudentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  selectAllItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
   draftCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -2135,4 +2541,76 @@ const docenteStyles = StyleSheet.create({
     borderRadius: 8,
   },
   sendBtnText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+  attachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  attachmentName: { fontSize: 14, fontWeight: '500', color: Colors.textPrimary, flex: 1 },
+  attachmentUrl: { fontSize: 12, color: Colors.textSecondary, maxWidth: 200 },
+  attachmentChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  attachmentChipText: { flex: 1, fontSize: 13, color: Colors.textPrimary },
+  attachBtns: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  attachOptionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    backgroundColor: '#FFFFFF',
+  },
+  attachOptionText: { fontSize: 12, fontWeight: '600', color: Colors.primary },
+  addLinkBox: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  addLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.primary,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalDraftBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    backgroundColor: '#FFFFFF',
+  },
+  modalDraftBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
 });
