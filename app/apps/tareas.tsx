@@ -735,7 +735,7 @@ export default function TareasScreen() {
     const renderDocenteAddModal = () => (
       <Modal visible={showDocenteAddModal} transparent animationType="fade">
         <Pressable style={styles.addModalOverlay} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
-          <Pressable style={[styles.addModalCard, isWide && { maxWidth: 900 }]} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
+          <Pressable style={[styles.addModalCard, isWide && { maxWidth: 1100 }]} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
             <View style={styles.addHeader}>
               <Text style={styles.addTitle}>{editingDraftId ? 'Editar tarea' : 'Nueva tarea'}</Text>
               <IconButton icon="close" iconColor={Colors.textSecondary} size={20} onPress={() => { resetDraftForm(); setShowDocenteAddModal(false); }} />
@@ -896,28 +896,52 @@ export default function TareasScreen() {
                 </Text>
                 <MaterialCommunityIcons name={showDraftCalendar ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
               </Pressable>
-              {showDraftCalendar && (
-                <Calendar
-                  onDayPress={(day: { dateString: string }) => {
-                    setDraftDueDate(day.dateString);
-                    setShowDraftCalendar(false);
-                  }}
-                  markedDates={draftDueDate ? { [draftDueDate]: { selected: true, selectedColor: Colors.primary } } : {}}
-                  minDate={new Date().toISOString().split('T')[0]}
-                  theme={{
-                    calendarBackground: '#FFFFFF',
-                    todayTextColor: Colors.primary,
-                    dayTextColor: Colors.textPrimary,
-                    textDisabledColor: '#D9D9D9',
-                    arrowColor: Colors.primary,
-                    monthTextColor: Colors.textPrimary,
-                    textMonthFontWeight: '600',
-                    textDayFontSize: 13,
-                    textMonthFontSize: 14,
-                  }}
-                  style={styles.calendarPicker}
-                />
-              )}
+              {showDraftCalendar && (() => {
+                const today = new Date();
+                const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+                const nextDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+                const nextMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-01`;
+                const calTheme = {
+                  calendarBackground: '#FFFFFF',
+                  todayTextColor: Colors.primary,
+                  dayTextColor: Colors.textPrimary,
+                  textDisabledColor: '#D9D9D9',
+                  arrowColor: 'transparent',
+                  monthTextColor: Colors.textPrimary,
+                  textMonthFontWeight: '600' as const,
+                  textDayFontSize: 13,
+                  textMonthFontSize: 14,
+                };
+                const calMarked = draftDueDate ? { [draftDueDate]: { selected: true, selectedColor: Colors.primary } } : {};
+                const onDay = (day: { dateString: string }) => {
+                  setDraftDueDate(day.dateString);
+                  setShowDraftCalendar(false);
+                };
+                return (
+                  <View style={{ flexDirection: 'row', gap: 16, marginBottom: 12 }}>
+                    <View style={{ flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, overflow: 'hidden' }}>
+                      <Calendar
+                        current={currentMonth}
+                        onDayPress={onDay}
+                        markedDates={calMarked}
+                        minDate={new Date().toISOString().split('T')[0]}
+                        hideArrows
+                        theme={calTheme}
+                      />
+                    </View>
+                    <View style={{ flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, overflow: 'hidden' }}>
+                      <Calendar
+                        current={nextMonth}
+                        onDayPress={onDay}
+                        markedDates={calMarked}
+                        minDate={new Date().toISOString().split('T')[0]}
+                        hideArrows
+                        theme={calTheme}
+                      />
+                    </View>
+                  </View>
+                );
+              })()}
 
               <Text style={styles.formLabel}>Prioridad</Text>
               <View style={styles.priorityRow}>
