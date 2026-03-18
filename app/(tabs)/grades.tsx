@@ -27,6 +27,7 @@ const alumnoApps: AppItem[] = [
 ];
 
 const docenteApps: AppItem[] = [
+  { icon: 'checkbox-marked-outline', label: 'Tareas', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/tareas' },
   { icon: 'google-classroom', label: 'Mis cursos', color: '#5B77D3', bgColor: '#EEF1FB', route: '/apps/materias' },
   { icon: 'school', label: 'Cargar notas', color: '#E67E22', bgColor: '#FDF2E6', route: '/apps/notas' },
   { icon: 'calendar-check', label: 'Presentismo', color: '#4CAF50', bgColor: '#EAF7EB', route: '/apps/presentismo' },
@@ -39,6 +40,7 @@ const docenteApps: AppItem[] = [
 ];
 
 const padreApps: AppItem[] = [
+  { icon: 'checkbox-marked-outline', label: 'Tareas', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/tareas' },
   { icon: 'school', label: 'Notas', color: '#E67E22', bgColor: '#FDF2E6', route: '/apps/notas' },
   { icon: 'calendar-check', label: 'Presentismo', color: '#4CAF50', bgColor: '#EAF7EB', route: '/apps/presentismo' },
   { icon: 'notebook-outline', label: 'Cuaderno digital', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/noticias' },
