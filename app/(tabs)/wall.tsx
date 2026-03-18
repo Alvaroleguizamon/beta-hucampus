@@ -1,45 +1,15 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { StyleSheet, View, FlatList, Pressable, ScrollView, Modal, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { Text, TextInput, IconButton, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSocialStore } from '../../lib/stores/social-store';
 import { useGroupsStore } from '../../lib/stores/groups-store';
-import { mockBirthdays } from '../../lib/mock-data';
 import { WallPostCard } from '../../components/social/WallPostCard';
 import { Colors } from '../../constants/colors';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 import { useNoticiasStore } from '../../lib/stores/noticias-store';
 import { useAuthStore } from '../../lib/stores/auth-store';
-
-interface Notification {
-  id: string;
-  type: 'evento' | 'nota' | 'tarea' | 'viaje' | 'autorizacion' | 'comunicado';
-  title: string;
-  body: string;
-  time: string;
-  read: boolean;
-  route: string;
-}
-
-const notifIcon: Record<string, { icon: string; color: string }> = {
-  evento: { icon: 'calendar-star', color: '#9C27B0' },
-  nota: { icon: 'school', color: Colors.warning },
-  tarea: { icon: 'checkbox-marked-outline', color: '#7C6BC4' },
-  viaje: { icon: 'bus', color: Colors.accent },
-  autorizacion: { icon: 'file-sign', color: '#8D6E63' },
-  comunicado: { icon: 'bullhorn', color: Colors.primary },
-};
-
-const mockNotifications: Notification[] = [
-  { id: 'n1', type: 'nota', title: 'Nueva nota cargada', body: 'Prof. García cargó una nota en Matemática: 8', time: 'Hace 1 hora', read: false, route: '/apps/notas' },
-  { id: 'n2', type: 'evento', title: 'Evento próximo', body: 'Acto del 25 de Mayo - Mañana a las 10:00 hs', time: 'Hace 2 horas', read: false, route: '/apps/eventos' },
-  { id: 'n3', type: 'tarea', title: 'Tarea grupal recibida', body: 'Lucía Gómez te agregó a "Análisis literario"', time: 'Hace 3 horas', read: false, route: '/apps/tareas' },
-  { id: 'n4', type: 'viaje', title: 'Salida educativa', body: 'Museo de Ciencias Naturales - 25/03. Recordá traer DNI.', time: 'Hoy 08:30', read: true, route: '/apps/viajes' },
-  { id: 'n5', type: 'autorizacion', title: 'Autorización pendiente', body: 'La autorización para el Museo de Ciencias sigue pendiente.', time: 'Ayer', read: true, route: '/apps/autorizaciones' },
-  { id: 'n6', type: 'comunicado', title: 'Nuevo comunicado', body: 'Jornada de capacitación docente - No hay clases el viernes.', time: 'Ayer', read: true, route: '/apps/noticias' },
-  { id: 'n7', type: 'nota', title: 'Nueva nota cargada', body: 'Prof. Martínez cargó una nota en Lengua: 7', time: 'Hace 2 días', read: true, route: '/apps/notas' },
-];
 
 const categoryConfig: Record<string, { color: string; label: string }> = {
   comunicado: { color: Colors.primary, label: 'Comunicado' },
@@ -77,37 +47,12 @@ export default function WallScreen() {
   const composerInputRef = useRef<any>(null);
   const [composerSelection, setComposerSelection] = useState({ start: 0, end: 0 });
   const [expandedNewsId, setExpandedNewsId] = useState<string | null>(null);
-  const [showBirthdays, setShowBirthdays] = useState(false);
-  const [bdTab, setBdTab] = useState<'hoy' | 'proximos'>('hoy');
-  const [showNotifs, setShowNotifs] = useState(false);
-  const [notifications, setNotifications] = useState(mockNotifications);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
 
   const tabs: { key: SubTab; label: string }[] = [
     { key: 'muro', label: 'Muro' },
     { key: 'grupos', label: 'Grupos' },
     { key: 'noticias', label: 'Noticias' },
   ];
-
-  // Birthdays logic
-  const todayMD = useMemo(() => {
-    const d = new Date();
-    return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }, []);
-
-  const todayBirthdays = mockBirthdays.filter((b) => b.date === todayMD);
-
-  const upcomingBirthdays = useMemo(() => {
-    return mockBirthdays
-      .filter((b) => b.date > todayMD)
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(0, 5);
-  }, [todayMD]);
 
   const pinnedNoticias = noticias.filter((n) => n.pinned);
 
@@ -292,30 +237,6 @@ export default function WallScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.logo}>humand <Text style={styles.logoSchool}>school</Text></Text>
-        <View style={styles.headerIcons}>
-          <IconButton icon="magnify" size={24} iconColor={Colors.primary} />
-          <View>
-            <IconButton icon="cake-variant" size={24} iconColor={Colors.primary} onPress={() => setShowBirthdays(true)} />
-            {todayBirthdays.length > 0 && (
-              <View style={styles.birthdayBadge}>
-                <Text style={styles.birthdayBadgeText}>{todayBirthdays.length}</Text>
-              </View>
-            )}
-          </View>
-          <View>
-            <IconButton icon="bell-outline" size={24} iconColor={Colors.primary} onPress={() => setShowNotifs(true)} />
-            {unreadCount > 0 && (
-              <View style={styles.notifBadge}>
-                <Text style={styles.notifBadgeText}>{unreadCount}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-      </View>
-
       {isDesktop ? (
         /* ── Desktop layout: feed + aside ── */
         <View style={styles.desktopLayout}>
@@ -505,124 +426,6 @@ export default function WallScreen() {
         </>
       )}
 
-      {/* Birthday Modal */}
-      <Modal visible={showBirthdays} animationType="fade" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>🎂 Cumpleaños</Text>
-              <IconButton icon="close" size={20} iconColor={Colors.textSecondary} onPress={() => { setShowBirthdays(false); setBdTab('hoy'); }} />
-            </View>
-
-            {/* Tabs */}
-            <View style={styles.bdTabs}>
-              <Pressable
-                style={[styles.bdTab, bdTab === 'hoy' && styles.bdTabActive]}
-                onPress={() => setBdTab('hoy')}
-              >
-                <Text style={[styles.bdTabText, bdTab === 'hoy' && styles.bdTabTextActive]}>
-                  Hoy {todayBirthdays.length > 0 ? `(${todayBirthdays.length})` : ''}
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[styles.bdTab, bdTab === 'proximos' && styles.bdTabActive]}
-                onPress={() => setBdTab('proximos')}
-              >
-                <Text style={[styles.bdTabText, bdTab === 'proximos' && styles.bdTabTextActive]}>
-                  Próximos
-                </Text>
-              </Pressable>
-            </View>
-
-            {bdTab === 'hoy' && (
-              <View style={styles.bdSection}>
-                {todayBirthdays.length > 0 ? todayBirthdays.map((b) => {
-                  const isDocente = b.grade === 'Docente';
-                  return (
-                    <View key={b.id} style={styles.bdRow}>
-                      <View style={styles.bdAvatar}>
-                        <MaterialCommunityIcons name="cake-variant" size={20} color={Colors.primary} />
-                      </View>
-                      <View style={styles.bdInfo}>
-                        <Text style={styles.bdName}>{b.name}</Text>
-                        <Text style={styles.bdGrade}>{isDocente ? '👩‍🏫 Docente' : `🎒 ${b.grade}`}</Text>
-                      </View>
-                      <Text style={styles.bdEmoji}>🎉</Text>
-                    </View>
-                  );
-                }) : (
-                  <Text style={styles.bdEmpty}>No hay cumpleaños hoy</Text>
-                )}
-              </View>
-            )}
-
-            {bdTab === 'proximos' && (
-              <View style={styles.bdSection}>
-                {upcomingBirthdays.length > 0 ? upcomingBirthdays.map((b) => {
-                  const isDocente = b.grade === 'Docente';
-                  return (
-                    <View key={b.id} style={styles.bdRow}>
-                      <View style={[styles.bdAvatar, { backgroundColor: Colors.border }]}>
-                        <Text style={styles.bdAvatarText}>{b.name[0]}</Text>
-                      </View>
-                      <View style={styles.bdInfo}>
-                        <Text style={styles.bdName}>{b.name}</Text>
-                        <Text style={styles.bdGrade}>{isDocente ? '👩‍🏫 Docente' : `🎒 ${b.grade}`} · {b.date}</Text>
-                      </View>
-                    </View>
-                  );
-                }) : (
-                  <Text style={styles.bdEmpty}>No hay cumpleaños próximos</Text>
-                )}
-              </View>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* Notifications - Full screen */}
-      <Modal visible={showNotifs} animationType="slide">
-        <View style={styles.notifScreen}>
-          <View style={styles.notifScreenHeader}>
-            <Pressable onPress={() => setShowNotifs(false)} style={styles.notifBackBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-            </Pressable>
-            <Text style={styles.notifScreenTitle}>Notificaciones</Text>
-            {unreadCount > 0 && (
-              <Pressable onPress={markAllRead}>
-                <Text style={styles.markReadText}>Marcar como leídas</Text>
-              </Pressable>
-            )}
-          </View>
-
-          <ScrollView contentContainerStyle={styles.notifList}>
-            {notifications.map((n) => {
-              const cfg = notifIcon[n.type];
-              return (
-                <Pressable
-                  key={n.id}
-                  style={[styles.notifRow, !n.read && styles.notifRowUnread]}
-                  onPress={() => {
-                    setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
-                    setShowNotifs(false);
-                    setTimeout(() => router.push(n.route as any), 300);
-                  }}
-                >
-                  <View style={[styles.notifIcon, { backgroundColor: cfg.color + '15' }]}>
-                    <MaterialCommunityIcons name={cfg.icon as any} size={20} color={cfg.color} />
-                  </View>
-                  <View style={styles.notifContent}>
-                    <Text style={[styles.notifTitle, !n.read && styles.notifTitleUnread]}>{n.title}</Text>
-                    <Text style={styles.notifBody} numberOfLines={2}>{n.body}</Text>
-                    <Text style={styles.notifTime}>{n.time}</Text>
-                  </View>
-                  {!n.read && <View style={styles.notifDot} />}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -632,42 +435,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingLeft: 20,
-    paddingRight: 4,
-    paddingTop: 8,
-    backgroundColor: '#FFFFFF',
-  },
-  logo: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: Colors.primary,
-    letterSpacing: -0.5,
-  },
-  logoSchool: {
-    fontWeight: '400',
-    color: Colors.primary,
-  },
-  headerIcons: {
-    flexDirection: 'row',
-  },
-  birthdayBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: Colors.error,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  birthdayBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
 
   // Pills
   pillsContainer: {
@@ -1182,86 +949,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  // Birthday modal
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '70%',
-  },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: Colors.textPrimary },
-  bdTabs: { flexDirection: 'row', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  bdTab: { flex: 1, alignItems: 'center', paddingVertical: 10 },
-  bdTabActive: { borderBottomWidth: 2, borderBottomColor: Colors.primary },
-  bdTabText: { fontSize: 14, fontWeight: '500', color: Colors.textSecondary },
-  bdTabTextActive: { color: Colors.primary, fontWeight: '600' },
-  bdSection: { marginBottom: 20 },
-  bdRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  bdAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.primary + '15', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  bdAvatarText: { fontSize: 16, fontWeight: '700', color: Colors.textSecondary },
-  bdInfo: { flex: 1 },
-  bdName: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
-  bdGrade: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  bdEmoji: { fontSize: 20 },
-  bdEmpty: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', paddingVertical: 30 },
-
-  // Notifications
-  notifScreen: { flex: 1, backgroundColor: Colors.background },
-  notifScreenHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingTop: 12,
-    paddingBottom: 12,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  notifBackBtn: { padding: 8 },
-  notifScreenTitle: { flex: 1, fontSize: 20, fontWeight: '700', color: Colors.textPrimary, marginLeft: 8 },
-  notifList: { padding: 12 },
-  notifBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: Colors.error,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notifBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '700' },
-  notifHeaderRight: { flexDirection: 'row', alignItems: 'center' },
-  markReadText: { fontSize: 13, color: Colors.primary, fontWeight: '500' },
-  notifRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  notifRowUnread: { backgroundColor: Colors.primary + '08', borderLeftWidth: 3, borderLeftColor: Colors.primary },
-  notifIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  notifContent: { flex: 1 },
-  notifTitle: { fontSize: 14, fontWeight: '500', color: Colors.textPrimary },
-  notifTitleUnread: { fontWeight: '700' },
-  notifBody: { fontSize: 13, color: Colors.textSecondary, marginTop: 2, lineHeight: 18 },
-  notifTime: { fontSize: 11, color: Colors.textSecondary, marginTop: 4 },
-  notifDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primary, marginLeft: 8 },
 });

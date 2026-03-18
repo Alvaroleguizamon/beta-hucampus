@@ -12,7 +12,7 @@ export default function AppsLayout() {
     <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column' }}>
       {isDesktop && <DesktopSidebar />}
       <View style={{ flex: 1 }}>
-        {!isDesktop && <UserTopBar />}
+        <UserTopBar />
         <Stack
           screenOptions={{
             headerStyle: {

@@ -6,7 +6,7 @@ export default function Index() {
   const role = useAuthStore((s) => s.user?.role);
 
   if (isLoggedIn) {
-    const destination = role === 'alumno' ? '/(tabs)/wall' : '/(tabs)/home';
+    const destination = '/(tabs)/wall';
     return <Redirect href={destination as any} />;
   }
 

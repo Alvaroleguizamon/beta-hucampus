@@ -58,21 +58,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <IconButton icon="information-outline" size={22} iconColor={Colors.textPrimary} />
-        <Text style={styles.topBarTitle}>Mi perfil</Text>
-        <View style={styles.topBarRight}>
-          <IconButton icon="cog-outline" size={22} iconColor={Colors.textPrimary} />
-          <IconButton
-            icon="logout"
-            size={22}
-            iconColor={Colors.textPrimary}
-            onPress={() => { logout(); router.replace('/'); }}
-          />
-        </View>
-      </View>
-
       <ScrollView>
         {/* Cover / Banner */}
         <View style={styles.banner}>
