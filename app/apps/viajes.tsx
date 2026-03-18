@@ -3,9 +3,9 @@ import { StyleSheet, View, FlatList, Pressable, ScrollView } from 'react-native'
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
-import { mockTrips, mockTripAttendees } from '../../lib/mock-data';
 import { Trip } from '../../lib/types';
 import { useAuthStore } from '../../lib/stores/auth-store';
+import { useTripsStore } from '../../lib/stores/trips-store';
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -40,6 +40,8 @@ const statusConfig = {
 
 export default function ViajesScreen() {
   const role = useAuthStore((s) => s.user?.role ?? 'alumno');
+  const trips = useTripsStore((s) => s.trips);
+  const attendees = useTripsStore((s) => s.attendees);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -48,16 +50,16 @@ export default function ViajesScreen() {
 
   const tripsByDate = useMemo(() => {
     const map: Record<string, Trip> = {};
-    mockTrips.forEach((t) => { map[t.date] = t; });
+    trips.forEach((t) => { map[t.date] = t; });
     return map;
-  }, []);
+  }, [trips]);
 
   // Trips that fall within the current week
   const weekTrips = useMemo(() => {
     const start = formatDate(weekDays[0]);
     const end = formatDate(weekDays[6]);
-    return mockTrips.filter((t) => t.date >= start && t.date <= end);
-  }, [weekDays]);
+    return trips.filter((t) => t.date >= start && t.date <= end);
+  }, [weekDays, trips]);
 
   const weekMonth = monthNames[weekDays[3].getMonth()];
   const weekYear = weekDays[3].getFullYear();
@@ -165,17 +167,17 @@ export default function ViajesScreen() {
           )}
 
           {role === 'docente' && (() => {
-            const attendees = mockTripAttendees[selectedTrip.id] ?? [];
-            const authCount = attendees.filter((a) => a.authorized).length;
+            const attendees_list = attendees[selectedTrip.id] ?? [];
+            const authCount = attendees_list.filter((a) => a.authorized).length;
             return (
               <View style={styles.infoCard}>
                 <View style={styles.attendeesHeader}>
-                  <Text style={styles.infoCardTitle}>Alumnos ({attendees.length})</Text>
-                  <Text style={[styles.attendeesCount, { color: authCount === attendees.length ? Colors.success : Colors.warning }]}>
-                    {authCount}/{attendees.length} autorizados
+                  <Text style={styles.infoCardTitle}>Alumnos ({attendees_list.length})</Text>
+                  <Text style={[styles.attendeesCount, { color: authCount === attendees_list.length ? Colors.success : Colors.warning }]}>
+                    {authCount}/{attendees_list.length} autorizados
                   </Text>
                 </View>
-                {attendees.map((a) => (
+                {attendees_list.map((a) => (
                   <View key={a.studentId} style={styles.attendeeRow}>
                     <View style={[styles.attendeeAvatar, { backgroundColor: a.authorized ? Colors.success + '15' : Colors.border }]}>
                       <Text style={[styles.attendeeAvatarText, { color: a.authorized ? Colors.success : Colors.textSecondary }]}>
@@ -213,8 +215,8 @@ export default function ViajesScreen() {
     );
   }
 
-  const upcoming = mockTrips.filter((t) => t.status !== 'finalizado');
-  const past = mockTrips.filter((t) => t.status === 'finalizado');
+  const upcoming = trips.filter((t) => t.status !== 'finalizado');
+  const past = trips.filter((t) => t.status === 'finalizado');
   const allTrips = [...upcoming, ...past];
 
   return (

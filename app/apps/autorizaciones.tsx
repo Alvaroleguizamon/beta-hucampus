@@ -4,17 +4,7 @@ import { Text, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../lib/stores/auth-store';
-
-interface Authorization {
-  id: string;
-  title: string;
-  type: 'salida' | 'retiro' | 'actividad' | 'medica';
-  date: string;
-  status: 'pendiente' | 'autorizado' | 'rechazado' | 'vencido';
-  description: string;
-  authorizedBy?: string;
-  authorizedDate?: string;
-}
+import { useTripsStore, Authorization } from '../../lib/stores/trips-store';
 
 interface AuthorizedPerson {
   id: string;
@@ -39,63 +29,6 @@ const statusConfig = {
   vencido: { color: Colors.textSecondary, icon: 'clock-alert-outline', label: 'Vencido' },
 };
 
-const mockAuthorizations: Authorization[] = [
-  {
-    id: 'auth1',
-    title: 'Salida al Museo de Ciencias Naturales',
-    type: 'salida',
-    date: '2026-03-25',
-    status: 'pendiente',
-    description: 'Se requiere autorización para la salida educativa al Museo de Ciencias Naturales el 25/03.',
-  },
-  {
-    id: 'auth2',
-    title: 'Viaje de Egresados - Bariloche',
-    type: 'salida',
-    date: '2026-09-10',
-    status: 'pendiente',
-    description: 'Autorización para el viaje de egresados a Bariloche del 10 al 21 de septiembre.',
-  },
-  {
-    id: 'auth3',
-    title: 'Campamento Sierra de la Ventana',
-    type: 'salida',
-    date: '2026-04-15',
-    status: 'autorizado',
-    description: 'Campamento de 3 días en Sierra de la Ventana.',
-    authorizedBy: 'Carlos Pérez (Padre)',
-    authorizedDate: '2026-03-12',
-  },
-  {
-    id: 'auth4',
-    title: 'Retiro anticipado - Turno médico',
-    type: 'retiro',
-    date: '2026-03-19',
-    status: 'autorizado',
-    description: 'Retiro a las 11:00 hs por turno con el dentista.',
-    authorizedBy: 'Carlos Pérez (Padre)',
-    authorizedDate: '2026-03-17',
-  },
-  {
-    id: 'auth5',
-    title: 'Clase de natación extracurricular',
-    type: 'actividad',
-    date: '2026-03-01',
-    status: 'autorizado',
-    description: 'Participación en el taller de natación los viernes de 14 a 16 hs.',
-    authorizedBy: 'Carlos Pérez (Padre)',
-    authorizedDate: '2026-02-28',
-  },
-  {
-    id: 'auth6',
-    title: 'Visita a la Usina del Arte',
-    type: 'salida',
-    date: '2026-03-10',
-    status: 'vencido',
-    description: 'La autorización venció sin ser completada.',
-  },
-];
-
 const mockAuthorizedPersons: AuthorizedPerson[] = [
   { id: 'ap1', name: 'Carlos Pérez', relationship: 'Padre', dni: '28.456.789', phone: '11-5555-1234', active: true },
   { id: 'ap2', name: 'María López de Pérez', relationship: 'Madre', dni: '30.123.456', phone: '11-5555-5678', active: true },
@@ -108,21 +41,23 @@ export default function AutorizacionesScreen() {
   const [tab, setTab] = useState('autorizaciones');
   const [selectedAuth, setSelectedAuth] = useState<Authorization | null>(null);
   const [reminded, setReminded] = useState<Record<string, boolean>>({});
-  const [authorizations, setAuthorizations] = useState(mockAuthorizations);
+
+  const authorizations = useTripsStore((s) => s.authorizations);
+  const authorize = useTripsStore((s) => s.authorize);
+  const reject = useTripsStore((s) => s.reject);
 
   const handleAuthorize = (authId: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    setAuthorizations((prev) => prev.map((a) =>
-      a.id === authId ? { ...a, status: 'autorizado' as const, authorizedBy: 'Carlos Pérez (Padre)', authorizedDate: today } : a
-    ));
-    setSelectedAuth((prev) => prev ? { ...prev, status: 'autorizado', authorizedBy: 'Carlos Pérez (Padre)', authorizedDate: today } : null);
+    authorize(authId, 'Carlos Pérez (Padre)');
+    setSelectedAuth((prev) => {
+      if (!prev) return null;
+      const today = new Date().toISOString().split('T')[0];
+      return { ...prev, status: 'autorizado', authorizedBy: 'Carlos Pérez (Padre)', authorizedDate: today };
+    });
     Alert.alert('Autorizado', 'La autorización fue aprobada correctamente.');
   };
 
   const handleReject = (authId: string) => {
-    setAuthorizations((prev) => prev.map((a) =>
-      a.id === authId ? { ...a, status: 'rechazado' as const } : a
-    ));
+    reject(authId);
     setSelectedAuth((prev) => prev ? { ...prev, status: 'rechazado' } : null);
     Alert.alert('Rechazado', 'La autorización fue rechazada.');
   };

@@ -6,6 +6,7 @@ import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Colors } from '../../constants/colors';
 import { mockSubjects, mockClassmates, mockCourses } from '../../lib/mock-data';
 import { useAuthStore } from '../../lib/stores/auth-store';
+import { useTasksStore, DocenteTask, DraftTask, TaskAttachment, StudentDelivery } from '../../lib/stores/tasks-store';
 
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
@@ -33,89 +34,15 @@ interface Task {
     content: string;
     date: string;
   };
+  _fromDocente?: boolean;
 }
 
-const initialTasks: Task[] = [
-  { id: 't1', title: 'Resolver ejercicios pág. 45-48', subject: 'Matemática', subjectColor: '#5B77D3', teacher: 'Prof. García', dueDate: '2026-03-20', status: 'pendiente', priority: 'alta', grupal: false, description: 'Resolver todos los ejercicios de las páginas 45 a 48. Mostrar procedimiento completo.' },
+// Personal tasks the alumno adds manually (not from docentes)
+const initialPersonalTasks: Task[] = [
   { id: 't2', title: 'Leer capítulo 5 - Revolución de Mayo', subject: 'Historia', subjectColor: '#FF9800', teacher: 'Prof. López', dueDate: '2026-03-21', status: 'pendiente', priority: 'media', grupal: false, description: 'Leer el capítulo 5 del manual y responder las preguntas de la página 120.' },
   { id: 't3', title: 'Trabajo práctico grupal - Análisis literario', subject: 'Lengua', subjectColor: '#0693E3', teacher: 'Prof. Martínez', dueDate: '2026-03-25', status: 'pendiente', priority: 'alta', grupal: true, integrantes: ['Lucía Gómez', 'Martín Ruiz', 'Sofía Díaz'], description: 'Elegir una obra del siglo XIX y realizar análisis de personajes, contexto histórico y estilo narrativo. Extensión: 3 a 5 páginas.' },
   { id: 't4', title: 'Preparar herbario - 10 especies', subject: 'Biología', subjectColor: '#4CAF50', teacher: 'Prof. Fernández', dueDate: '2026-03-28', status: 'pendiente', priority: 'media', grupal: true, integrantes: ['Tomás López'], description: 'Recolectar y clasificar 10 especies de plantas. Presentar en carpeta con foto, nombre común y nombre científico.' },
   { id: 't5', title: 'Reading comprehension Unit 3', subject: 'Inglés', subjectColor: '#9C27B0', teacher: 'Prof. Rodríguez', dueDate: '2026-03-22', status: 'entregado', priority: 'baja', grupal: false, description: 'Complete reading comprehension exercises from Unit 3, pages 30-35.', submission: { type: 'texto', content: 'Ejercicios resueltos y enviados por la plataforma.', date: '2026-03-19' } },
-  { id: 't6', title: 'Estudiar para parcial', subject: 'Matemática', subjectColor: '#5B77D3', teacher: 'Prof. García', dueDate: '2026-03-20', status: 'pendiente', priority: 'alta', grupal: false, description: 'Estudiar unidades 1 a 3 para el parcial. Revisar guía de ejercicios y apuntes de clase.' },
-];
-
-// ─── Docente types & mock data ───
-interface StudentDelivery {
-  studentId: string;
-  studentName: string;
-  status: 'pendiente' | 'entregado';
-  submissionDate?: string;
-  submissionContent?: string;
-}
-
-interface TaskAttachment {
-  id: string;
-  type: 'archivo' | 'link';
-  name: string;
-  url?: string;
-}
-
-interface DocenteTask {
-  id: string;
-  title: string;
-  courseId: string;
-  dueDate: string;
-  priority: 'alta' | 'media' | 'baja';
-  description?: string;
-  attachments?: TaskAttachment[];
-  deliveries: StudentDelivery[];
-}
-
-const initialDocenteTasks: DocenteTask[] = [
-  {
-    id: 'dt1', title: 'Resolver ejercicios pág. 45-48', courseId: 'c1', dueDate: '2026-03-20', priority: 'alta',
-    description: 'Resolver todos los ejercicios de las páginas 45 a 48. Mostrar procedimiento completo.',
-    attachments: [
-      { id: 'att1', type: 'archivo', name: 'Guía_ejercicios_U3.pdf' },
-      { id: 'att2', type: 'link', name: 'Video explicativo - Ecuaciones', url: 'https://example.com/video' },
-    ],
-    deliveries: [
-      { studentId: 'st1', studentName: 'Juan Pérez', status: 'entregado', submissionDate: '2026-03-18', submissionContent: 'Ejercicios resueltos.' },
-      { studentId: 'st2', studentName: 'María González', status: 'entregado', submissionDate: '2026-03-19', submissionContent: 'Adjunto PDF con resolución.' },
-      { studentId: 'st3', studentName: 'Lucas Rodríguez', status: 'pendiente' },
-      { studentId: 'st4', studentName: 'Sofía Martínez', status: 'pendiente' },
-      { studentId: 'st5', studentName: 'Mateo López', status: 'entregado', submissionDate: '2026-03-17', submissionContent: 'Resuelto completo.' },
-    ],
-  },
-  {
-    id: 'dt2', title: 'Estudiar para parcial - Unidades 1-3', courseId: 'c1', dueDate: '2026-03-25', priority: 'media',
-    description: 'Estudiar unidades 1 a 3 para el parcial.',
-    deliveries: [
-      { studentId: 'st1', studentName: 'Juan Pérez', status: 'pendiente' },
-      { studentId: 'st2', studentName: 'María González', status: 'pendiente' },
-      { studentId: 'st3', studentName: 'Lucas Rodríguez', status: 'pendiente' },
-      { studentId: 'st4', studentName: 'Sofía Martínez', status: 'pendiente' },
-      { studentId: 'st5', studentName: 'Mateo López', status: 'pendiente' },
-    ],
-  },
-  {
-    id: 'dt3', title: 'Trabajo práctico - Ecuaciones', courseId: 'c2', dueDate: '2026-03-22', priority: 'alta',
-    description: 'Resolver guía de ecuaciones cuadráticas.',
-    deliveries: [
-      { studentId: 'st6', studentName: 'Valentina Díaz', status: 'entregado', submissionDate: '2026-03-20', submissionContent: 'Guía resuelta.' },
-      { studentId: 'st7', studentName: 'Tomás Fernández', status: 'pendiente' },
-      { studentId: 'st8', studentName: 'Camila Ruiz', status: 'entregado', submissionDate: '2026-03-21', submissionContent: 'Adjunto archivo.' },
-    ],
-  },
-  {
-    id: 'dt4', title: 'Ejercicios de repaso', courseId: 'c2', dueDate: '2026-03-28', priority: 'baja',
-    description: 'Completar ejercicios de repaso del cuadernillo.',
-    deliveries: [
-      { studentId: 'st6', studentName: 'Valentina Díaz', status: 'pendiente' },
-      { studentId: 'st7', studentName: 'Tomás Fernández', status: 'pendiente' },
-      { studentId: 'st8', studentName: 'Camila Ruiz', status: 'pendiente' },
-    ],
-  },
 ];
 
 const priorityConfig = {
@@ -149,8 +76,16 @@ export default function TareasScreen() {
   const role = useAuthStore((s) => s.user?.role ?? 'alumno');
   const isReadOnly = role === 'padre';
 
+  // ─── Tasks store ───
+  const publishedTasks = useTasksStore((s) => s.publishedTasks);
+  const storeDrafts = useTasksStore((s) => s.drafts);
+  const publishTask = useTasksStore((s) => s.publishTask);
+  const saveDraftAction = useTasksStore((s) => s.saveDraft);
+  const removeDraftAction = useTasksStore((s) => s.removeDraft);
+  const storeSubmitDelivery = useTasksStore((s) => s.submitDelivery);
+
   // ─── Docente state ───
-  const [docenteTasks, setDocenteTasks] = useState(initialDocenteTasks);
+  const docenteTasks = publishedTasks;
   const [selectedCourseId, setSelectedCourseId] = useState(mockCourses[0]?.id ?? '');
   const [studentFilters, setStudentFilters] = useState<string[]>([]);
   const [selectedDocenteTask, setSelectedDocenteTask] = useState<DocenteTask | null>(null);
@@ -159,21 +94,8 @@ export default function TareasScreen() {
   const [docenteMobileTab, setDocenteMobileTab] = useState<'tareas' | 'organizador'>('tareas');
   const [showDocenteAddModal, setShowDocenteAddModal] = useState(false);
 
-  // Draft state
-  interface DraftTask {
-    id: string;
-    title: string;
-    courseId: string;
-    assignTo: 'curso' | 'alumnos';
-    selectedStudentIds: string[];
-    dueDate: string;
-    priority: 'alta' | 'media' | 'baja';
-    description: string;
-    attachments: TaskAttachment[];
-  }
-  const [drafts, setDrafts] = useState<DraftTask[]>([
-    { id: 'draft1', title: 'Ejercicios de funciones', courseId: 'c1', assignTo: 'curso', selectedStudentIds: [], dueDate: '2026-04-01', priority: 'media', description: 'Resolver ejercicios 1 a 15 de la guía de funciones lineales.', attachments: [] },
-  ]);
+  // Draft state — from store
+  const drafts = storeDrafts;
   const [draftTitle, setDraftTitle] = useState('');
   const [draftCourseId, setDraftCourseId] = useState(mockCourses[0]?.id ?? '');
   const [draftAssignTo, setDraftAssignTo] = useState<'curso' | 'alumnos'>('curso');
@@ -192,7 +114,37 @@ export default function TareasScreen() {
   const [showDraftStudentList, setShowDraftStudentList] = useState(false);
 
   // ─── Alumno/Padre state (must be before early returns for hooks consistency) ───
-  const [tasks, setTasks] = useState(initialTasks);
+  const userId = useAuthStore((s) => s.user?.id ?? 'u1');
+  const STUDENT_COURSE_ID = 'c1'; // Lucía Martínez is in 3ro A (c1)
+  const [personalTasks, setPersonalTasks] = useState<Task[]>(initialPersonalTasks);
+
+  const tasks = useMemo<Task[]>(() => {
+    const fromDocente: Task[] = publishedTasks
+      .filter((t) => t.courseId === STUDENT_COURSE_ID)
+      .map((t) => {
+        const course = mockCourses.find((c) => c.id === t.courseId);
+        const subject = course ? mockSubjects.find((s) => s.id === course.subjectId) : null;
+        const delivery = t.deliveries.find((d) => d.studentId === userId);
+        return {
+          id: t.id,
+          title: t.title,
+          subject: subject?.name ?? 'Matemática',
+          subjectColor: subject?.color ?? '#5B77D3',
+          teacher: subject?.teacher ?? '',
+          dueDate: t.dueDate,
+          status: delivery?.status ?? 'pendiente',
+          priority: t.priority,
+          grupal: false,
+          description: t.description,
+          submission: delivery?.submissionDate
+            ? { type: 'texto' as const, content: delivery.submissionContent ?? '', date: delivery.submissionDate }
+            : undefined,
+          _fromDocente: true,
+        };
+      });
+    const docenteIds = new Set(fromDocente.map((t) => t.id));
+    return [...fromDocente, ...personalTasks.filter((t) => !docenteIds.has(t.id))];
+  }, [publishedTasks, personalTasks, userId]);
   const [statusFilter, setStatusFilter] = useState<'todas' | 'pendientes' | 'entregadas'>('pendientes');
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -599,6 +551,7 @@ export default function TareasScreen() {
     const saveDraft = () => {
       if (!draftTitle.trim()) return;
       const draftData = {
+        id: editingDraftId ?? `draft${Date.now()}`,
         title: draftTitle,
         courseId: draftCourseId,
         assignTo: draftAssignTo,
@@ -608,13 +561,7 @@ export default function TareasScreen() {
         description: draftDescription,
         attachments: draftAttachments,
       };
-      if (editingDraftId) {
-        setDrafts((prev) => prev.map((d) =>
-          d.id === editingDraftId ? { ...d, ...draftData } : d
-        ));
-      } else {
-        setDrafts((prev) => [{ id: `draft${Date.now()}`, ...draftData }, ...prev]);
-      }
+      saveDraftAction(draftData, editingDraftId || undefined);
       resetDraftForm();
       setShowDocenteAddModal(false);
     };
@@ -644,14 +591,14 @@ export default function TareasScreen() {
         })),
       };
 
-      setDocenteTasks((prev) => [newTask, ...prev]);
-      setDrafts((prev) => prev.filter((d) => d.id !== draftId));
+      publishTask(newTask);
+      removeDraftAction(draftId);
       setShowSendConfirm(null);
       Alert.alert('Tarea enviada', `La tarea fue asignada a ${targetStudents.length} alumno${targetStudents.length > 1 ? 's' : ''} de ${course.name} — ${course.grade}.`);
     };
 
     const deleteDraft = (draftId: string) => {
-      setDrafts((prev) => prev.filter((d) => d.id !== draftId));
+      removeDraftAction(draftId);
     };
 
     // ─── Docente organizer panel ───
@@ -1068,12 +1015,8 @@ export default function TareasScreen() {
                       description: draftDescription,
                       attachments: draftAttachments,
                     };
-                    // Add to drafts temporarily so sendDraft can find it
-                    if (!editingDraftId) {
-                      setDrafts((prev) => [draftData, ...prev]);
-                    } else {
-                      setDrafts((prev) => prev.map((d) => d.id === id ? draftData : d));
-                    }
+                    // Save to store, then send
+                    saveDraftAction(draftData, editingDraftId || undefined);
                     resetDraftForm();
                     setShowDocenteAddModal(false);
                     // Use setTimeout to let state update before sending
@@ -1180,7 +1123,7 @@ export default function TareasScreen() {
     const subjectData = mockSubjects.find((s) => s.name === newSubject);
     const integrantes = newGrupal && selectedClassmates.length > 0 ? selectedClassmates : undefined;
 
-    setTasks((prev) => [{
+    setPersonalTasks((prev) => [{
       id: `t${Date.now()}`,
       title: newTitle,
       subject: newSubject || 'General',
@@ -1215,11 +1158,15 @@ export default function TareasScreen() {
   const confirmSubmission = () => {
     if (!selectedTask) return;
     const today = new Date().toISOString().split('T')[0];
-    setTasks((prev) => prev.map((t) =>
-      t.id === selectedTask.id
-        ? { ...t, status: 'entregado' as const, submission: { type: 'texto' as const, content: submissionText, date: today } }
-        : t
-    ));
+    if (selectedTask._fromDocente) {
+      storeSubmitDelivery(selectedTask.id, userId, submissionText);
+    } else {
+      setPersonalTasks((prev) => prev.map((t) =>
+        t.id === selectedTask.id
+          ? { ...t, status: 'entregado' as const, submission: { type: 'texto' as const, content: submissionText, date: today } }
+          : t,
+      ));
+    }
     setSelectedTask({ ...selectedTask, status: 'entregado', submission: { type: 'texto', content: submissionText, date: today } });
     setSubmissionText('');
     setShowSubmitConfirm(false);
@@ -1238,11 +1185,15 @@ export default function TareasScreen() {
         {
           text: 'Simular adjunto',
           onPress: () => {
-            setTasks((prev) => prev.map((t) =>
-              t.id === selectedTask.id
-                ? { ...t, status: 'entregado' as const, submission: { type: 'archivo' as const, content: 'Tarea_TP.pdf', date: today } }
-                : t
-            ));
+            if (selectedTask._fromDocente) {
+              storeSubmitDelivery(selectedTask.id, userId, 'Tarea_TP.pdf');
+            } else {
+              setPersonalTasks((prev) => prev.map((t) =>
+                t.id === selectedTask.id
+                  ? { ...t, status: 'entregado' as const, submission: { type: 'archivo' as const, content: 'Tarea_TP.pdf', date: today } }
+                  : t,
+              ));
+            }
             setSelectedTask({ ...selectedTask, status: 'entregado', submission: { type: 'archivo', content: 'Tarea_TP.pdf', date: today } });
             const tMsg = selectedTask.teacher ? ` a ${selectedTask.teacher}` : '';
             Alert.alert('Entrega confirmada', `Tu archivo fue enviado${tMsg} correctamente.`);
