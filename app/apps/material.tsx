@@ -15,6 +15,7 @@ interface MaterialBase {
 
 interface MaterialFile extends MaterialBase {
   type: 'pdf' | 'link' | 'doc';
+  url?: string;
 }
 
 interface MaterialVideo extends MaterialBase {
@@ -39,7 +40,7 @@ const materialBySubject: Record<string, Material[]> = {
     { id: 'mat3', name: 'Resumen teórico - Funciones', type: 'doc', date: '2026-03-05' },
   ],
   s2: [
-    { id: 'mat4', name: 'Análisis de "Martín Fierro"', type: 'pdf', date: '2026-03-14' },
+    { id: 'mat4', name: 'Martín Fierro', type: 'pdf', date: '2026-03-14', url: 'https://digitales.bcn.gob.ar/files/textos/publicacion-martin-fierro.pdf' },
     { id: 'mat5', name: 'Guía de comprensión lectora', type: 'doc', date: '2026-03-08' },
   ],
   s3: [
@@ -115,6 +116,61 @@ function YoutubePlayer({ videoId, containerWidth }: { videoId: string; container
         allowsFullscreenVideo
         javaScriptEnabled
       />
+    </View>
+  );
+}
+
+function PDFDetail({ item, onBack }: { item: MaterialFile; onBack: () => void }) {
+  const { width } = useWindowDimensions();
+  const { isDesktop } = useBreakpoint();
+  const contentWidth = isDesktop ? width - SIDEBAR_WIDTH - 48 : width - 32;
+  const viewerHeight = Math.round(contentWidth * 1.35);
+
+  // Google Docs Viewer bypasses X-Frame-Options restrictions on both web and native
+  const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(item.url!)}&embedded=true`;
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.pdfHeader}>
+        <Pressable style={styles.pdfBackBtn} onPress={onBack}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={Colors.primary} />
+          <Text style={styles.backText}>Material</Text>
+        </Pressable>
+        <Pressable
+          style={styles.downloadBtn}
+          onPress={() => {
+            if (Platform.OS === 'web') {
+              const a = document.createElement('a');
+              a.href = item.url!;
+              a.download = item.name;
+              a.target = '_blank';
+              a.click();
+            }
+          }}
+        >
+          <MaterialCommunityIcons name="download" size={18} color={Colors.primary} />
+          <Text style={styles.downloadBtnText}>Descargar</Text>
+        </Pressable>
+      </View>
+
+      <Text style={styles.pdfTitle}>{item.name}</Text>
+
+      <View style={[styles.pdfViewer, { height: viewerHeight, marginHorizontal: isDesktop ? 24 : 16 }]}>
+        {Platform.OS === 'web' ? (
+          <iframe
+            src={viewerUrl}
+            width="100%"
+            height="100%"
+            style={{ border: 'none', borderRadius: 12 }}
+          />
+        ) : (
+          <WebView
+            source={{ uri: viewerUrl }}
+            style={{ flex: 1 }}
+            javaScriptEnabled
+          />
+        )}
+      </View>
     </View>
   );
 }
@@ -226,6 +282,11 @@ function VideoDetail({ item, onBack, subject, subjectId, onSelectVideo }: {
 export default function MaterialScreen() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<MaterialVideo | null>(null);
+  const [selectedPDF, setSelectedPDF] = useState<MaterialFile | null>(null);
+
+  if (selectedPDF) {
+    return <PDFDetail item={selectedPDF} onBack={() => setSelectedPDF(null)} />;
+  }
 
   if (selectedVideo) {
     const subject = mockSubjects.find((s) => s.id === (selectedSubject ?? ''));
@@ -264,10 +325,15 @@ export default function MaterialScreen() {
           renderItem={({ item }) => {
             const tIcon = typeIcon[item.type];
             const isVideo = item.type === 'youtube_embed';
+            const isPDFWithUrl = item.type === 'pdf' && !!(item as MaterialFile).url;
+            const isInteractive = isVideo || isPDFWithUrl;
             return (
               <Pressable
                 style={styles.materialRow}
-                onPress={() => isVideo ? setSelectedVideo(item as MaterialVideo) : undefined}
+                onPress={() => {
+                  if (isVideo) setSelectedVideo(item as MaterialVideo);
+                  else if (isPDFWithUrl) setSelectedPDF(item as MaterialFile);
+                }}
               >
                 <View style={[styles.materialIcon, { backgroundColor: tIcon.color + '15' }]}>
                   <MaterialCommunityIcons name={tIcon.icon as any} size={24} color={tIcon.color} />
@@ -276,10 +342,9 @@ export default function MaterialScreen() {
                   <Text style={styles.materialName}>{item.name}</Text>
                   <Text style={styles.materialDate}>{item.date}</Text>
                 </View>
-                {isVideo
-                  ? <MaterialCommunityIcons name="play-circle-outline" size={22} color={Colors.primary} />
-                  : <MaterialCommunityIcons name="download" size={22} color={Colors.textSecondary} />
-                }
+                {isVideo && <MaterialCommunityIcons name="play-circle-outline" size={22} color={Colors.primary} />}
+                {isPDFWithUrl && <MaterialCommunityIcons name="eye-outline" size={22} color={Colors.primary} />}
+                {!isInteractive && <MaterialCommunityIcons name="download" size={22} color={Colors.textSecondary} />}
               </Pressable>
             );
           }}
@@ -458,5 +523,45 @@ const styles = StyleSheet.create({
   relatedDate: {
     fontSize: 11,
     color: Colors.textSecondary,
+  },
+  pdfHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  pdfBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pdfTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  pdfViewer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    flex: 1,
+  },
+  downloadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+  },
+  downloadBtnText: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: '600',
   },
 });
