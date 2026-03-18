@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
 import { Colors } from '../../constants/colors';
+import { useAuthStore } from '../../lib/stores/auth-store';
 
 const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 
@@ -39,10 +40,16 @@ const schedule: Record<string, { time: string; subject: string; color: string; r
 };
 
 export default function HorariosScreen() {
+  const user = useAuthStore((s) => s.user);
   const today = new Date().getDay(); // 0=Sun, 1=Mon...
   const todayIndex = today >= 1 && today <= 5 ? today - 1 : 0;
 
   return (
+    <View style={styles.root}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Horarios</Text>
+        {user?.name ? <Text style={styles.headerSub}>{user.name}</Text> : null}
+      </View>
     <ScrollView style={styles.container}>
       {days.map((day, index) => {
         const isToday = index === todayIndex;
@@ -66,10 +73,22 @@ export default function HorariosScreen() {
         );
       })}
     </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.background },
+  header: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary },
+  headerSub: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
   container: { flex: 1, backgroundColor: Colors.background },
   daySection: { paddingHorizontal: 16, paddingTop: 16 },
   daySectionToday: { backgroundColor: Colors.primary + '08' },

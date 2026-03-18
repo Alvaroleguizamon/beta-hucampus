@@ -51,6 +51,12 @@ export const mockGrades: Grade[] = [
   { id: 'g5', subjectId: 's5', subjectName: 'Inglés', studentId: 'st1', studentName: 'Juan Pérez', value: 10, date: '2026-03-01', description: 'Reading comprehension', period: '1er Trimestre' },
   { id: 'g6', subjectId: 's1', subjectName: 'Matemática', studentId: 'st2', studentName: 'María González', value: 9, date: '2026-03-10', description: 'Parcial 1', period: '1er Trimestre' },
   { id: 'g7', subjectId: 's2', subjectName: 'Lengua', studentId: 'st2', studentName: 'María González', value: 8, date: '2026-03-08', description: 'TP Análisis literario', period: '1er Trimestre' },
+  // Notas de Lucía Martínez (usuario alumno logueado u1)
+  { id: 'g8',  subjectId: 's1', subjectName: 'Matemática', studentId: 'u1', studentName: 'Lucía Martínez', value: 9,  date: '2026-03-10', description: 'Parcial 1',             period: '1er Trimestre' },
+  { id: 'g9',  subjectId: 's2', subjectName: 'Lengua',     studentId: 'u1', studentName: 'Lucía Martínez', value: 8,  date: '2026-03-08', description: 'TP Análisis literario', period: '1er Trimestre' },
+  { id: 'g10', subjectId: 's3', subjectName: 'Historia',   studentId: 'u1', studentName: 'Lucía Martínez', value: 10, date: '2026-03-06', description: 'Exposición oral',        period: '1er Trimestre' },
+  { id: 'g11', subjectId: 's4', subjectName: 'Biología',   studentId: 'u1', studentName: 'Lucía Martínez', value: 7,  date: '2026-03-04', description: 'Parcial 1',             period: '1er Trimestre' },
+  { id: 'g12', subjectId: 's5', subjectName: 'Inglés',     studentId: 'u1', studentName: 'Lucía Martínez', value: 9,  date: '2026-03-02', description: 'Reading comprehension', period: '1er Trimestre' },
 ];
 
 export const mockCourses: Course[] = [

@@ -7,8 +7,9 @@ interface CommunityState {
   conversations: ChatConversation[];
   messages: Record<string, ChatMessage[]>;
   toggleContact: (contactId: string) => void;
-  sendMessage: (conversationId: string, text: string) => void;
-  startConversation: (contact: ParentContact) => string;
+  sendMessage: (conversationId: string, text: string, senderId: string, senderName: string) => void;
+  markAsRead: (conversationId: string) => void;
+  startConversation: (participantId: string, participantName: string) => string;
 }
 
 export const useCommunityStore = create<CommunityState>((set, get) => ({
@@ -22,11 +23,11 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       ),
     }));
   },
-  sendMessage: (conversationId, text) => {
+  sendMessage: (conversationId, text, senderId, senderName) => {
     const newMsg: ChatMessage = {
       id: `m${Date.now()}`,
-      senderId: 'me',
-      senderName: 'Yo',
+      senderId,
+      senderName,
       text,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toTimeString().slice(0, 5),
@@ -37,17 +38,24 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
         [conversationId]: [...(state.messages[conversationId] ?? []), newMsg],
       },
       conversations: state.conversations.map((c) =>
-        c.id === conversationId ? { ...c, lastMessage: text, lastMessageDate: newMsg.date, unreadCount: 0 } : c
+        c.id === conversationId ? { ...c, lastMessage: text, lastMessageDate: newMsg.date } : c
       ),
     }));
   },
-  startConversation: (contact) => {
-    const existing = get().conversations.find((c) => c.participantId === contact.id);
+  markAsRead: (conversationId) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === conversationId ? { ...c, unreadCount: 0 } : c
+      ),
+    }));
+  },
+  startConversation: (participantId, participantName) => {
+    const existing = get().conversations.find((c) => c.participantId === participantId);
     if (existing) return existing.id;
     const newConv: ChatConversation = {
       id: `chat${Date.now()}`,
-      participantId: contact.id,
-      participantName: contact.name,
+      participantId,
+      participantName,
       lastMessage: '',
       lastMessageDate: new Date().toISOString().split('T')[0],
       unreadCount: 0,

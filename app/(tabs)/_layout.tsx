@@ -3,6 +3,8 @@ import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../lib/stores/auth-store';
+import { useNotificationsStore } from '../../lib/stores/notifications-store';
+import { useCommunityStore } from '../../lib/stores/community-store';
 import { Colors } from '../../constants/colors';
 import { Role } from '../../lib/types';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
@@ -21,7 +23,7 @@ const tabsByRole: Record<Role, TabConfig[]> = {
     { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
     { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar' },
     { name: 'grades', title: 'Apps', icon: 'view-grid-outline', iconFocused: 'view-grid' },
-    { name: 'communications', title: 'Chats', icon: 'chat-outline', iconFocused: 'chat' },
+    { name: 'grupos', title: 'Grupos', icon: 'account-group-outline', iconFocused: 'account-group' },
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account' },
   ],
   docente: [
@@ -43,10 +45,24 @@ const tabsByRole: Record<Role, TabConfig[]> = {
 const allTabs = ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos'];
 
 export default function TabsLayout() {
-  const role = useAuthStore((s) => s.user?.role ?? 'alumno');
+  const user = useAuthStore((s) => s.user);
+  const role = user?.role ?? 'alumno';
+  const userId = user?.id ?? 'u1';
   const visibleTabs = tabsByRole[role];
   const visibleNames = visibleTabs.map((t) => t.name);
   const { isDesktop } = useBreakpoint();
+
+  const notifUnread = useNotificationsStore((s) => s.getUnreadCount(userId, role));
+  const conversations = useCommunityStore((s) => s.conversations);
+  const chatUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+
+  function getBadge(tabName: string): number | undefined {
+    // Apps tab → notificaciones de escuela (tareas, comunicados, grupos, autorizaciones)
+    if (tabName === 'grades') return notifUnread > 0 ? notifUnread : undefined;
+    // Chats tab (alumno) o Comunidad (padre) → mensajes sin leer
+    if (tabName === 'communications' || tabName === 'community') return chatUnread > 0 ? chatUnread : undefined;
+    return undefined;
+  }
 
   return (
     <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column' }}>
@@ -79,6 +95,7 @@ export default function TabsLayout() {
             const config = visibleTabs.find((t) => t.name === tabName);
             const isVisible = visibleNames.includes(tabName);
 
+            const badge = getBadge(tabName);
             return (
               <Tabs.Screen
                 key={tabName}
@@ -86,6 +103,8 @@ export default function TabsLayout() {
                 options={{
                   title: config?.title ?? tabName,
                   href: isVisible ? undefined : null,
+                  tabBarBadge: badge,
+                  tabBarBadgeStyle: { backgroundColor: Colors.primary, fontSize: 10 },
                   tabBarIcon: ({ color, size, focused }) => (
                     <MaterialCommunityIcons
                       name={((focused ? config?.iconFocused : config?.icon) ?? 'help-circle') as any}

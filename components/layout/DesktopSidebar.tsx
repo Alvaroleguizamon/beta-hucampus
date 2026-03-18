@@ -28,7 +28,7 @@ const tabsByRole: Record<Role, TabConfig[]> = {
     { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home', route: '/(tabs)/wall' },
     { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar', route: '/(tabs)/calendar' },
     { name: 'grades', title: 'Apps', icon: 'view-grid-outline', iconFocused: 'view-grid', route: '/(tabs)/grades' },
-    { name: 'communications', title: 'Chats', icon: 'chat-outline', iconFocused: 'chat', route: '/(tabs)/communications' },
+    { name: 'grupos', title: 'Grupos', icon: 'account-group-outline', iconFocused: 'account-group', route: '/(tabs)/grupos' },
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account', route: '/(tabs)/home' },
   ],
   docente: [
@@ -50,7 +50,6 @@ const tabsByRole: Record<Role, TabConfig[]> = {
 const appsByRole: Record<Role, AppItem[]> = {
   alumno: [
     { icon: 'checkbox-marked-outline', label: 'Tareas', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/tareas' },
-    { icon: 'calendar-account', label: 'Agenda personal', color: '#5B77D3', bgColor: '#EEF1FB', route: '/apps/agenda-personal' },
     { icon: 'book-open-variant', label: 'Material de estudio', color: '#0693E3', bgColor: '#E6F6FD', route: '/apps/material' },
     { icon: 'school', label: 'Notas', color: '#E67E22', bgColor: '#FDF2E6', route: '/apps/notas' },
     { icon: 'bookshelf', label: 'Materias y Horarios', color: '#27AE60', bgColor: '#E8F8EF', route: '/apps/materias' },
@@ -61,15 +60,14 @@ const appsByRole: Record<Role, AppItem[]> = {
   ],
   docente: [
     { icon: 'checkbox-marked-outline', label: 'Tareas', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/tareas' },
-    { icon: 'google-classroom', label: 'Mis cursos', color: '#5B77D3', bgColor: '#EEF1FB', route: '/apps/materias' },
+    { icon: 'clock-outline', label: 'Horarios', color: '#5B77D3', bgColor: '#EEF1FB', route: '/apps/horarios' },
     { icon: 'school', label: 'Cargar notas', color: '#E67E22', bgColor: '#FDF2E6', route: '/apps/notas' },
     { icon: 'calendar-check', label: 'Presentismo', color: '#4CAF50', bgColor: '#EAF7EB', route: '/apps/presentismo' },
     { icon: 'book-open-variant', label: 'Material', color: '#0693E3', bgColor: '#E6F6FD', route: '/apps/material' },
     { icon: 'message-text-outline', label: 'Comunicados', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/noticias' },
     { icon: 'star-outline', label: 'Eventos', color: '#9C27B0', bgColor: '#F3E5F5', route: '/apps/eventos' },
     { icon: 'bus', label: 'Viajes y Salidas', color: '#00897B', bgColor: '#E0F2F1', route: '/apps/viajes' },
-    { icon: 'account-group', label: 'Alumnos', color: '#27AE60', bgColor: '#E8F8EF', route: '/apps/materias' },
-    { icon: 'clock-outline', label: 'Horarios', color: '#E74C3C', bgColor: '#FDECEB', route: '/apps/horarios' },
+    { icon: 'account-group', label: 'Alumnos', color: '#27AE60', bgColor: '#E8F8EF', route: '/apps/alumnos' },
   ],
   padre: [
     { icon: 'checkbox-marked-outline', label: 'Tareas', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/tareas' },

@@ -65,7 +65,9 @@ const mockMessages: Record<string, ChatMessage[]> = {
 };
 
 export default function CommunicationsScreen() {
-  const role = useAuthStore((s) => s.user?.role ?? 'alumno');
+  const user = useAuthStore((s) => s.user);
+  const userId = user?.id ?? 'u1';
+  const userName = user?.name ?? 'Yo';
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [chatName, setChatName] = useState('');
   const [messageText, setMessageText] = useState('');
@@ -75,8 +77,8 @@ export default function CommunicationsScreen() {
     if (!messageText.trim() || !activeChat) return;
     const newMsg: ChatMessage = {
       id: `m${Date.now()}`,
-      senderId: 'me',
-      senderName: 'Yo',
+      senderId: userId,
+      senderName: userName,
       text: messageText,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toTimeString().slice(0, 5),
@@ -111,7 +113,7 @@ export default function CommunicationsScreen() {
         <FlatList
           data={chatMessages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ChatBubble message={item} />}
+          renderItem={({ item }) => <ChatBubble message={item} currentUserId={userId} />}
           contentContainerStyle={styles.chatMessages}
         />
 

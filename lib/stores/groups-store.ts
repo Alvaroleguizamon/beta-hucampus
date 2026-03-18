@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Group, GroupMember, WallPost, ReactionType, Role } from '../types';
 import { mockGroups, mockGroupPosts, mockCourses } from '../mock-data';
+import { useNotificationsStore } from './notifications-store';
 
 // Color por tipo de curso para grupos automáticos
 const COURSE_COLORS = ['#7C6BC4', '#5B77D3', '#0693E3', '#00897B', '#43A047'];
@@ -192,6 +193,7 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
   },
 
   inviteMember: (groupId, member) => {
+    const group = get().groups.find((g) => g.id === groupId);
     set((state) => ({
       groups: state.groups.map((g) =>
         g.id !== groupId
@@ -199,6 +201,16 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
           : { ...g, members: [...g.members.filter((m) => m.userId !== member.userId), member] },
       ),
     }));
+    if (group) {
+      useNotificationsStore.getState().addNotification({
+        type: 'grupo',
+        title: 'Invitación a grupo',
+        body: `Fuiste invitado al grupo ${group.name}.`,
+        date: new Date().toISOString().split('T')[0],
+        targetUserId: member.userId,
+        deepLink: `/(tabs)/grupos/${groupId}`,
+      });
+    }
   },
 
   removeMember: (groupId, userId) => {

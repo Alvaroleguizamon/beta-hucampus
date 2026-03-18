@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análisis — humand school</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #5B77D3;
+    --accent: #0693E3;
+    --success: #4CAF50;
+    --warning: #FF9800;
+    --error: #F44336;
+    --text: #1A1A1A;
+    --text2: #717171;
+    --border: #E5E5E5;
+    --bg: #F7F7F7;
+    --white: #FFFFFF;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--text);
+    background: var(--white);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* COVER PAGE */
+  .cover {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #5B77D3 0%, #0693E3 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 80px;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    right: -100px; top: -100px;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    right: 100px; bottom: -150px;
+    width: 350px; height: 350px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .cover-tag {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 32px;
+    display: inline-block;
+  }
+  .cover h1 {
+    font-size: 64px;
+    font-weight: 800;
+    color: white;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .cover h1 span { font-weight: 300; opacity: 0.8; }
+  .cover-subtitle {
+    font-size: 20px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 400;
+    margin-bottom: 60px;
+    max-width: 500px;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 40px;
+  }
+  .cover-meta-item label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 4px;
+  }
+  .cover-meta-item span {
+    font-size: 14px;
+    color: white;
+    font-weight: 500;
+  }
+  .cover-pills {
+    position: absolute;
+    bottom: 80px;
+    right: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .cover-pill {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* LAYOUT */
+  .page { padding: 60px 72px; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+
+  /* SECTION HEADER */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-number {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .section-header p {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 2px;
+  }
+
+  /* ROLES TABLE */
+  .roles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .role-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .role-card-header {
+    padding: 16px 20px;
+    font-weight: 700;
+    font-size: 15px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .role-card-header .emoji { font-size: 20px; }
+  .role-card-body { padding: 16px 20px; }
+  .role-feature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 12px;
+    border-bottom: 1px solid var(--bg);
+  }
+  .role-feature:last-child { border-bottom: none; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-yes { background: var(--success); }
+  .dot-partial { background: var(--warning); }
+  .dot-no { background: var(--border); }
+  .feature-label { flex: 1; color: var(--text); }
+  .feature-note { font-size: 10px; color: var(--text2); }
+
+  /* ACCESS TABLE */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    font-size: 12px;
+  }
+  th {
+    background: var(--bg);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text2);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  .check { color: var(--success); font-weight: 700; }
+  .cross { color: var(--border); font-weight: 700; }
+  .partial-text { color: var(--warning); font-weight: 600; font-size: 11px; }
+
+  /* FLOW STATUS */
+  .flows-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .flow-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .flow-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .flow-status {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .flow-title {
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .flow-items { display: flex; flex-direction: column; gap: 4px; }
+  .flow-item {
+    font-size: 11px;
+    color: var(--text2);
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.5;
+  }
+  .flow-item::before {
+    content: '→';
+    color: var(--border);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* PROBLEMS */
+  .problems-list { display: flex; flex-direction: column; gap: 12px; }
+  .problem-card {
+    border-radius: 12px;
+    padding: 16px 18px;
+    border-left: 4px solid;
+    background: var(--bg);
+    page-break-inside: avoid;
+  }
+  .problem-card.critical { border-left-color: var(--error); background: #FFF5F5; }
+  .problem-card.medium { border-left-color: var(--warning); background: #FFFAF0; }
+  .problem-card.minor { border-left-color: var(--success); background: #F5FFF5; }
+  .problem-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .severity-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .severity-badge.critical { background: var(--error); color: white; }
+  .severity-badge.medium { background: var(--warning); color: white; }
+  .severity-badge.minor { background: var(--success); color: white; }
+  .file-tag {
+    font-size: 10px;
+    font-family: monospace;
+    background: rgba(0,0,0,0.07);
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: var(--text2);
+  }
+  .problem-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .problem-desc {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .impact-tag {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+  .impact-tag strong { color: var(--text); }
+
+  /* RECOMMENDATIONS */
+  .rec-section { margin-bottom: 32px; }
+  .rec-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text2);
+  }
+  .rec-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .rec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .rec-card {
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    page-break-inside: avoid;
+  }
+  .rec-card-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+  .rec-card-title {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .rec-card-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .effort-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--text2);
+  }
+
+  /* MAP */
+  .map-box {
+    background: #0F1117;
+    border-radius: 14px;
+    padding: 28px 32px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    color: #9CA3AF;
+    overflow: hidden;
+  }
+  .map-box .ok { color: #4ADE80; }
+  .map-box .warn { color: #FBBF24; }
+  .map-box .err { color: #F87171; }
+  .map-box .dim { color: #4B5563; }
+  .map-box .hi { color: #60A5FA; font-weight: bold; }
+  .map-box .label { color: #E5E7EB; font-weight: bold; }
+
+  /* SUMMARY FOOTER */
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .summary-card {
+    border-radius: 14px;
+    padding: 20px 22px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .summary-card .num {
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .summary-card .lbl {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text2);
+  }
+
+  /* PAGE HEADER */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 36px;
+  }
+  .page-brand { font-size: 11px; font-weight: 700; color: var(--primary); letter-spacing: 1px; text-transform: uppercase; }
+  .page-num { font-size: 11px; color: var(--text2); }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { padding: 40px 56px; }
+    .cover { padding: 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-tag">Product Engineering · UX Analysis</div>
+  <h1>humand <span>school</span></h1>
+  <p class="cover-subtitle">Análisis completo de flujos de usuario, problemas de producto y recomendaciones priorizadas</p>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <label>Fecha</label>
+      <span>Marzo 2026</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Stack</label>
+      <span>React Native · Expo Router · Zustand</span>
+    </div>
+    <div class="cover-meta-item">
+      <label>Roles</label>
+      <span>Alumno · Docente · Padre</span>
+    </div>
+  </div>
+  <div class="cover-pills">
+    <div class="cover-pill">4 problemas críticos</div>
+    <div class="cover-pill">6 problemas medios</div>
+    <div class="cover-pill">5 quick wins</div>
+  </div>
+</div>
+
+<!-- PAGE 1: RESUMEN + ROLES -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-brand">humand school · análisis de producto</span>
+    <span class="page-num">01</span>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="summary-bar">
+    <div class="summary-card">
+      <div class="num" style="color:var(--primary)">14</div>
+      <div class="lbl">Pantallas</div>
+    </div>
+    <div class="summary-card">
+      <div class="num" style="color:var(--error)">4</div>
+      <div class="lbl">Problemas críticos</div>
+    </div>
+    <div class="summary-card">
+      <div class="num" style="color:var(--warning)">6</div>
+      <div class="lbl">Problemas medios</div>
+    </div>
+    <div class="summary-card">
+      <div class="num" style="color:var(--success)">5</div>
+      <div class="lbl">Quick wins</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">1</div>
+    <div>
+      <h2>Roles de usuario</h2>
+      <p>Acceso, acciones y visibilidad por perfil</p>
+    </div>
+  </div>
+
+  <div class="roles-grid">
+    <!-- Alumno -->
+    <div class="role-card">
+      <div class="role-card-header" style="background: linear-gradient(135deg,#5B77D3,#7C6BC4)">
+        <span class="emoji">🎒</span> Alumno
+      </div>
+      <div class="role-card-body">
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Ver muro</span></div>
+        <div class="role-feature"><span class="dot dot-no"></span><span class="feature-label">Publicar en muro</span><span class="feature-note">No permitido</span></div>
+        <div class="role-feature"><span class="dot dot-partial"></span><span class="feature-label">Comentar</span><span class="feature-note">Solo en grupos</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Grupos (si es miembro)</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Notas propias</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Tareas recibidas</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Presentismo propio</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Viajes / Agenda</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Chats con compañeros</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Material de estudio</span></div>
+      </div>
+    </div>
+
+    <!-- Docente -->
+    <div class="role-card">
+      <div class="role-card-header" style="background: linear-gradient(135deg,#0693E3,#00897B)">
+        <span class="emoji">👩‍🏫</span> Docente
+      </div>
+      <div class="role-card-body">
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Publicar en muro</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Comentar posts</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Crear y gestionar grupos</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Crear noticias</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Tomar presentismo</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Crear tareas</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Ver cursos a cargo</span></div>
+        <div class="role-feature"><span class="dot dot-no"></span><span class="feature-label">Chat directo</span><span class="feature-note">No implementado</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Material / Horarios</span></div>
+      </div>
+    </div>
+
+    <!-- Padre -->
+    <div class="role-card">
+      <div class="role-card-header" style="background: linear-gradient(135deg,#FF9800,#F44336)">
+        <span class="emoji">👨‍👩‍👧</span> Padre
+      </div>
+      <div class="role-card-body">
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Ver muro</span></div>
+        <div class="role-feature"><span class="dot dot-no"></span><span class="feature-label">Publicar / Comentar</span><span class="feature-note">No permitido</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Ver notas del hijo</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Presentismo del hijo</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Autorizar viajes</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Chat con otros padres</span></div>
+        <div class="role-feature"><span class="dot dot-yes"></span><span class="feature-label">Comunidad de padres</span></div>
+        <div class="role-feature"><span class="dot dot-no"></span><span class="feature-label">Grupos</span><span class="feature-note">Sin acceso</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: FLUJOS -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-brand">humand school · análisis de producto</span>
+    <span class="page-num">02</span>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">2</div>
+    <div>
+      <h2>Mapa de flujos</h2>
+      <p>Estado actual de cada feature de punta a punta</p>
+    </div>
+  </div>
+
+  <div class="flows-grid">
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--success)"></div>
+        <span class="flow-title">✅ Muro social</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item">Docente publica con texto + imagen + formato</div>
+        <div class="flow-item">Alumnos ven y reaccionan con emojis</div>
+        <div class="flow-item">Posts de grupos aparecen con badge de grupo</div>
+        <div class="flow-item">Conteo de vistas (impressions)</div>
+        <div class="flow-item">Noticias fijadas integradas en el feed</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--success)"></div>
+        <span class="flow-title">✅ Grupos</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item">Docente crea grupo con tipo y color</div>
+        <div class="flow-item">Miembros publican y comentan</div>
+        <div class="flow-item">Modal de miembros con roles</div>
+        <div class="flow-item">Feed del grupo separado del muro general</div>
+        <div class="flow-item" style="color:var(--warning)">⚠ Invitar miembros: sin UI</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--success)"></div>
+        <span class="flow-title">✅ Noticias</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item">Docente crea noticia con categoría + audiencia</div>
+        <div class="flow-item">Listado con filtro por categoría</div>
+        <div class="flow-item">Vista single page completa</div>
+        <div class="flow-item">Pin integrado en el muro</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--success)"></div>
+        <span class="flow-title">✅ Presentismo</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item">Docente selecciona curso y fecha</div>
+        <div class="flow-item">Marca P / A / T por alumno</div>
+        <div class="flow-item">Alumno ve su historial en calendario</div>
+        <div class="flow-item">Padre ve el del hijo</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--error)"></div>
+        <span class="flow-title">🔴 Tareas</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item">Docente crea tarea en estado local</div>
+        <div class="flow-item" style="color:var(--error)">✗ No hay store unificado</div>
+        <div class="flow-item" style="color:var(--error)">✗ Alumno nunca ve la tarea creada</div>
+        <div class="flow-item" style="color:var(--error)">✗ No hay notificación al asignar</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--error)"></div>
+        <span class="flow-title">🔴 Autorizaciones</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item">Padre ve listado de autorizaciones</div>
+        <div class="flow-item">Puede aprobar / rechazar visualmente</div>
+        <div class="flow-item" style="color:var(--error)">✗ Acción no persiste en ningún store</div>
+        <div class="flow-item" style="color:var(--error)">✗ Sin conexión con viajes.tsx</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--warning)"></div>
+        <span class="flow-title">🟡 Chat</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item">Alumno: chat con compañeros funciona</div>
+        <div class="flow-item">Padre: chat en comunidad funciona</div>
+        <div class="flow-item" style="color:var(--warning)">⚠ Dos sistemas paralelos no conectados</div>
+        <div class="flow-item" style="color:var(--error)">✗ Docente no tiene acceso a chat</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--warning)"></div>
+        <span class="flow-title">🟡 Perfil</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item">Datos básicos del usuario visibles</div>
+        <div class="flow-item" style="color:var(--error)">✗ Tab "Muro" vacía — dead end</div>
+        <div class="flow-item" style="color:var(--error)">✗ Tab "Grupos" vacía — dead end</div>
+        <div class="flow-item" style="color:var(--error)">✗ Sin edición de perfil</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--error)"></div>
+        <span class="flow-title">🔴 Horarios / Materias</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item" style="color:var(--error)">✗ Pantallas completamente vacías</div>
+        <div class="flow-item" style="color:var(--error)">✗ Aparecen en el grid de apps</div>
+        <div class="flow-item" style="color:var(--error)">✗ Dead ends sin aviso al usuario</div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-card-header">
+        <div class="flow-status" style="background:var(--success)"></div>
+        <span class="flow-title">✅ Material de estudio</span>
+      </div>
+      <div class="flow-items">
+        <div class="flow-item">Listado por materia con íconos de tipo</div>
+        <div class="flow-item">PDF via Google Docs Viewer</div>
+        <div class="flow-item">Videos YouTube embebidos</div>
+        <div class="flow-item">Layout desktop dos columnas</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3: PROBLEMAS CRÍTICOS -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-brand">humand school · análisis de producto</span>
+    <span class="page-num">03</span>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">3</div>
+    <div>
+      <h2>Problemas identificados</h2>
+      <p>Ordenados por severidad e impacto en el usuario</p>
+    </div>
+  </div>
+
+  <div class="problems-list">
+
+    <div class="problem-card critical">
+      <div class="problem-header">
+        <span class="severity-badge critical">🔴 Crítico</span>
+        <span class="file-tag">app/apps/tareas.tsx</span>
+      </div>
+      <div class="problem-title">Sin store unificado de tareas — el flujo está roto</div>
+      <div class="problem-desc">El docente crea tareas en estado local de la pantalla. Al navegar, esas tareas se pierden y el alumno nunca las ve porque <code>tareas.tsx</code> no comparte estado con ningún store global. El flujo principal docente → alumno está completamente roto.</div>
+      <div class="impact-tag">Impacto: <strong>El feature de tareas es inutilizable en producción</strong></div>
+    </div>
+
+    <div class="problem-card critical">
+      <div class="problem-header">
+        <span class="severity-badge critical">🔴 Crítico</span>
+        <span class="file-tag">app/apps/autorizaciones.tsx</span>
+      </div>
+      <div class="problem-title">Aprobar/rechazar autorizaciones no persiste</div>
+      <div class="problem-desc">El padre puede presionar "Aprobar" o "Rechazar" en la UI pero la acción no se guarda en ningún store ni state global. Al salir y volver, la autorización sigue en estado "pendiente". Tampoco hay conexión con <code>viajes.tsx</code>.</div>
+      <div class="impact-tag">Impacto: <strong>Funcionalidad crítica que parece funcionar pero no hace nada</strong></div>
+    </div>
+
+    <div class="problem-card critical">
+      <div class="problem-header">
+        <span class="severity-badge critical">🔴 Crítico</span>
+        <span class="file-tag">app/(tabs)/home.tsx</span>
+      </div>
+      <div class="problem-title">Perfil con tabs "Muro" y "Grupos" completamente vacías</div>
+      <div class="problem-desc">El usuario llega al perfil, ve sus datos y al tocar las tabs "Muro" y "Grupos" encuentra pantallas vacías. Los stores ya tienen los datos disponibles (<code>social-store</code>, <code>groups-store</code>) pero no están conectados a esta pantalla.</div>
+      <div class="impact-tag">Impacto: <strong>Perfil inútil — frustración de usuario</strong></div>
+    </div>
+
+    <div class="problem-card critical">
+      <div class="problem-header">
+        <span class="severity-badge critical">🔴 Crítico</span>
+        <span class="file-tag">app/apps/horarios.tsx · materias.tsx</span>
+      </div>
+      <div class="problem-title">Pantallas placeholder en el grid de apps</div>
+      <div class="problem-desc">Ambas pantallas aparecen como opciones navegables en el grid de apps pero están completamente vacías. El usuario las toca esperando contenido y encuentra una pantalla en blanco sin ningún mensaje ni indicación.</div>
+      <div class="impact-tag">Impacto: <strong>Confusión — el usuario cree que la app está rota</strong></div>
+    </div>
+
+    <div class="problem-card medium">
+      <div class="problem-header">
+        <span class="severity-badge medium">🟡 Medio</span>
+        <span class="file-tag">app/(tabs)/communications.tsx · community.tsx</span>
+      </div>
+      <div class="problem-title">Dos sistemas de chat paralelos, docente sin acceso</div>
+      <div class="problem-desc">Alumnos tienen su propio sistema de chat en <code>communications.tsx</code> con <code>social-store</code>, y padres tienen otro en <code>community.tsx</code> con <code>community-store</code>. Son implementaciones separadas que no se comunican. El docente no tiene acceso a ninguna.</div>
+      <div class="impact-tag">Impacto: <strong>Docentes no pueden comunicarse 1:1, padres no pueden chatear con docentes</strong></div>
+    </div>
+
+    <div class="problem-card medium">
+      <div class="problem-header">
+        <span class="severity-badge medium">🟡 Medio</span>
+        <span class="file-tag">components/layout/UserTopBar.tsx</span>
+      </div>
+      <div class="problem-title">Notificaciones en estado local — no persisten</div>
+      <div class="problem-desc">El sistema de notificaciones vive en el estado local de <code>UserTopBar</code>. Al remontar el componente se resetean. Además ninguna acción de la app (nueva tarea, post de grupo, nueva noticia) genera notificaciones reales.</div>
+      <div class="impact-tag">Impacto: <strong>Notificaciones no son confiables — el usuario las pierde</strong></div>
+    </div>
+
+    <div class="problem-card medium">
+      <div class="problem-header">
+        <span class="severity-badge medium">🟡 Medio</span>
+        <span class="file-tag">app/(tabs)/grupos/[id].tsx</span>
+      </div>
+      <div class="problem-title">Sin UI para invitar miembros a grupos</div>
+      <div class="problem-desc">La función <code>inviteMember</code> existe en <code>groups-store.ts</code> pero no hay ninguna pantalla ni botón para usarla. Los grupos quedan cerrados sin posibilidad de crecer una vez creados.</div>
+      <div class="impact-tag">Impacto: <strong>Los grupos solo tienen los miembros del mock — no pueden expandirse</strong></div>
+    </div>
+
+    <div class="problem-card medium">
+      <div class="problem-header">
+        <span class="severity-badge medium">🟡 Medio</span>
+        <span class="file-tag">components/social/WallPostCard.tsx</span>
+      </div>
+      <div class="problem-title">Markdown no se renderiza en los posts</div>
+      <div class="problem-desc">El compositor permite usar <strong>negrita</strong> (<code>**texto**</code>), <em>itálica</em> (<code>_texto_</code>) y subrayado, pero <code>WallPostCard</code> muestra el texto plano con los asteriscos visibles. No hay parser de markdown en la visualización.</div>
+      <div class="impact-tag">Impacto: <strong>Posts del compositor rico se ven con símbolos raros</strong></div>
+    </div>
+
+    <div class="problem-card medium">
+      <div class="problem-header">
+        <span class="severity-badge medium">🟡 Medio</span>
+        <span class="file-tag">app/apps/agenda-personal.tsx · app/(tabs)/calendar.tsx</span>
+      </div>
+      <div class="problem-title">Eventos de agenda personal no aparecen en el calendario</div>
+      <div class="problem-desc">Los eventos creados en <code>agenda-personal.tsx</code> se guardan en su propio store, pero <code>calendar.tsx</code> consume <code>calendar-store</code> por separado. Ambos calendarios no están sincronizados.</div>
+      <div class="impact-tag">Impacto: <strong>El alumno crea un recordatorio y no lo ve en su calendario principal</strong></div>
+    </div>
+
+    <div class="problem-card minor">
+      <div class="problem-header">
+        <span class="severity-badge minor">🟢 Menor</span>
+        <span class="file-tag">app/(auth)/select-role.tsx</span>
+      </div>
+      <div class="problem-title">Onboarding inconsistente por rol</div>
+      <div class="problem-desc">Alumnos van al <code>wall</code> después de seleccionar rol, pero docentes y padres van a <code>home</code> (perfil), que está casi vacío. Todos deberían llegar al <code>wall</code> como pantalla principal.</div>
+      <div class="impact-tag">Impacto: <strong>Primera experiencia confusa para docentes y padres</strong></div>
+    </div>
+
+    <div class="problem-card minor">
+      <div class="problem-header">
+        <span class="severity-badge minor">🟢 Menor</span>
+        <span class="file-tag">Multiple pantallas</span>
+      </div>
+      <div class="problem-title">Sin feedback visual en acciones (toasts/snackbars)</div>
+      <div class="problem-desc">Tomar presentismo, enviar tarea, publicar en el muro, crear grupo — ninguna acción muestra una confirmación visual. El usuario no sabe si "pasó algo".</div>
+      <div class="impact-tag">Impacto: <strong>Inseguridad del usuario — puede repetir acciones por error</strong></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PAGE 4: RECOMENDACIONES -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-brand">humand school · análisis de producto</span>
+    <span class="page-num">04</span>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">4</div>
+    <div>
+      <h2>Recomendaciones priorizadas</h2>
+      <p>Organizadas por esfuerzo e impacto</p>
+    </div>
+  </div>
+
+  <!-- Quick wins -->
+  <div class="rec-section">
+    <div class="rec-section-title">⚡ Quick wins — bajo esfuerzo, alto impacto</div>
+    <div class="rec-grid">
+      <div class="rec-card">
+        <div class="rec-card-num">01</div>
+        <div class="rec-card-title">Renderizar markdown en posts</div>
+        <div class="rec-card-desc">Instalar <code>react-native-markdown-display</code> o parsear <code>**bold**</code> / <code>_italic_</code> con una función simple en WallPostCard. Los posts del compositor rico muestran asteriscos hoy.</div>
+        <div class="effort-tag">⏱ ~2 hs</div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-card-num">02</div>
+        <div class="rec-card-title">Reemplazar pantallas vacías</div>
+        <div class="rec-card-desc">Horarios y Materias: mostrar un empty state con "Próximamente" bien diseñado, o directamente sacarlas del grid hasta que estén listas. Evita dead ends que confunden.</div>
+        <div class="effort-tag">⏱ ~1 hs</div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-card-num">03</div>
+        <div class="rec-card-title">Conectar grupos al perfil</div>
+        <div class="rec-card-desc">La tab "Grupos" de <code>home.tsx</code> ya tiene el store disponible. Es conectar <code>getUserGroups(userId)</code> y reutilizar el mismo componente de la lista del muro.</div>
+        <div class="effort-tag">⏱ ~1 hs</div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-card-num">04</div>
+        <div class="rec-card-title">Mover notificaciones a un store</div>
+        <div class="rec-card-desc">Extraer el array de notificaciones de <code>UserTopBar</code> a un <code>notifications-store.ts</code> con Zustand. Permite que cualquier acción de la app agregue notificaciones reales.</div>
+        <div class="effort-tag">⏱ ~2 hs</div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-card-num">05</div>
+        <div class="rec-card-title">Onboarding a wall para todos</div>
+        <div class="rec-card-desc">Cambiar <code>select-role.tsx</code> para que docentes y padres también vayan al <code>wall</code> post-login. El wall es la pantalla más completa y rica en contenido para todos los roles.</div>
+        <div class="effort-tag">⏱ ~30 min</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MVP features -->
+  <div class="rec-section">
+    <div class="rec-section-title">🏗️ Features para completar el MVP</div>
+    <div class="rec-grid">
+      <div class="rec-card">
+        <div class="rec-card-num">01</div>
+        <div class="rec-card-title">Store unificado de tareas</div>
+        <div class="rec-card-desc">Crear <code>tasks-store.ts</code> con Zustand. Docente crea tarea → se guarda en el store → alumno asignado la ve en su lista. Es el flujo académico más importante después del muro.</div>
+        <div class="effort-tag">⏱ ~1 día</div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-card-num">02</div>
+        <div class="rec-card-title">Persistir autorizaciones</div>
+        <div class="rec-card-desc">Crear <code>authorizations-store.ts</code> y conectarlo con <code>viajes.tsx</code>. Cuando un viaje requiere autorización, generarla automáticamente. La acción del padre debe reflejarse en ambas pantallas.</div>
+        <div class="effort-tag">⏱ ~1 día</div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-card-num">03</div>
+        <div class="rec-card-title">UI para invitar miembros a grupos</div>
+        <div class="rec-card-desc">El store ya tiene <code>inviteMember()</code>. Agregar en la pantalla del grupo un botón "Invitar" para admins, con una lista de usuarios del curso para seleccionar.</div>
+        <div class="effort-tag">⏱ ~4 hs</div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-card-num">04</div>
+        <div class="rec-card-title">Chat unificado con acceso docente</div>
+        <div class="rec-card-desc">Unificar <code>social-store</code> y <code>community-store</code> en un <code>chat-store</code> con conversaciones que soporten alumno↔alumno, padre↔padre, y alumno/padre↔docente.</div>
+        <div class="effort-tag">⏱ ~2 días</div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-card-num">05</div>
+        <div class="rec-card-title">Notificaciones reactivas</div>
+        <div class="rec-card-desc">Conectar las acciones de los stores al <code>notifications-store</code>: nueva tarea asignada, post en grupo al que pertenecés, autorización pendiente, nueva noticia.</div>
+        <div class="effort-tag">⏱ ~1 día</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UX improvements -->
+  <div class="rec-section">
+    <div class="rec-section-title">🎨 Mejoras de UX/UI</div>
+    <div class="rec-grid">
+      <div class="rec-card">
+        <div class="rec-card-num">01</div>
+        <div class="rec-card-title">Feedback visual en acciones</div>
+        <div class="rec-card-desc">Agregar toasts/snackbars de confirmación al tomar presentismo, publicar, crear grupo, enviar tarea. React Native Paper tiene <code>Snackbar</code> listo para usar.</div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-card-num">02</div>
+        <div class="rec-card-title">Badge de actividad en grupos</div>
+        <div class="rec-card-desc">Mostrar un punto rojo en la card del grupo cuando hay posts nuevos no leídos. Similar al badge de notificaciones del bell icon.</div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-card-num">03</div>
+        <div class="rec-card-title">Búsqueda global funcional</div>
+        <div class="rec-card-desc">El ícono de lupa del header del muro no hace nada. Podría buscar en posts, noticias y grupos con un sheet deslizable.</div>
+      </div>
+      <div class="rec-card">
+        <div class="rec-card-num">04</div>
+        <div class="rec-card-title">Sincronizar agendas</div>
+        <div class="rec-card-desc">Eventos de <code>agenda-personal</code> deberían aparecer en <code>calendar.tsx</code>. Unificar en <code>calendar-store</code> con un campo <code>source: 'personal' | 'institutional'</code>.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 5: MAPA DE CONEXIONES -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-brand">humand school · análisis de producto</span>
+    <span class="page-num">05</span>
+  </div>
+
+  <div class="section-header">
+    <div class="section-number">5</div>
+    <div>
+      <h2>Mapa de vinculaciones entre features</h2>
+      <p>Verde = conectado · Amarillo = parcial · Rojo = faltante</p>
+    </div>
+  </div>
+
+  <div class="map-box">
+<span class="label">AUTH</span>
+<span class="dim"> ─────────────────────────────────────────────────────────────────────────</span>
+ └── <span class="ok">login</span> → <span class="ok">select-role</span> ──┬── <span class="ok">wall</span> <span class="dim">(alumno)</span>
+                          ├── <span class="warn">home</span> <span class="dim">(docente/padre — debería ir a wall)</span>
+                          └── <span class="ok">role-based UI rendering</span>
+
+<span class="label">WALL</span>
+<span class="dim"> ─────────────────────────────────────────────────────────────────────────</span>
+ ├── <span class="ok">posts generales</span>  <span class="hi">social-store</span>    ──── WallPostCard
+ ├── <span class="ok">posts de grupos</span>  <span class="hi">groups-store</span>    ──── WallPostCard <span class="dim">[con badge]</span>
+ ├── <span class="ok">noticias fijadas</span> <span class="hi">noticias-store</span>  ──── PinnedCard ──→ noticia/[id]
+ ├── <span class="ok">[aside] Grupos</span>   ───────────────────────── grupos/[id]
+ └── <span class="ok">[aside] Noticias</span> ─────────────────────────  apps/noticias → noticia/[id]
+
+<span class="label">GRUPOS</span>
+<span class="dim"> ─────────────────────────────────────────────────────────────────────────</span>
+ ├── <span class="ok">feed propio</span>     <span class="hi">groups-store</span>
+ ├── <span class="ok">compositor</span>      <span class="dim">(todos los miembros)</span>
+ ├── <span class="ok">modal miembros</span>
+ └── <span class="err">invitar miembros</span> <span class="dim">── store listo, UI FALTANTE ──────────────────── ✗</span>
+
+<span class="label">ACADÉMICO</span>
+<span class="dim"> ─────────────────────────────────────────────────────────────────────────</span>
+ grades.tsx <span class="dim">(grid)</span>
+ ├── <span class="ok">apps/notas</span>        ── <span class="hi">mock data</span>
+ ├── <span class="err">apps/tareas</span>       ── <span class="err">estado local</span> <span class="dim">── ROTO: docente crea, alumno no ve ──── ✗</span>
+ ├── <span class="ok">apps/presentismo</span>  ── <span class="hi">local state</span>
+ ├── <span class="ok">apps/material</span>     ── <span class="hi">react-native-webview</span>
+ ├── <span class="err">apps/horarios</span>     ── <span class="err">VACÍA</span> <span class="dim">──────────────────────────────────────────── ✗</span>
+ └── <span class="err">apps/materias</span>     ── <span class="err">VACÍA</span> <span class="dim">──────────────────────────────────────────── ✗</span>
+
+<span class="label">CALENDARIO</span>
+<span class="dim"> ─────────────────────────────────────────────────────────────────────────</span>
+ calendar.tsx   ── <span class="hi">calendar-store</span> + trips <span class="dim">(mock)</span>
+ ├── <span class="ok">apps/eventos</span>       ── subset de calendar-store
+ ├── <span class="warn">apps/agenda-personal</span> ── <span class="warn">store propio</span> <span class="dim">─── NO conecta a calendar ───────── ⚠</span>
+ └── <span class="warn">apps/viajes</span>        ── <span class="warn">mockTrips</span>
+          └── <span class="err">apps/autorizaciones</span> <span class="dim">─── SIN CONEXIÓN, acciones no persisten ── ✗</span>
+
+<span class="label">COMUNICACIÓN</span>
+<span class="dim"> ─────────────────────────────────────────────────────────────────────────</span>
+ ├── <span class="ok">communications.tsx</span>  <span class="dim">(alumno)</span>  ── <span class="hi">social-store</span>
+ ├── <span class="ok">community.tsx</span>       <span class="dim">(padre)</span>   ── <span class="hi">community-store</span>
+ ├── <span class="err">docente</span>             <span class="dim">──────────── SIN ACCESO A CHAT ─────────────────── ✗</span>
+ └── <span class="err">chat unificado</span>      <span class="dim">──────────── DOS SISTEMAS SEPARADOS ───────────── ✗</span>
+
+<span class="label">NOTIFICACIONES</span>
+<span class="dim"> ─────────────────────────────────────────────────────────────────────────</span>
+ UserTopBar.tsx <span class="dim">(estado local)</span>
+ ├── <span class="err">nueva tarea</span>      <span class="dim">── no genera notificación ───────────────────────── ✗</span>
+ ├── <span class="err">post en grupo</span>    <span class="dim">── no genera notificación ───────────────────────── ✗</span>
+ └── <span class="err">autorización</span>     <span class="dim">── no genera notificación ───────────────────────── ✗</span>
+
+<span class="label">PERFIL</span>
+<span class="dim"> ─────────────────────────────────────────────────────────────────────────</span>
+ home.tsx
+ ├── <span class="ok">Info personal</span>    ── <span class="hi">auth-store</span>
+ ├── <span class="err">Tab Muro</span>         <span class="dim">── VACÍA (social-store disponible, sin conectar) ─── ✗</span>
+ └── <span class="err">Tab Grupos</span>       <span class="dim">── VACÍA (groups-store disponible, sin conectar) ── ✗</span>
+  </div>
+
+  <div style="margin-top: 24px; padding: 20px 24px; background: var(--bg); border-radius: 12px; border: 1px solid var(--border);">
+    <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Conclusión ejecutiva</div>
+    <div style="font-size: 12px; color: var(--text2); line-height: 1.7;">
+      La app tiene una base arquitectónica sólida y la mayoría de las pantallas están bien construidas con buen diseño.
+      Los problemas principales son de <strong style="color:var(--text)">conectividad entre features</strong> (tareas sin store, autorizaciones sin persistencia, dos sistemas de chat)
+      y algunos <strong style="color:var(--text)">dead ends</strong> (horarios, materias, perfil).
+      Con <strong style="color:var(--primary)">~5–7 días de trabajo enfocado</strong> en los quick wins y el store de tareas, el MVP estaría en condiciones de salir a producción.
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -187,3 +187,15 @@ export interface ChatConversation {
   lastMessageDate: string;
   unreadCount: number;
 }
+
+export interface AppNotification {
+  id: string;
+  type: 'tarea' | 'comunicado' | 'grupo' | 'autorizacion' | 'mensaje';
+  title: string;
+  body: string;
+  date: string;
+  read: boolean;
+  targetUserId?: string; // undefined = todos
+  targetRole?: Role;     // undefined = todos los roles
+  deepLink?: string;     // ruta para navegar al tocar
+}

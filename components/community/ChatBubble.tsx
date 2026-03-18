@@ -6,10 +6,11 @@ import { ChatMessage } from '../../lib/types';
 
 interface Props {
   message: ChatMessage;
+  currentUserId: string;
 }
 
-export function ChatBubble({ message }: Props) {
-  const isMe = message.senderId === 'me';
+export function ChatBubble({ message, currentUserId }: Props) {
+  const isMe = message.senderId === currentUserId;
 
   return (
     <View style={[styles.container, isMe ? styles.containerMe : styles.containerOther]}>

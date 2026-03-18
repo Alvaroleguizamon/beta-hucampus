@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, FlatList, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { Text, TextInput, IconButton, SegmentedButtons } from 'react-native-paper';
 import { useCommunityStore } from '../../lib/stores/community-store';
+import { useAuthStore } from '../../lib/stores/auth-store';
 import { ContactCard } from '../../components/community/ContactCard';
 import { ChatBubble } from '../../components/community/ChatBubble';
 import { Colors } from '../../constants/colors';
@@ -9,18 +10,33 @@ import { Layout } from '../../constants/layout';
 import { ParentContact } from '../../lib/types';
 
 export default function CommunityScreen() {
-  const { contacts, conversations, messages, toggleContact, sendMessage, startConversation } = useCommunityStore();
+  const { contacts, conversations, messages, toggleContact, sendMessage, markAsRead, startConversation } = useCommunityStore();
+  const user = useAuthStore((s) => s.user);
+  const userId = user?.id ?? 'u1';
+  const userName = user?.name ?? 'Yo';
   const [tab, setTab] = useState('contactos');
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [chatName, setChatName] = useState('');
   const [messageText, setMessageText] = useState('');
+  const flatListRef = useRef<FlatList>(null);
+
+  const openChat = (convId: string, name: string) => {
+    setActiveChat(convId);
+    setChatName(name);
+    markAsRead(convId);
+  };
 
   const handleChat = (contact: ParentContact) => {
-    const convId = startConversation(contact);
-    setActiveChat(convId);
-    setChatName(contact.name);
+    const convId = startConversation(contact.id, contact.name);
+    openChat(convId, contact.name);
     setTab('chats');
   };
+
+  useEffect(() => {
+    if (activeChat) {
+      flatListRef.current?.scrollToEnd({ animated: false });
+    }
+  }, [activeChat, messages]);
 
   // Chat detail view
   if (activeChat) {
@@ -40,11 +56,12 @@ export default function CommunityScreen() {
         </View>
 
         <FlatList
+          ref={flatListRef}
           data={chatMessages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ChatBubble message={item} />}
+          renderItem={({ item }) => <ChatBubble message={item} currentUserId={userId} />}
           contentContainerStyle={styles.chatMessages}
-          inverted={false}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         />
 
         <View style={styles.chatInputBar}>
@@ -65,7 +82,7 @@ export default function CommunityScreen() {
             size={20}
             onPress={() => {
               if (messageText.trim()) {
-                sendMessage(activeChat, messageText);
+                sendMessage(activeChat, messageText, userId, userName);
                 setMessageText('');
               }
             }}
@@ -108,7 +125,7 @@ export default function CommunityScreen() {
           renderItem={({ item }) => (
             <Pressable
               style={styles.conversationRow}
-              onPress={() => { setActiveChat(item.id); setChatName(item.participantName); }}
+              onPress={() => openChat(item.id, item.participantName)}
             >
               <View style={styles.convAvatar}>
                 <Text style={styles.convAvatarText}>{item.participantName[0]}</Text>

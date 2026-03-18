@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useNotificationsStore } from './notifications-store';
 
 export interface StudentDelivery {
   studentId: string;
@@ -130,8 +131,17 @@ export const useTasksStore = create<TasksState>((set) => ({
   publishedTasks: initialPublishedTasks,
   drafts: initialDrafts,
 
-  publishTask: (task) =>
-    set((s) => ({ publishedTasks: [task, ...s.publishedTasks] })),
+  publishTask: (task) => {
+    set((s) => ({ publishedTasks: [task, ...s.publishedTasks] }));
+    useNotificationsStore.getState().addNotification({
+      type: 'tarea',
+      title: 'Nueva tarea publicada',
+      body: `${task.title} — entrega ${task.dueDate}`,
+      date: new Date().toISOString().split('T')[0],
+      targetRole: 'alumno',
+      deepLink: '/(tabs)/grades',
+    });
+  },
 
   saveDraft: (draftData, editingId) =>
     set((s) => {
