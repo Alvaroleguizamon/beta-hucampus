@@ -29,7 +29,7 @@ export default function LoginScreen() {
             </Text>
           </View>
           <Text variant="headlineMedium" style={styles.title}>
-            Humand School
+            Hu Campus
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
             Tu colegio en una app
