@@ -81,14 +81,40 @@ export const mockCourses: Course[] = [
 ];
 
 export const mockAttendance: AttendanceRecord[] = [
-  { id: 'a1', studentId: 'st1', studentName: 'Juan Pérez', date: '2026-03-17', status: 'presente', courseId: 'c1' },
-  { id: 'a2', studentId: 'st1', studentName: 'Juan Pérez', date: '2026-03-14', status: 'presente', courseId: 'c1' },
-  { id: 'a3', studentId: 'st1', studentName: 'Juan Pérez', date: '2026-03-13', status: 'tardanza', courseId: 'c1' },
-  { id: 'a4', studentId: 'st1', studentName: 'Juan Pérez', date: '2026-03-12', status: 'ausente', courseId: 'c1' },
-  { id: 'a5', studentId: 'st1', studentName: 'Juan Pérez', date: '2026-03-11', status: 'presente', courseId: 'c1' },
-  { id: 'a6', studentId: 'st1', studentName: 'Juan Pérez', date: '2026-03-10', status: 'presente', courseId: 'c1' },
-  { id: 'a7', studentId: 'st2', studentName: 'María González', date: '2026-03-17', status: 'presente', courseId: 'c1' },
-  { id: 'a8', studentId: 'st2', studentName: 'María González', date: '2026-03-14', status: 'ausente', courseId: 'c1' },
+  // Juan Pérez — c1
+  { id: 'a1',  studentId: 'st1', studentName: 'Juan Pérez',       date: '2026-03-18', status: 'presente', courseId: 'c1', checkInTime: '07:58' },
+  { id: 'a2',  studentId: 'st1', studentName: 'Juan Pérez',       date: '2026-03-17', status: 'presente', courseId: 'c1', checkInTime: '08:05' },
+  { id: 'a3',  studentId: 'st1', studentName: 'Juan Pérez',       date: '2026-03-14', status: 'presente', courseId: 'c1', checkInTime: '07:55' },
+  { id: 'a4',  studentId: 'st1', studentName: 'Juan Pérez',       date: '2026-03-13', status: 'tardanza', courseId: 'c1', checkInTime: '08:34' },
+  { id: 'a5',  studentId: 'st1', studentName: 'Juan Pérez',       date: '2026-03-12', status: 'ausente',  courseId: 'c1' },
+  { id: 'a6',  studentId: 'st1', studentName: 'Juan Pérez',       date: '2026-03-11', status: 'presente', courseId: 'c1', checkInTime: '08:01' },
+  { id: 'a7',  studentId: 'st1', studentName: 'Juan Pérez',       date: '2026-03-10', status: 'presente', courseId: 'c1', checkInTime: '08:03' },
+  // María González — c1
+  { id: 'a8',  studentId: 'st2', studentName: 'María González',   date: '2026-03-18', status: 'tardanza', courseId: 'c1', checkInTime: '08:21' },
+  { id: 'a9',  studentId: 'st2', studentName: 'María González',   date: '2026-03-17', status: 'presente', courseId: 'c1', checkInTime: '08:02' },
+  { id: 'a10', studentId: 'st2', studentName: 'María González',   date: '2026-03-14', status: 'ausente',  courseId: 'c1' },
+  { id: 'a11', studentId: 'st2', studentName: 'María González',   date: '2026-03-13', status: 'presente', courseId: 'c1', checkInTime: '07:59' },
+  // Lucas Rodríguez — c1
+  { id: 'a12', studentId: 'st3', studentName: 'Lucas Rodríguez',  date: '2026-03-18', status: 'ausente',  courseId: 'c1' },
+  { id: 'a13', studentId: 'st3', studentName: 'Lucas Rodríguez',  date: '2026-03-17', status: 'presente', courseId: 'c1', checkInTime: '08:10' },
+  { id: 'a14', studentId: 'st3', studentName: 'Lucas Rodríguez',  date: '2026-03-14', status: 'tardanza', courseId: 'c1', checkInTime: '08:28' },
+  // Sofía Martínez — c1
+  { id: 'a15', studentId: 'st4', studentName: 'Sofía Martínez',   date: '2026-03-18', status: 'presente', courseId: 'c1', checkInTime: '07:52' },
+  { id: 'a16', studentId: 'st4', studentName: 'Sofía Martínez',   date: '2026-03-17', status: 'presente', courseId: 'c1', checkInTime: '07:54' },
+  { id: 'a17', studentId: 'st4', studentName: 'Sofía Martínez',   date: '2026-03-14', status: 'presente', courseId: 'c1', checkInTime: '08:00' },
+  // Mateo López — c1
+  { id: 'a18', studentId: 'st5', studentName: 'Mateo López',      date: '2026-03-18', status: 'tardanza', courseId: 'c1', checkInTime: '08:19' },
+  { id: 'a19', studentId: 'st5', studentName: 'Mateo López',      date: '2026-03-17', status: 'ausente',  courseId: 'c1' },
+  { id: 'a20', studentId: 'st5', studentName: 'Mateo López',      date: '2026-03-14', status: 'presente', courseId: 'c1', checkInTime: '08:07' },
+  // Valentina Díaz — c2
+  { id: 'a21', studentId: 'st6', studentName: 'Valentina Díaz',   date: '2026-03-18', status: 'presente', courseId: 'c2', checkInTime: '08:04' },
+  { id: 'a22', studentId: 'st6', studentName: 'Valentina Díaz',   date: '2026-03-17', status: 'presente', courseId: 'c2', checkInTime: '07:57' },
+  // Tomás Fernández — c2
+  { id: 'a23', studentId: 'st7', studentName: 'Tomás Fernández',  date: '2026-03-18', status: 'ausente',  courseId: 'c2' },
+  { id: 'a24', studentId: 'st7', studentName: 'Tomás Fernández',  date: '2026-03-17', status: 'tardanza', courseId: 'c2', checkInTime: '08:41' },
+  // Camila Ruiz — c2
+  { id: 'a25', studentId: 'st8', studentName: 'Camila Ruiz',      date: '2026-03-18', status: 'presente', courseId: 'c2', checkInTime: '08:11' },
+  { id: 'a26', studentId: 'st8', studentName: 'Camila Ruiz',      date: '2026-03-17', status: 'presente', courseId: 'c2', checkInTime: '08:06' },
 ];
 
 export const mockCalendarEvents: CalendarEvent[] = [
