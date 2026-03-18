@@ -140,6 +140,13 @@ export interface Trip {
   };
 }
 
+export interface TripAttendee {
+  studentId: string;
+  studentName: string;
+  authorized: boolean;
+  authorizedBy: string | null;
+}
+
 export interface ChatConversation {
   id: string;
   participantId: string;

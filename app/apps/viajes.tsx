@@ -3,8 +3,9 @@ import { StyleSheet, View, FlatList, Pressable, ScrollView } from 'react-native'
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
-import { mockTrips } from '../../lib/mock-data';
+import { mockTrips, mockTripAttendees } from '../../lib/mock-data';
 import { Trip } from '../../lib/types';
+import { useAuthStore } from '../../lib/stores/auth-store';
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -38,6 +39,7 @@ const statusConfig = {
 };
 
 export default function ViajesScreen() {
+  const role = useAuthStore((s) => s.user?.role ?? 'alumno');
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -161,6 +163,43 @@ export default function ViajesScreen() {
               </View>
             </View>
           )}
+
+          {role === 'docente' && (() => {
+            const attendees = mockTripAttendees[selectedTrip.id] ?? [];
+            const authCount = attendees.filter((a) => a.authorized).length;
+            return (
+              <View style={styles.infoCard}>
+                <View style={styles.attendeesHeader}>
+                  <Text style={styles.infoCardTitle}>Alumnos ({attendees.length})</Text>
+                  <Text style={[styles.attendeesCount, { color: authCount === attendees.length ? Colors.success : Colors.warning }]}>
+                    {authCount}/{attendees.length} autorizados
+                  </Text>
+                </View>
+                {attendees.map((a) => (
+                  <View key={a.studentId} style={styles.attendeeRow}>
+                    <View style={[styles.attendeeAvatar, { backgroundColor: a.authorized ? Colors.success + '15' : Colors.border }]}>
+                      <Text style={[styles.attendeeAvatarText, { color: a.authorized ? Colors.success : Colors.textSecondary }]}>
+                        {a.studentName[0]}
+                      </Text>
+                    </View>
+                    <View style={styles.attendeeInfo}>
+                      <Text style={styles.attendeeName}>{a.studentName}</Text>
+                      {a.authorized ? (
+                        <Text style={styles.attendeeAuth}>{a.authorizedBy}</Text>
+                      ) : (
+                        <Text style={styles.attendeePending}>Autorización pendiente</Text>
+                      )}
+                    </View>
+                    <MaterialCommunityIcons
+                      name={a.authorized ? 'check-circle' : 'clock-outline'}
+                      size={20}
+                      color={a.authorized ? Colors.success : Colors.warning}
+                    />
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
 
           <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>Contacto de emergencia</Text>
@@ -358,4 +397,15 @@ const styles = StyleSheet.create({
   checkText: { fontSize: 14, color: Colors.textPrimary },
   authRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   authText: { fontSize: 15, fontWeight: '600' },
+
+  // Attendees (docente)
+  attendeesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  attendeesCount: { fontSize: 13, fontWeight: '600' },
+  attendeeRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  attendeeAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  attendeeAvatarText: { fontSize: 14, fontWeight: '700' },
+  attendeeInfo: { flex: 1 },
+  attendeeName: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  attendeeAuth: { fontSize: 11, color: Colors.success, marginTop: 1 },
+  attendeePending: { fontSize: 11, color: Colors.warning, marginTop: 1 },
 });

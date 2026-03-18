@@ -3,6 +3,7 @@ import { StyleSheet, View, FlatList, Pressable, ScrollView, Alert } from 'react-
 import { Text, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
+import { useAuthStore } from '../../lib/stores/auth-store';
 
 interface Authorization {
   id: string;
@@ -103,9 +104,28 @@ const mockAuthorizedPersons: AuthorizedPerson[] = [
 ];
 
 export default function AutorizacionesScreen() {
+  const role = useAuthStore((s) => s.user?.role ?? 'alumno');
   const [tab, setTab] = useState('autorizaciones');
   const [selectedAuth, setSelectedAuth] = useState<Authorization | null>(null);
   const [reminded, setReminded] = useState<Record<string, boolean>>({});
+  const [authorizations, setAuthorizations] = useState(mockAuthorizations);
+
+  const handleAuthorize = (authId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    setAuthorizations((prev) => prev.map((a) =>
+      a.id === authId ? { ...a, status: 'autorizado' as const, authorizedBy: 'Carlos Pérez (Padre)', authorizedDate: today } : a
+    ));
+    setSelectedAuth((prev) => prev ? { ...prev, status: 'autorizado', authorizedBy: 'Carlos Pérez (Padre)', authorizedDate: today } : null);
+    Alert.alert('Autorizado', 'La autorización fue aprobada correctamente.');
+  };
+
+  const handleReject = (authId: string) => {
+    setAuthorizations((prev) => prev.map((a) =>
+      a.id === authId ? { ...a, status: 'rechazado' as const } : a
+    ));
+    setSelectedAuth((prev) => prev ? { ...prev, status: 'rechazado' } : null);
+    Alert.alert('Rechazado', 'La autorización fue rechazada.');
+  };
 
   const sendReminder = (authId: string, authTitle: string) => {
     Alert.alert(
@@ -157,7 +177,28 @@ export default function AutorizacionesScreen() {
             </View>
           )}
 
-          {selectedAuth.status === 'pendiente' && (
+          {selectedAuth.status === 'pendiente' && role === 'padre' && (
+            <View>
+              <View style={styles.pendingNotice}>
+                <MaterialCommunityIcons name="alert-circle-outline" size={20} color={Colors.warning} />
+                <Text style={styles.pendingNoticeText}>
+                  Esta autorización requiere tu aprobación.
+                </Text>
+              </View>
+              <View style={styles.authActions}>
+                <Pressable style={styles.authorizeBtn} onPress={() => handleAuthorize(selectedAuth.id)}>
+                  <MaterialCommunityIcons name="check-circle" size={20} color="#FFFFFF" />
+                  <Text style={styles.authorizeBtnText}>Autorizar</Text>
+                </Pressable>
+                <Pressable style={styles.rejectBtn} onPress={() => handleReject(selectedAuth.id)}>
+                  <MaterialCommunityIcons name="close-circle" size={20} color={Colors.error} />
+                  <Text style={styles.rejectBtnText}>Rechazar</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
+          {selectedAuth.status === 'pendiente' && role !== 'padre' && (
             <View>
               <View style={styles.pendingNotice}>
                 <MaterialCommunityIcons name="alert-circle-outline" size={20} color={Colors.warning} />
@@ -200,7 +241,7 @@ export default function AutorizacionesScreen() {
 
       {tab === 'autorizaciones' ? (
         <FlatList
-          data={mockAuthorizations}
+          data={authorizations}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
@@ -341,6 +382,31 @@ const styles = StyleSheet.create({
   authByDate: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
   pendingNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: Colors.warning + '10', borderRadius: 10, padding: 14 },
   pendingNoticeText: { flex: 1, fontSize: 13, color: Colors.textPrimary, lineHeight: 20 },
+  authActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  authorizeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.success,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  authorizeBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  rejectBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.error + '10',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.error,
+  },
+  rejectBtnText: { color: Colors.error, fontSize: 15, fontWeight: '600' },
   reminderBtn: {
     flexDirection: 'row',
     alignItems: 'center',

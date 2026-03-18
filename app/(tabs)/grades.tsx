@@ -32,7 +32,8 @@ const docenteApps: AppItem[] = [
   { icon: 'calendar-check', label: 'Presentismo', color: '#4CAF50', bgColor: '#EAF7EB', route: '/apps/presentismo' },
   { icon: 'book-open-variant', label: 'Material', color: '#0693E3', bgColor: '#E6F6FD', route: '/apps/material' },
   { icon: 'message-text-outline', label: 'Comunicados', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/noticias' },
-  { icon: 'calendar-month', label: 'Calendario', color: '#5B77D3', bgColor: '#EEF1FB', route: '/apps/eventos' },
+  { icon: 'star-outline', label: 'Eventos', color: '#9C27B0', bgColor: '#F3E5F5', route: '/apps/eventos' },
+  { icon: 'bus', label: 'Viajes y Salidas', color: '#00897B', bgColor: '#E0F2F1', route: '/apps/viajes' },
   { icon: 'account-group', label: 'Alumnos', color: '#27AE60', bgColor: '#E8F8EF', route: '/apps/materias' },
   { icon: 'clock-outline', label: 'Horarios', color: '#E74C3C', bgColor: '#FDECEB', route: '/apps/horarios' },
 ];
@@ -41,9 +42,9 @@ const padreApps: AppItem[] = [
   { icon: 'school', label: 'Notas', color: '#E67E22', bgColor: '#FDF2E6', route: '/apps/notas' },
   { icon: 'calendar-check', label: 'Presentismo', color: '#4CAF50', bgColor: '#EAF7EB', route: '/apps/presentismo' },
   { icon: 'notebook-outline', label: 'Cuaderno digital', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/noticias' },
-  { icon: 'calendar-month', label: 'Calendario', color: '#5B77D3', bgColor: '#EEF1FB', route: '/apps/eventos' },
-  { icon: 'account-group', label: 'Comunidad', color: '#0693E3', bgColor: '#E6F6FD', route: '/apps/materias' },
-  { icon: 'newspaper-variant-outline', label: 'Noticias', color: '#E74C3C', bgColor: '#FDECEB', route: '/apps/noticias' },
+  { icon: 'star-outline', label: 'Eventos', color: '#9C27B0', bgColor: '#F3E5F5', route: '/apps/eventos' },
+  { icon: 'bus', label: 'Viajes y Salidas', color: '#00897B', bgColor: '#E0F2F1', route: '/apps/viajes' },
+  { icon: 'file-sign', label: 'Autorizaciones', color: '#8D6E63', bgColor: '#EFEBE9', route: '/apps/autorizaciones' },
 ];
 
 const appsByRole = {

@@ -1,4 +1,4 @@
-import { FeedPost, Subject, Grade, AttendanceRecord, Course, CalendarEvent, Communication, WallPost, Classmate, ParentContact, ChatConversation, ChatMessage, Trip } from './types';
+import { FeedPost, Subject, Grade, AttendanceRecord, Course, CalendarEvent, Communication, WallPost, Classmate, ParentContact, ChatConversation, ChatMessage, Trip, TripAttendee } from './types';
 
 export const mockSubjects: Subject[] = [
   { id: 's1', name: 'Matemática', teacher: 'Prof. García', color: '#5B77D3' },
@@ -302,3 +302,34 @@ export const mockTrips: Trip[] = [
     },
   },
 ];
+
+export const mockTripAttendees: Record<string, TripAttendee[]> = {
+  trip1: [
+    { studentId: 'st1', studentName: 'Juan Pérez', authorized: false, authorizedBy: null },
+    { studentId: 'st2', studentName: 'María González', authorized: true, authorizedBy: 'Laura González (Madre)' },
+    { studentId: 'st3', studentName: 'Lucas Rodríguez', authorized: true, authorizedBy: 'Roberto Rodríguez (Padre)' },
+    { studentId: 'st4', studentName: 'Sofía Martínez', authorized: false, authorizedBy: null },
+    { studentId: 'st5', studentName: 'Mateo López', authorized: true, authorizedBy: 'Carlos López (Padre)' },
+  ],
+  trip2: [
+    { studentId: 'st1', studentName: 'Juan Pérez', authorized: true, authorizedBy: 'Carlos Pérez (Padre)' },
+    { studentId: 'st2', studentName: 'María González', authorized: true, authorizedBy: 'Laura González (Madre)' },
+    { studentId: 'st3', studentName: 'Lucas Rodríguez', authorized: false, authorizedBy: null },
+    { studentId: 'st4', studentName: 'Sofía Martínez', authorized: true, authorizedBy: 'Ana Martínez (Madre)' },
+    { studentId: 'st5', studentName: 'Mateo López', authorized: false, authorizedBy: null },
+  ],
+  trip3: [
+    { studentId: 'st1', studentName: 'Juan Pérez', authorized: false, authorizedBy: null },
+    { studentId: 'st2', studentName: 'María González', authorized: false, authorizedBy: null },
+    { studentId: 'st3', studentName: 'Lucas Rodríguez', authorized: true, authorizedBy: 'Roberto Rodríguez (Padre)' },
+    { studentId: 'st4', studentName: 'Sofía Martínez', authorized: false, authorizedBy: null },
+    { studentId: 'st5', studentName: 'Mateo López', authorized: false, authorizedBy: null },
+  ],
+  trip4: [
+    { studentId: 'st1', studentName: 'Juan Pérez', authorized: true, authorizedBy: 'Carlos Pérez (Padre)' },
+    { studentId: 'st2', studentName: 'María González', authorized: true, authorizedBy: 'Laura González (Madre)' },
+    { studentId: 'st3', studentName: 'Lucas Rodríguez', authorized: true, authorizedBy: 'Roberto Rodríguez (Padre)' },
+    { studentId: 'st4', studentName: 'Sofía Martínez', authorized: true, authorizedBy: 'Ana Martínez (Madre)' },
+    { studentId: 'st5', studentName: 'Mateo López', authorized: true, authorizedBy: 'Carlos López (Padre)' },
+  ],
+};

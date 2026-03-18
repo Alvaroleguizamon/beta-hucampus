@@ -21,18 +21,18 @@ const tabsByRole: Record<Role, TabConfig[]> = {
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account' },
   ],
   docente: [
-    { name: 'home', title: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
+    { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
     { name: 'courses', title: 'Cursos', icon: 'google-classroom', iconFocused: 'google-classroom' },
-    { name: 'grades', title: 'Notas', icon: 'school-outline', iconFocused: 'school' },
-    { name: 'attendance', title: 'Asistencia', icon: 'calendar-check-outline', iconFocused: 'calendar-check' },
-    { name: 'calendar', title: 'Calendario', icon: 'calendar-month-outline', iconFocused: 'calendar-month' },
+    { name: 'grades', title: 'Apps', icon: 'view-grid-outline', iconFocused: 'view-grid' },
+    { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar' },
+    { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account' },
   ],
   padre: [
-    { name: 'home', title: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
-    { name: 'grades', title: 'Notas', icon: 'school-outline', iconFocused: 'school' },
-    { name: 'attendance', title: 'Asistencia', icon: 'calendar-check-outline', iconFocused: 'calendar-check' },
+    { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
+    { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar' },
+    { name: 'grades', title: 'Apps', icon: 'view-grid-outline', iconFocused: 'view-grid' },
     { name: 'community', title: 'Comunidad', icon: 'account-group-outline', iconFocused: 'account-group' },
-    { name: 'calendar', title: 'Calendario', icon: 'calendar-month-outline', iconFocused: 'calendar-month' },
+    { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account' },
   ],
 };
 
