@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { StyleSheet, View, FlatList, Pressable, ScrollView, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { StyleSheet, View, FlatList, Pressable, ScrollView, Image, ActivityIndicator, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Text, TextInput, IconButton, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -47,14 +47,34 @@ export default function WallScreen() {
   const composerInputRef = useRef<any>(null);
   const [composerSelection, setComposerSelection] = useState({ start: 0, end: 0 });
   const [expandedNewsId, setExpandedNewsId] = useState<string | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<any>(null);
 
   const tabs: { key: SubTab; label: string }[] = [
     { key: 'muro', label: 'Muro' },
-    { key: 'grupos', label: 'Grupos' },
     { key: 'noticias', label: 'Noticias' },
   ];
 
   const pinnedNoticias = noticias.filter((n) => n.pinned);
+
+  const sq = searchQuery.toLowerCase().trim();
+  const filteredFeed = useMemo(() => {
+    if (!sq) return mergedFeed;
+    return mergedFeed.filter((p) =>
+      p.text?.toLowerCase().includes(sq) || p.authorName?.toLowerCase().includes(sq)
+    );
+  }, [mergedFeed, sq]);
+  const filteredGroups = useMemo(() => {
+    if (!sq) return myGroups;
+    return myGroups.filter((g) => g.name.toLowerCase().includes(sq));
+  }, [myGroups, sq]);
+  const filteredNoticias = useMemo(() => {
+    if (!sq) return noticias;
+    return noticias.filter((n) =>
+      n.title?.toLowerCase().includes(sq) || n.body?.toLowerCase().includes(sq)
+    );
+  }, [noticias, sq]);
 
   const insertFormat = (prefix: string, suffix: string) => {
     const { start, end } = composerSelection;
@@ -97,7 +117,7 @@ export default function WallScreen() {
 
   const feedContent = (
     <FlatList
-      data={mergedFeed}
+      data={filteredFeed}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.feedList}
       onViewableItemsChanged={onViewableItemsChanged}
@@ -235,13 +255,122 @@ export default function WallScreen() {
     />
   );
 
+  const gruposContent = (
+    <FlatList
+      data={filteredGroups}
+      keyExtractor={(g) => g.id}
+      contentContainerStyle={styles.groupsList}
+      ListHeaderComponent={
+        canPublish ? (
+          <Pressable style={styles.newGroupBtn} onPress={() => router.push('/grupos/nuevo' as any)}>
+            <MaterialCommunityIcons name="plus" size={18} color={Colors.primary} />
+            <Text style={styles.newGroupBtnText}>Crear grupo</Text>
+          </Pressable>
+        ) : null
+      }
+      ListEmptyComponent={
+        <View style={styles.emptyState}>
+          <MaterialCommunityIcons name="account-group-outline" size={64} color={Colors.border} />
+          <Text style={styles.emptyTitle}>Sin grupos</Text>
+          <Text style={styles.emptySubtitle}>Todavía no pertenecés a ningún grupo</Text>
+        </View>
+      }
+      renderItem={({ item: group }) => {
+        const typeLabel: Record<string, string> = { curso: 'Curso', materia: 'Materia', extracurricular: 'Extracurricular', privado: 'Privado' };
+        const lastPosts = allGroupPosts[group.id] ?? [];
+        const lastPost = lastPosts[0];
+        return (
+          <Pressable style={styles.groupCard} onPress={() => router.push(`/grupos/${group.id}` as any)}>
+            <View style={[styles.groupCardIcon, { backgroundColor: group.coverColor }]}>
+              <Text style={styles.groupCardIconText}>{group.name[0]}</Text>
+            </View>
+            <View style={styles.groupCardInfo}>
+              <View style={styles.groupCardHeader}>
+                <Text style={styles.groupCardName} numberOfLines={1}>{group.name}</Text>
+                <View style={[styles.groupTypeBadge, { backgroundColor: group.coverColor + '18' }]}>
+                  <Text style={[styles.groupTypeBadgeText, { color: group.coverColor }]}>{typeLabel[group.type]}</Text>
+                </View>
+              </View>
+              <Text style={styles.groupCardMeta}>
+                {group.members.length} miembros{lastPost ? ` · ${lastPost.date}` : ''}
+              </Text>
+              {lastPost && (
+                <Text style={styles.groupCardLastPost} numberOfLines={1}>
+                  {lastPost.authorName}: {lastPost.text.replace(/\*\*/g, '').replace(/_/g, '')}
+                </Text>
+              )}
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={Colors.border} />
+          </Pressable>
+        );
+      }}
+    />
+  );
+
+  const noticiasContent = (
+    <FlatList
+      data={filteredNoticias.slice(0, 5)}
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.newsList}
+      renderItem={({ item }) => {
+        const cfg = categoryConfig[item.category];
+        return (
+          <Pressable
+            style={styles.newsCard}
+            onPress={() => router.push(`/apps/noticia/${item.id}` as any)}
+          >
+            <View style={styles.newsHeader}>
+              <View style={[styles.newsChip, { backgroundColor: cfg.color }]}>
+                <Text style={styles.newsChipText}>{cfg.label}</Text>
+              </View>
+              <Text style={styles.newsDate}>{item.date}</Text>
+            </View>
+            <Text style={styles.newsTitle}>{item.title}</Text>
+            <Text style={styles.newsBody} numberOfLines={2}>{item.body}</Text>
+            <View style={styles.newsFooter}>
+              <Text style={styles.newsAuthor}>{item.author}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                <Text style={styles.newsReadMore}>Ver noticia</Text>
+                <MaterialCommunityIcons name="arrow-right" size={13} color={Colors.primary} />
+              </View>
+            </View>
+          </Pressable>
+        );
+      }}
+      ListFooterComponent={
+        <Pressable style={styles.seeAllBtn} onPress={() => router.push('/apps/noticias')}>
+          <Text style={styles.seeAllText}>Ver todas las noticias</Text>
+          <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
+        </Pressable>
+      }
+    />
+  );
+
   return (
     <View style={styles.container}>
       {isDesktop ? (
         /* ── Desktop layout: feed + aside ── */
         <View style={styles.desktopLayout}>
           <View style={styles.desktopMain}>
-            {feedContent}
+            <View style={styles.pillsContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>
+                {tabs.map((tab) => (
+                  <Pressable
+                    key={tab.key}
+                    style={[styles.pill, activeTab === tab.key && styles.pillActive]}
+                    onPress={() => setActiveTab(tab.key)}
+                  >
+                    <Text style={[styles.pillText, activeTab === tab.key && styles.pillTextActive]}>
+                      {tab.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+
+            {activeTab === 'muro' && feedContent}
+            {activeTab === 'grupos' && gruposContent}
+            {activeTab === 'noticias' && noticiasContent}
           </View>
 
           <ScrollView style={styles.desktopAside} showsVerticalScrollIndicator={false} contentContainerStyle={styles.desktopAsideContent}>
@@ -312,11 +441,11 @@ export default function WallScreen() {
         /* ── Mobile layout: tabs + content ── */
         <>
           <View style={styles.pillsContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>
+            <View style={styles.pillsMobile}>
               {tabs.map((tab) => (
                 <Pressable
                   key={tab.key}
-                  style={[styles.pill, activeTab === tab.key && styles.pillActive]}
+                  style={[styles.pill, styles.pillMobile, activeTab === tab.key && styles.pillActive]}
                   onPress={() => setActiveTab(tab.key)}
                 >
                   <Text style={[styles.pillText, activeTab === tab.key && styles.pillTextActive]}>
@@ -324,105 +453,12 @@ export default function WallScreen() {
                   </Text>
                 </Pressable>
               ))}
-            </ScrollView>
+            </View>
           </View>
 
           {activeTab === 'muro' && feedContent}
-
-          {activeTab === 'grupos' && (
-            <FlatList
-              data={myGroups}
-              keyExtractor={(g) => g.id}
-              contentContainerStyle={styles.groupsList}
-              ListHeaderComponent={
-                canPublish ? (
-                  <Pressable style={styles.newGroupBtn} onPress={() => router.push('/grupos/nuevo' as any)}>
-                    <MaterialCommunityIcons name="plus" size={18} color={Colors.primary} />
-                    <Text style={styles.newGroupBtnText}>Crear grupo</Text>
-                  </Pressable>
-                ) : null
-              }
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <MaterialCommunityIcons name="account-group-outline" size={64} color={Colors.border} />
-                  <Text style={styles.emptyTitle}>Sin grupos</Text>
-                  <Text style={styles.emptySubtitle}>Todavía no pertenecés a ningún grupo</Text>
-                </View>
-              }
-              renderItem={({ item: group }) => {
-                const typeLabel: Record<string, string> = { curso: 'Curso', materia: 'Materia', extracurricular: 'Extracurricular', privado: 'Privado' };
-                const lastPosts = allGroupPosts[group.id] ?? [];
-                const lastPost = lastPosts[0];
-                return (
-                  <Pressable style={styles.groupCard} onPress={() => router.push(`/grupos/${group.id}` as any)}>
-                    <View style={[styles.groupCardIcon, { backgroundColor: group.coverColor }]}>
-                      <Text style={styles.groupCardIconText}>{group.name[0]}</Text>
-                    </View>
-                    <View style={styles.groupCardInfo}>
-                      <View style={styles.groupCardHeader}>
-                        <Text style={styles.groupCardName} numberOfLines={1}>{group.name}</Text>
-                        <View style={[styles.groupTypeBadge, { backgroundColor: group.coverColor + '18' }]}>
-                          <Text style={[styles.groupTypeBadgeText, { color: group.coverColor }]}>{typeLabel[group.type]}</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.groupCardMeta}>
-                        {group.members.length} miembros{lastPost ? ` · ${lastPost.date}` : ''}
-                      </Text>
-                      {lastPost && (
-                        <Text style={styles.groupCardLastPost} numberOfLines={1}>
-                          {lastPost.authorName}: {lastPost.text.replace(/\*\*/g, '').replace(/_/g, '')}
-                        </Text>
-                      )}
-                    </View>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={Colors.border} />
-                  </Pressable>
-                );
-              }}
-            />
-          )}
-
-          {activeTab === 'noticias' && (
-            <FlatList
-              data={noticias.slice(0, 5)}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.newsList}
-              renderItem={({ item }) => {
-                const cfg = categoryConfig[item.category];
-                return (
-                  <Pressable
-                    style={styles.newsCard}
-                    onPress={() => router.push(`/apps/noticia/${item.id}` as any)}
-                  >
-                    <View style={styles.newsHeader}>
-                      <Chip
-                        compact
-                        textStyle={styles.newsChipText}
-                        style={[styles.newsChip, { backgroundColor: cfg.color }]}
-                      >
-                        {cfg.label}
-                      </Chip>
-                      <Text style={styles.newsDate}>{item.date}</Text>
-                    </View>
-                    <Text style={styles.newsTitle}>{item.title}</Text>
-                    <Text style={styles.newsBody} numberOfLines={2}>{item.body}</Text>
-                    <View style={styles.newsFooter}>
-                      <Text style={styles.newsAuthor}>{item.author}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                        <Text style={styles.newsReadMore}>Ver noticia</Text>
-                        <MaterialCommunityIcons name="arrow-right" size={13} color={Colors.primary} />
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              }}
-              ListFooterComponent={
-                <Pressable style={styles.seeAllBtn} onPress={() => router.push('/apps/noticias')}>
-                  <Text style={styles.seeAllText}>Ver todas las noticias</Text>
-                  <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
-                </Pressable>
-              }
-            />
-          )}
+          {activeTab === 'grupos' && gruposContent}
+          {activeTab === 'noticias' && noticiasContent}
         </>
       )}
 
@@ -438,14 +474,57 @@ const styles = StyleSheet.create({
 
   // Pills
   pillsContainer: {
-    backgroundColor: '#FFFFFF',
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    backgroundColor: 'transparent',
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  pillsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 16,
+    gap: 6,
   },
   pills: {
     paddingHorizontal: 16,
     gap: 10,
+  },
+  pillsMobile: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  pillMobile: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  searchBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+  searchBarExpanded: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 16,
+    paddingHorizontal: 12,
+    height: 38,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    backgroundColor: '#FFFFFF',
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    backgroundColor: 'transparent',
+    height: 34,
   },
   pill: {
     paddingHorizontal: 20,
@@ -453,10 +532,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: Colors.primary,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   pillActive: {
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
   },
   pillText: {
     color: Colors.primary,
@@ -464,7 +544,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pillTextActive: {
-    color: Colors.primary,
+    color: '#FFFFFF',
     fontWeight: '700',
   },
 
@@ -686,8 +766,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   newsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  newsChip: { height: 26 },
-  newsChipText: { color: '#FFFFFF', fontSize: 11 },
+  newsChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'center',
+  },
+  newsChipText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
   newsDate: { fontSize: 12, color: Colors.textSecondary },
   newsTitle: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary, marginBottom: 6 },
   newsBody: { fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },

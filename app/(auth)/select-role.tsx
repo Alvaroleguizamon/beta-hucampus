@@ -18,7 +18,7 @@ export default function SelectRoleScreen() {
 
   const handleSelect = (role: Role) => {
     selectRole(role);
-    const destination = role === 'alumno' ? '/(tabs)/wall' : '/(tabs)/home';
+    const destination = '/(tabs)/wall';
     router.replace(destination as any);
   };
 

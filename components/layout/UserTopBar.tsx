@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from 'react-native';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet, Modal, ScrollView, Animated, Dimensions, Easing } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { IconButton } from 'react-native-paper';
+import { IconButton, TextInput } from 'react-native-paper';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { useCourseStore } from '../../lib/stores/course-store';
 import { mockCourses, mockBirthdays } from '../../lib/mock-data';
 import { Colors } from '../../constants/colors';
 import { Role } from '../../lib/types';
+import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 interface Notification {
   id: string;
@@ -49,8 +50,54 @@ export default function UserTopBar() {
   const role = user?.role ?? 'alumno';
   const { selectedCourseId, setSelectedCourse } = useCourseStore();
   const logout = useAuthStore((s) => s.logout);
+  const { isDesktop } = useBreakpoint();
+  const [sidePanel, setSidePanel] = useState<'notifs' | 'birthdays' | null>(null);
+  const [sidePanelVisible, setSidePanelVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(400)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  const screenWidth = Dimensions.get('window').width;
+  const panelWidth = isDesktop ? 400 : screenWidth;
+
+  const openSidePanel = (panel: 'notifs' | 'birthdays') => {
+    if (sidePanel === panel) { closeSidePanel(); return; }
+    setSidePanel(panel);
+    setSidePanelVisible(true);
+    slideAnim.setValue(panelWidth);
+    backdropAnim.setValue(0);
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, easing: Easing.out(Easing.exp), useNativeDriver: true }),
+      Animated.timing(backdropAnim, { toValue: 1, duration: 400, easing: Easing.out(Easing.exp), useNativeDriver: true }),
+    ]).start();
+  };
+
+  const closeSidePanel = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: panelWidth, duration: 350, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      Animated.timing(backdropAnim, { toValue: 0, duration: 350, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+    ]).start(() => {
+      setSidePanel(null);
+      setSidePanelVisible(false);
+    });
+  };
   const [courseDropdownOpen, setCourseDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchAnim = useRef(new Animated.Value(0)).current;
+
+  const openSearch = () => {
+    setShowSearch(true);
+    searchAnim.setValue(0);
+    Animated.timing(searchAnim, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  };
+  const closeSearch = () => {
+    Animated.timing(searchAnim, { toValue: 0, duration: 200, easing: Easing.in(Easing.cubic), useNativeDriver: false }).start(() => {
+      setShowSearch(false);
+      setSearchQuery('');
+    });
+  };
+
   const selectedCourse = mockCourses.find((c) => c.id === selectedCourseId);
 
   // Birthdays
@@ -87,59 +134,103 @@ export default function UserTopBar() {
   return (
     <View style={styles.wrapper}>
       <View style={styles.bar}>
-        {/* Left: course selector (docente only) */}
-        <View style={styles.left}>
-          {role === 'docente' && (
-            <View style={styles.courseSelectorRow}>
-              <Text style={styles.courseSelectorLabel}>Curso activo</Text>
-              <Pressable style={styles.courseSelector} onPress={() => { setCourseDropdownOpen(!courseDropdownOpen); setUserDropdownOpen(false); }}>
-                <View style={styles.courseIcon}>
-                  <MaterialCommunityIcons name="google-classroom" size={15} color={Colors.primary} />
+        {/* ── Left: logo / course selector (hidden when search open) ── */}
+        {!showSearch && (
+          <View style={styles.left}>
+            {!isDesktop ? (
+              <Pressable style={styles.mobileLogoRow} onPress={() => router.replace('/(tabs)/wall' as any)}>
+                <View style={styles.mobileLogoIcon}>
+                  <MaterialCommunityIcons name="school" size={18} color="#FFFFFF" />
                 </View>
-                <Text style={styles.courseName}>{selectedCourse?.name ?? '—'}</Text>
-                <MaterialCommunityIcons
-                  name={courseDropdownOpen ? 'chevron-up' : 'chevron-down'}
-                  size={15}
-                  color={Colors.primary}
-                />
+                <Text style={styles.mobileLogoText}>Humand School</Text>
               </Pressable>
+            ) : role === 'docente' ? (
+              <View style={styles.courseSelectorRow}>
+                <Text style={styles.courseSelectorLabel}>Curso activo</Text>
+                <Pressable style={styles.courseSelector} onPress={() => { setCourseDropdownOpen(!courseDropdownOpen); setUserDropdownOpen(false); }}>
+                  <View style={styles.courseIcon}>
+                    <MaterialCommunityIcons name="google-classroom" size={15} color={Colors.primary} />
+                  </View>
+                  <Text style={styles.courseName}>{selectedCourse?.name ?? '—'}</Text>
+                  <MaterialCommunityIcons
+                    name={courseDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                    size={15}
+                    color={Colors.primary}
+                  />
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        )}
+
+        {/* ── Search bar (replaces left section, extends to icons) ── */}
+        {showSearch && (
+          <Animated.View style={[styles.searchOverlay, {
+            flex: 1,
+            opacity: searchAnim,
+            transform: [{ translateX: searchAnim.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }],
+          }]}>
+            <MaterialCommunityIcons name="magnify" size={20} color={Colors.textSecondary} />
+            <TextInput
+              placeholder="Buscar..."
+              placeholderTextColor={Colors.textSecondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              style={styles.searchInput}
+              autoFocus
+              dense
+              mode="flat"
+              underlineStyle={{ display: 'none' }}
+              contentStyle={{ paddingLeft: 0, fontSize: 14 }}
+            />
+            <Pressable onPress={closeSearch} hitSlop={8}>
+              <MaterialCommunityIcons name="close" size={18} color={Colors.textSecondary} />
+            </Pressable>
+          </Animated.View>
+        )}
+
+        {!(showSearch && !isDesktop) && (
+        <View style={styles.rightGroup}>
+          <View style={styles.actionIcons}>
+            <Pressable style={styles.iconBtn} onPress={() => { closeAll(); showSearch ? closeSearch() : openSearch(); }} hitSlop={6}>
+              <MaterialCommunityIcons name="magnify" size={24} color={Colors.primary} />
+            </Pressable>
+            <View>
+              <Pressable style={styles.iconBtn} onPress={() => { closeAll(); openSidePanel('birthdays'); }} hitSlop={6}>
+                <MaterialCommunityIcons name="cake-variant" size={22} color={Colors.primary} />
+              </Pressable>
+              {todayBirthdays.length > 0 && (
+                <View style={styles.badgeIcon}>
+                  <Text style={styles.badgeText}>{todayBirthdays.length}</Text>
+                </View>
+              )}
             </View>
-          )}
-        </View>
-
-        {/* Center: action icons */}
-        <View style={styles.centerIcons}>
-          <IconButton icon="magnify" size={22} iconColor={Colors.primary} onPress={closeAll} />
-          <View>
-            <IconButton icon="cake-variant" size={22} iconColor={Colors.primary} onPress={() => { closeAll(); setShowBirthdays(true); }} />
-            {todayBirthdays.length > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{todayBirthdays.length}</Text>
+            <View>
+              <Pressable style={styles.iconBtn} onPress={() => { closeAll(); openSidePanel('notifs'); }} hitSlop={6}>
+                <MaterialCommunityIcons name="bell-outline" size={22} color={Colors.primary} />
+              </Pressable>
+              {unreadCount > 0 && (
+                <View style={styles.badgeIcon}>
+                  <Text style={styles.badgeText}>{unreadCount}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+          <Pressable style={styles.userInfo} onPress={() => { setUserDropdownOpen(!userDropdownOpen); setCourseDropdownOpen(false); }}>
+            {isDesktop && (
+              <View style={styles.userText}>
+                <Text style={styles.userName}>{user?.name ?? '—'}</Text>
+                <Text style={styles.userRole}>{rolLabel[role]}</Text>
               </View>
             )}
-          </View>
-          <View>
-            <IconButton icon="bell-outline" size={22} iconColor={Colors.primary} onPress={() => { closeAll(); setShowNotifs(true); }} />
-            {unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unreadCount}</Text>
-              </View>
-            )}
-          </View>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {(user?.name ?? 'U').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          </Pressable>
         </View>
-
-        {/* Right: user info + dropdown */}
-        <Pressable style={styles.userInfo} onPress={() => { setUserDropdownOpen(!userDropdownOpen); setCourseDropdownOpen(false); }}>
-          <View style={styles.userText}>
-            <Text style={styles.userName}>{user?.name ?? '—'}</Text>
-            <Text style={styles.userRole}>{rolLabel[role]}</Text>
-          </View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(user?.name ?? 'U').charAt(0).toUpperCase()}
-            </Text>
-          </View>
-        </Pressable>
+        )}
       </View>
 
       {/* Course dropdown */}
@@ -165,6 +256,20 @@ export default function UserTopBar() {
       {/* User dropdown */}
       {userDropdownOpen && (
         <View style={[styles.dropdown, styles.userDropdown]}>
+          {!isDesktop && (
+            <>
+              <View style={styles.dropdownUserInfo}>
+                <View style={styles.dropdownAvatar}>
+                  <Text style={styles.dropdownAvatarText}>{(user?.name ?? 'U').charAt(0).toUpperCase()}</Text>
+                </View>
+                <View>
+                  <Text style={styles.dropdownUserName}>{user?.name ?? '—'}</Text>
+                  <Text style={styles.dropdownUserRole}>{rolLabel[role]}</Text>
+                </View>
+              </View>
+              <View style={styles.optionDivider} />
+            </>
+          )}
           <Pressable style={styles.option}>
             <MaterialCommunityIcons name="cog-outline" size={17} color={Colors.textSecondary} />
             <Text style={styles.optionText}>Configuración</Text>
@@ -180,123 +285,117 @@ export default function UserTopBar() {
         </View>
       )}
 
-      {/* Birthday Modal */}
-      <Modal visible={showBirthdays} animationType="fade" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>🎂 Cumpleaños</Text>
-              <IconButton icon="close" size={20} iconColor={Colors.textSecondary} onPress={() => { setShowBirthdays(false); setBdTab('hoy'); }} />
-            </View>
-
-            <View style={styles.bdTabs}>
-              <Pressable
-                style={[styles.bdTab, bdTab === 'hoy' && styles.bdTabActive]}
-                onPress={() => setBdTab('hoy')}
-              >
-                <Text style={[styles.bdTabText, bdTab === 'hoy' && styles.bdTabTextActive]}>
-                  Hoy {todayBirthdays.length > 0 ? `(${todayBirthdays.length})` : ''}
+      {/* Side Panel - full height from right */}
+      {sidePanelVisible && (
+        <Modal visible transparent animationType="none">
+          <View style={styles.sidePanelOverlay}>
+            {isDesktop && (
+              <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.3)', opacity: backdropAnim }]}>
+                <Pressable style={{ flex: 1 }} onPress={closeSidePanel} />
+              </Animated.View>
+            )}
+            <Animated.View style={[styles.sidePanel, !isDesktop && { width: '100%', borderLeftWidth: 0 }, { transform: [{ translateX: slideAnim }] }]}>
+              <View style={styles.sidePanelHeader}>
+                <Text style={styles.sidePanelTitle}>
+                  {sidePanel === 'birthdays' ? '🎂 Cumpleaños' : 'Notificaciones'}
                 </Text>
-              </Pressable>
-              <Pressable
-                style={[styles.bdTab, bdTab === 'proximos' && styles.bdTabActive]}
-                onPress={() => setBdTab('proximos')}
-              >
-                <Text style={[styles.bdTabText, bdTab === 'proximos' && styles.bdTabTextActive]}>
-                  Próximos
-                </Text>
-              </Pressable>
-            </View>
-
-            {bdTab === 'hoy' && (
-              <View style={styles.bdSection}>
-                {todayBirthdays.length > 0 ? todayBirthdays.map((b) => {
-                  const isDocente = b.grade === 'Docente';
-                  return (
-                    <View key={b.id} style={styles.bdRow}>
-                      <View style={styles.bdAvatar}>
-                        <MaterialCommunityIcons name="cake-variant" size={20} color={Colors.primary} />
-                      </View>
-                      <View style={styles.bdInfo}>
-                        <Text style={styles.bdName}>{b.name}</Text>
-                        <Text style={styles.bdGrade}>{isDocente ? '👩‍🏫 Docente' : `🎒 ${b.grade}`}</Text>
-                      </View>
-                      <Text style={styles.bdEmoji}>🎉</Text>
-                    </View>
-                  );
-                }) : (
-                  <Text style={styles.bdEmpty}>No hay cumpleaños hoy</Text>
-                )}
+                <IconButton icon="close" size={18} iconColor={Colors.textSecondary} onPress={closeSidePanel} />
               </View>
-            )}
 
-            {bdTab === 'proximos' && (
-              <View style={styles.bdSection}>
-                {upcomingBirthdays.length > 0 ? upcomingBirthdays.map((b) => {
-                  const isDocente = b.grade === 'Docente';
-                  return (
-                    <View key={b.id} style={styles.bdRow}>
-                      <View style={[styles.bdAvatar, { backgroundColor: Colors.border }]}>
-                        <Text style={styles.bdAvatarText}>{b.name[0]}</Text>
+              {sidePanel === 'birthdays' && (
+                <>
+                  <View style={styles.bdTabs}>
+                    <Pressable style={[styles.bdTab, bdTab === 'hoy' && styles.bdTabActive]} onPress={() => setBdTab('hoy')}>
+                      <Text style={[styles.bdTabText, bdTab === 'hoy' && styles.bdTabTextActive]}>
+                        Hoy {todayBirthdays.length > 0 ? `(${todayBirthdays.length})` : ''}
+                      </Text>
+                    </Pressable>
+                    <Pressable style={[styles.bdTab, bdTab === 'proximos' && styles.bdTabActive]} onPress={() => setBdTab('proximos')}>
+                      <Text style={[styles.bdTabText, bdTab === 'proximos' && styles.bdTabTextActive]}>Próximos</Text>
+                    </Pressable>
+                  </View>
+                  <ScrollView style={styles.sidePanelScroll}>
+                    {bdTab === 'hoy' && (
+                      <View style={styles.bdSection}>
+                        {todayBirthdays.length > 0 ? todayBirthdays.map((b) => (
+                          <View key={b.id} style={styles.bdRow}>
+                            <View style={styles.bdAvatar}>
+                              <MaterialCommunityIcons name="cake-variant" size={20} color={Colors.primary} />
+                            </View>
+                            <View style={styles.bdInfo}>
+                              <Text style={styles.bdName}>{b.name}</Text>
+                              <Text style={styles.bdGrade}>{b.grade === 'Docente' ? '👩‍🏫 Docente' : `🎒 ${b.grade}`}</Text>
+                            </View>
+                            <Text style={styles.bdEmoji}>🎉</Text>
+                          </View>
+                        )) : (
+                          <Text style={styles.bdEmpty}>No hay cumpleaños hoy</Text>
+                        )}
                       </View>
-                      <View style={styles.bdInfo}>
-                        <Text style={styles.bdName}>{b.name}</Text>
-                        <Text style={styles.bdGrade}>{isDocente ? '👩‍🏫 Docente' : `🎒 ${b.grade}`} · {b.date}</Text>
+                    )}
+                    {bdTab === 'proximos' && (
+                      <View style={styles.bdSection}>
+                        {upcomingBirthdays.length > 0 ? upcomingBirthdays.map((b) => (
+                          <View key={b.id} style={styles.bdRow}>
+                            <View style={[styles.bdAvatar, { backgroundColor: Colors.border }]}>
+                              <Text style={styles.bdAvatarText}>{b.name[0]}</Text>
+                            </View>
+                            <View style={styles.bdInfo}>
+                              <Text style={styles.bdName}>{b.name}</Text>
+                              <Text style={styles.bdGrade}>{b.grade === 'Docente' ? '👩‍🏫 Docente' : `🎒 ${b.grade}`} · {b.date}</Text>
+                            </View>
+                          </View>
+                        )) : (
+                          <Text style={styles.bdEmpty}>No hay cumpleaños próximos</Text>
+                        )}
                       </View>
+                    )}
+                  </ScrollView>
+                </>
+              )}
+
+              {sidePanel === 'notifs' && (
+                <>
+                  {unreadCount > 0 && (
+                    <Pressable style={styles.sidePanelMarkRead} onPress={markAllRead}>
+                      <Text style={styles.markReadText}>Marcar todas como leídas</Text>
+                    </Pressable>
+                  )}
+                  <ScrollView style={styles.sidePanelScroll}>
+                    <View style={styles.notifList}>
+                      {notifications.map((n) => {
+                        const cfg = notifIcon[n.type];
+                        return (
+                          <Pressable
+                            key={n.id}
+                            style={[styles.notifRow, !n.read && styles.notifRowUnread]}
+                            onPress={() => {
+                              setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
+                              closeSidePanel();
+                              setTimeout(() => router.push(n.route as any), 300);
+                            }}
+                          >
+                            <View style={[styles.notifIcon, { backgroundColor: cfg.color + '15' }]}>
+                              <MaterialCommunityIcons name={cfg.icon as any} size={20} color={cfg.color} />
+                            </View>
+                            <View style={styles.notifContent}>
+                              <Text style={[styles.notifTitle, !n.read && styles.notifTitleUnread]}>{n.title}</Text>
+                              <Text style={styles.notifBody} numberOfLines={2}>{n.body}</Text>
+                              <Text style={styles.notifTime}>{n.time}</Text>
+                            </View>
+                            {!n.read && <View style={styles.notifDot} />}
+                          </Pressable>
+                        );
+                      })}
                     </View>
-                  );
-                }) : (
-                  <Text style={styles.bdEmpty}>No hay cumpleaños próximos</Text>
-                )}
-              </View>
-            )}
+                  </ScrollView>
+                </>
+              )}
+            </Animated.View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
 
-      {/* Notifications - Full screen */}
-      <Modal visible={showNotifs} animationType="slide">
-        <View style={styles.notifScreen}>
-          <View style={styles.notifScreenHeader}>
-            <Pressable onPress={() => setShowNotifs(false)} style={styles.notifBackBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-            </Pressable>
-            <Text style={styles.notifScreenTitle}>Notificaciones</Text>
-            {unreadCount > 0 && (
-              <Pressable onPress={markAllRead}>
-                <Text style={styles.markReadText}>Marcar como leídas</Text>
-              </Pressable>
-            )}
-          </View>
-
-          <ScrollView contentContainerStyle={styles.notifList}>
-            {notifications.map((n) => {
-              const cfg = notifIcon[n.type];
-              return (
-                <Pressable
-                  key={n.id}
-                  style={[styles.notifRow, !n.read && styles.notifRowUnread]}
-                  onPress={() => {
-                    setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
-                    setShowNotifs(false);
-                    setTimeout(() => router.push(n.route as any), 300);
-                  }}
-                >
-                  <View style={[styles.notifIcon, { backgroundColor: cfg.color + '15' }]}>
-                    <MaterialCommunityIcons name={cfg.icon as any} size={20} color={cfg.color} />
-                  </View>
-                  <View style={styles.notifContent}>
-                    <Text style={[styles.notifTitle, !n.read && styles.notifTitleUnread]}>{n.title}</Text>
-                    <Text style={styles.notifBody} numberOfLines={2}>{n.body}</Text>
-                    <Text style={styles.notifTime}>{n.time}</Text>
-                  </View>
-                  {!n.read && <View style={styles.notifDot} />}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -313,16 +412,43 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     paddingHorizontal: 20,
-    paddingVertical: 6,
-    height: 52,
+    height: 60,
   },
   left: {
     flex: 1,
   },
-  centerIcons: {
+  mobileLogoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: -14,
+    gap: 8,
+  },
+  mobileLogoIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mobileLogoText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    fontFamily: 'Inter_700Bold',
+  },
+  rightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 'auto',
+  },
+  actionIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  iconBtn: {
+    padding: 4,
   },
   courseSelectorRow: {
     flexDirection: 'row',
@@ -364,7 +490,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginLeft: 12,
+    marginLeft: 4,
   },
   userText: {
     alignItems: 'flex-end',
@@ -393,6 +519,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
+  },
+  badgeIcon: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
   },
   badge: {
     position: 'absolute',
@@ -450,6 +588,36 @@ const styles = StyleSheet.create({
   userDropdown: {
     left: 'auto' as any,
     right: 16,
+  },
+  dropdownUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  dropdownAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropdownAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  dropdownUserName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  dropdownUserRole: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 1,
   },
   optionDivider: {
     height: 1,
@@ -632,5 +800,70 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: Colors.primary,
     marginTop: 6,
+  },
+
+  // Desktop side panel
+  sidePanelOverlay: {
+    flex: 1,
+  },
+  sidePanel: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 400,
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: -4, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  sidePanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 20,
+    paddingRight: 8,
+    paddingTop: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  sidePanelTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  sidePanelScroll: {
+    flex: 1,
+  },
+  sidePanelMarkRead: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    alignItems: 'flex-start',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  searchOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    gap: 6,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    backgroundColor: 'transparent',
+    height: 32,
+    paddingVertical: 0,
   },
 });
