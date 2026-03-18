@@ -189,6 +189,7 @@ export default function TareasScreen() {
   const [showDraftCalendar, setShowDraftCalendar] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState<string | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [showDraftStudentList, setShowDraftStudentList] = useState(false);
 
   // ─── Alumno/Padre state (must be before early returns for hooks consistency) ───
   const [tasks, setTasks] = useState(initialTasks);
@@ -578,6 +579,7 @@ export default function TareasScreen() {
       setDraftLinkUrl('');
       setShowAddLink(false);
       setShowDraftCalendar(false);
+      setShowDraftStudentList(false);
       setEditingDraftId(null);
     };
 
@@ -826,44 +828,62 @@ export default function TareasScreen() {
                         ))}
                       </View>
                     )}
-                    <TextInput
-                      label="Buscar alumno..."
-                      value={draftStudentSearch}
-                      onChangeText={setDraftStudentSearch}
-                      mode="outlined"
-                      dense
-                      style={styles.formInput}
-                      outlineColor={Colors.border}
-                      activeOutlineColor={Colors.primary}
-                      left={<TextInput.Icon icon="magnify" />}
-                    />
-                    <View style={docenteStyles.draftStudentList}>
-                      {filteredDraftStudents.map((s) => {
-                        const isSelected = draftStudentIds.includes(s.id);
-                        return (
-                          <Pressable
-                            key={s.id}
-                            style={[docenteStyles.draftStudentRow, isSelected && { backgroundColor: Colors.primary + '08' }]}
-                            onPress={() => setDraftStudentIds((prev) =>
-                              prev.includes(s.id) ? prev.filter((id) => id !== s.id) : [...prev, s.id]
+                    <Pressable
+                      style={[docenteStyles.studentDropdownBtn, showDraftStudentList && { borderColor: Colors.primary }]}
+                      onPress={() => setShowDraftStudentList(!showDraftStudentList)}
+                    >
+                      <MaterialCommunityIcons name="magnify" size={18} color={Colors.textSecondary} />
+                      <Text style={{ flex: 1, fontSize: 14, color: selectedDraftStudents.length > 0 ? Colors.textPrimary : Colors.textSecondary }}>
+                        {selectedDraftStudents.length > 0
+                          ? `${selectedDraftStudents.length} alumno${selectedDraftStudents.length > 1 ? 's' : ''} seleccionado${selectedDraftStudents.length > 1 ? 's' : ''}`
+                          : 'Seleccionar alumnos...'}
+                      </Text>
+                      <MaterialCommunityIcons name={showDraftStudentList ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
+                    </Pressable>
+                    {showDraftStudentList && (
+                      <View style={{ marginTop: 4 }}>
+                        <TextInput
+                          label="Buscar alumno..."
+                          value={draftStudentSearch}
+                          onChangeText={setDraftStudentSearch}
+                          mode="outlined"
+                          dense
+                          style={styles.formInput}
+                          outlineColor={Colors.border}
+                          activeOutlineColor={Colors.primary}
+                          left={<TextInput.Icon icon="magnify" />}
+                        />
+                        <View style={[docenteStyles.draftStudentList, { maxHeight: 200 }]}>
+                          <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                            {filteredDraftStudents.map((s) => {
+                              const isSelected = draftStudentIds.includes(s.id);
+                              return (
+                                <Pressable
+                                  key={s.id}
+                                  style={[docenteStyles.draftStudentRow, isSelected && { backgroundColor: Colors.primary + '08' }]}
+                                  onPress={() => setDraftStudentIds((prev) =>
+                                    prev.includes(s.id) ? prev.filter((id) => id !== s.id) : [...prev, s.id]
+                                  )}
+                                >
+                                  <MaterialCommunityIcons
+                                    name={isSelected ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                                    size={20}
+                                    color={isSelected ? Colors.primary : Colors.border}
+                                  />
+                                  <View style={docenteStyles.studentAvatar}>
+                                    <Text style={docenteStyles.studentAvatarText}>{s.name[0]}</Text>
+                                  </View>
+                                  <Text style={[{ flex: 1, fontSize: 14, color: Colors.textPrimary }, isSelected && { color: Colors.primary, fontWeight: '600' }]}>{s.name}</Text>
+                                </Pressable>
+                              );
+                            })}
+                            {filteredDraftStudents.length === 0 && (
+                              <Text style={{ padding: 12, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' }}>No se encontraron alumnos</Text>
                             )}
-                          >
-                            <MaterialCommunityIcons
-                              name={isSelected ? 'checkbox-marked' : 'checkbox-blank-outline'}
-                              size={20}
-                              color={isSelected ? Colors.primary : Colors.border}
-                            />
-                            <View style={docenteStyles.studentAvatar}>
-                              <Text style={docenteStyles.studentAvatarText}>{s.name[0]}</Text>
-                            </View>
-                            <Text style={[{ flex: 1, fontSize: 14, color: Colors.textPrimary }, isSelected && { color: Colors.primary, fontWeight: '600' }]}>{s.name}</Text>
-                          </Pressable>
-                        );
-                      })}
-                      {filteredDraftStudents.length === 0 && (
-                        <Text style={{ padding: 12, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' }}>No se encontraron alumnos</Text>
-                      )}
-                    </View>
+                          </ScrollView>
+                        </View>
+                      </View>
+                    )}
                   </View>
                 );
               })()}
@@ -877,26 +897,28 @@ export default function TareasScreen() {
                 <MaterialCommunityIcons name={showDraftCalendar ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
               </Pressable>
               {showDraftCalendar && (
-                <Calendar
-                  onDayPress={(day: { dateString: string }) => {
-                    setDraftDueDate(day.dateString);
-                    setShowDraftCalendar(false);
-                  }}
-                  markedDates={draftDueDate ? { [draftDueDate]: { selected: true, selectedColor: Colors.primary } } : {}}
-                  minDate={new Date().toISOString().split('T')[0]}
-                  theme={{
-                    calendarBackground: '#FFFFFF',
-                    todayTextColor: Colors.primary,
-                    dayTextColor: Colors.textPrimary,
-                    textDisabledColor: '#D9D9D9',
-                    arrowColor: Colors.primary,
-                    monthTextColor: Colors.textPrimary,
-                    textMonthFontWeight: '600',
-                    textDayFontSize: 13,
-                    textMonthFontSize: 14,
-                  }}
-                  style={styles.calendarPicker}
-                />
+                <View style={{ maxWidth: 340, marginBottom: 12 }}>
+                  <Calendar
+                    onDayPress={(day: { dateString: string }) => {
+                      setDraftDueDate(day.dateString);
+                      setShowDraftCalendar(false);
+                    }}
+                    markedDates={draftDueDate ? { [draftDueDate]: { selected: true, selectedColor: Colors.primary } } : {}}
+                    minDate={new Date().toISOString().split('T')[0]}
+                    theme={{
+                      calendarBackground: '#FFFFFF',
+                      todayTextColor: Colors.primary,
+                      dayTextColor: Colors.textPrimary,
+                      textDisabledColor: '#D9D9D9',
+                      arrowColor: Colors.primary,
+                      monthTextColor: Colors.textPrimary,
+                      textMonthFontWeight: '600',
+                      textDayFontSize: 12,
+                      textMonthFontSize: 13,
+                    }}
+                    style={{ borderRadius: 10, borderWidth: 1, borderColor: Colors.border }}
+                  />
+                </View>
               )}
 
               <Text style={styles.formLabel}>Prioridad</Text>
@@ -2468,6 +2490,17 @@ const docenteStyles = StyleSheet.create({
   assignOptionTextActive: {
     color: Colors.primary,
     fontWeight: '600',
+  },
+  studentDropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
   },
   draftStudentList: {
     borderWidth: 1,
