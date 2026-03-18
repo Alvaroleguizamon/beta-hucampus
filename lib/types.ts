@@ -15,6 +15,9 @@ export interface FeedPost {
   author: string;
   date: string;
   category: 'comunicado' | 'novedad' | 'evento' | 'urgente';
+  image?: string;
+  targetAudience?: 'todos' | 'alumnos' | 'docentes' | 'padres';
+  pinned?: boolean;
 }
 
 export interface Subject {
@@ -74,16 +77,43 @@ export interface Communication {
   confirmed: boolean;
 }
 
+export type ReactionType = 'like' | 'love' | 'aplauso' | 'sorpresa';
+
+export interface GroupMember {
+  userId: string;
+  userName: string;
+  role: 'admin' | 'miembro';
+  joinedAt: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  type: 'curso' | 'materia' | 'extracurricular' | 'privado';
+  createdBy: string;
+  createdByName: string;
+  createdAt: string;
+  members: GroupMember[];
+  coverColor: string;
+  isAutomatic?: boolean;
+}
+
 export interface WallPost {
   id: string;
   authorId: string;
   authorName: string;
+  authorRole?: Role;
   authorAvatar?: string;
   text: string;
   image?: string;
   date: string;
   likes: string[];
+  reactions?: Record<string, ReactionType>; // userId → reactionType
+  viewedBy?: string[]; // userIds que vieron el post
   comments: WallComment[];
+  groupId?: string;
+  groupName?: string;
 }
 
 export interface WallComment {
