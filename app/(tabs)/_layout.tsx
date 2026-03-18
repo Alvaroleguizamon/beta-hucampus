@@ -1,9 +1,12 @@
 import React from 'react';
+import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { Colors } from '../../constants/colors';
 import { Role } from '../../lib/types';
+import { useBreakpoint } from '../../hooks/useBreakpoint';
+import DesktopSidebar from '../../components/layout/DesktopSidebar';
 
 type TabConfig = {
   name: string;
@@ -42,50 +45,58 @@ export default function TabsLayout() {
   const role = useAuthStore((s) => s.user?.role ?? 'alumno');
   const visibleTabs = tabsByRole[role];
   const visibleNames = visibleTabs.map((t) => t.name);
+  const { isDesktop } = useBreakpoint();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textSecondary,
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: Colors.border,
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 6,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '500',
-          marginTop: 2,
-        },
-        headerShown: false,
-      }}
-    >
-      {allTabs.map((tabName) => {
-        const config = visibleTabs.find((t) => t.name === tabName);
-        const isVisible = visibleNames.includes(tabName);
+    <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column' }}>
+      {isDesktop && <DesktopSidebar />}
+      <View style={{ flex: 1 }}>
+        <Tabs
+          screenOptions={{
+            tabBarActiveTintColor: Colors.primary,
+            tabBarInactiveTintColor: Colors.textSecondary,
+            tabBarStyle: isDesktop
+              ? { display: 'none' }
+              : {
+                  backgroundColor: '#FFFFFF',
+                  borderTopWidth: 1,
+                  borderTopColor: Colors.border,
+                  height: 64,
+                  paddingBottom: 8,
+                  paddingTop: 6,
+                },
+            tabBarLabelStyle: {
+              fontSize: 10,
+              fontWeight: '500',
+              marginTop: 2,
+            },
+            headerShown: false,
+          }}
+        >
+          {allTabs.map((tabName) => {
+            const config = visibleTabs.find((t) => t.name === tabName);
+            const isVisible = visibleNames.includes(tabName);
 
-        return (
-          <Tabs.Screen
-            key={tabName}
-            name={tabName}
-            options={{
-              title: config?.title ?? tabName,
-              href: isVisible ? undefined : null,
-              tabBarIcon: ({ color, size, focused }) => (
-                <MaterialCommunityIcons
-                  name={((focused ? config?.iconFocused : config?.icon) ?? 'help-circle') as any}
-                  size={24}
-                  color={color}
-                />
-              ),
-            }}
-          />
-        );
-      })}
-    </Tabs>
+            return (
+              <Tabs.Screen
+                key={tabName}
+                name={tabName}
+                options={{
+                  title: config?.title ?? tabName,
+                  href: isVisible ? undefined : null,
+                  tabBarIcon: ({ color, size, focused }) => (
+                    <MaterialCommunityIcons
+                      name={((focused ? config?.iconFocused : config?.icon) ?? 'help-circle') as any}
+                      size={24}
+                      color={color}
+                    />
+                  ),
+                }}
+              />
+            );
+          })}
+        </Tabs>
+      </View>
+    </View>
   );
 }
