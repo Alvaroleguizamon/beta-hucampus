@@ -1,6 +1,40 @@
 import { create } from 'zustand';
 import { Group, GroupMember, WallPost, ReactionType, Role } from '../types';
-import { mockGroups, mockGroupPosts } from '../mock-data';
+import { mockGroups, mockGroupPosts, mockCourses } from '../mock-data';
+
+// Color por tipo de curso para grupos automáticos
+const COURSE_COLORS = ['#7C6BC4', '#5B77D3', '#0693E3', '#00897B', '#43A047'];
+
+function buildCourseGroups(): Group[] {
+  const existing = new Set(mockGroups.map((g) => g.id));
+  const auto: Group[] = [];
+  mockCourses.forEach((course, idx) => {
+    const gid = `grp-curso-${course.id}`;
+    if (existing.has(gid)) return;
+    // No crear grp-3a si ya existe (mockGroups ya lo tiene)
+    if (mockGroups.some((g) => g.type === 'curso' && g.name.includes(course.grade))) return;
+    auto.push({
+      id: gid,
+      name: `${course.grade} - 2026`,
+      description: `Grupo oficial del curso ${course.grade}.`,
+      type: 'curso',
+      isAutomatic: true,
+      createdBy: 'admin',
+      createdByName: 'Dirección',
+      createdAt: '2026-03-01',
+      coverColor: COURSE_COLORS[idx % COURSE_COLORS.length],
+      members: [
+        ...course.students.map((s) => ({
+          userId: s.id,
+          userName: s.name,
+          role: 'miembro' as const,
+          joinedAt: '2026-03-01',
+        })),
+      ],
+    });
+  });
+  return auto;
+}
 
 const buildInitialPosts = (): Record<string, WallPost[]> => {
   const map: Record<string, WallPost[]> = {};
@@ -47,7 +81,7 @@ interface GroupsState {
 }
 
 export const useGroupsStore = create<GroupsState>((set, get) => ({
-  groups: mockGroups,
+  groups: [...mockGroups, ...buildCourseGroups()],
   groupPosts: buildInitialPosts(),
 
   getUserGroups: (userId) =>

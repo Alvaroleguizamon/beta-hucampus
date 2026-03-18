@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { StyleSheet, View, FlatList, Pressable, ScrollView, Modal, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
+import { StyleSheet, View, FlatList, Pressable, ScrollView, Modal, Image, ActivityIndicator, Alert } from 'react-native';
 import { Text, TextInput, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -7,6 +7,20 @@ import { useGroupsStore } from '../../../lib/stores/groups-store';
 import { useAuthStore } from '../../../lib/stores/auth-store';
 import { WallPostCard } from '../../../components/social/WallPostCard';
 import { Colors } from '../../../constants/colors';
+import { mockCourses } from '../../../lib/mock-data';
+
+// Pool de todos los usuarios conocidos para buscar al invitar
+const ALL_USERS = [
+  ...mockCourses.flatMap((c) =>
+    c.students.map((s) => ({ id: s.id, name: s.name, role: 'alumno' as const, grade: c.grade })),
+  ),
+  { id: 'doc1', name: 'Prof. García', role: 'docente' as const, grade: '' },
+  { id: 'doc2', name: 'Prof. Martínez', role: 'docente' as const, grade: '' },
+  { id: 'doc3', name: 'Prof. López', role: 'docente' as const, grade: '' },
+  { id: 'doc4', name: 'Prof. Fernández', role: 'docente' as const, grade: '' },
+  { id: 'doc5', name: 'Prof. Rodríguez', role: 'docente' as const, grade: '' },
+  { id: 'u1', name: 'Lucía Martínez', role: 'alumno' as const, grade: '3ro A' },
+];
 
 const TYPE_LABEL: Record<string, string> = {
   curso: 'Curso',
@@ -25,6 +39,8 @@ export default function GroupDetailScreen() {
     setGroupPostReaction,
     markGroupPostViewed,
     addGroupPostComment,
+    inviteMember,
+    removeMember,
   } = useGroupsStore();
   const user = useAuthStore((s) => s.user);
   const userId = user?.id ?? 'u1';
@@ -35,13 +51,53 @@ export default function GroupDetailScreen() {
   const isMember = group?.members.some((m) => m.userId === userId) ?? false;
   const isAdmin = isGroupAdmin(id ?? '', userId);
   const canPost = isMember;
+  const canInvite = isAdmin || role === 'docente';
 
   const [showComposer, setShowComposer] = useState(false);
   const [postText, setPostText] = useState('');
   const [postImage, setPostImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
+  const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [inviteSearch, setInviteSearch] = useState('');
   const [selection, setSelection] = useState({ start: 0, end: 0 });
+
+  const memberIds = useMemo(() => new Set(group?.members.map((m) => m.userId) ?? []), [group?.members]);
+
+  const inviteResults = useMemo(() => {
+    if (!inviteSearch.trim()) return [];
+    const q = inviteSearch.toLowerCase();
+    return ALL_USERS.filter(
+      (u) => !memberIds.has(u.id) && u.name.toLowerCase().includes(q),
+    ).slice(0, 8);
+  }, [inviteSearch, memberIds]);
+
+  const handleInvite = (targetUser: typeof ALL_USERS[0]) => {
+    inviteMember(id ?? '', {
+      userId: targetUser.id,
+      userName: targetUser.name,
+      role: 'miembro',
+      joinedAt: new Date().toISOString().split('T')[0],
+    });
+    setInviteSearch('');
+    Alert.alert(
+      'Invitación enviada',
+      `${targetUser.name} fue agregado al grupo y recibirá una notificación.`,
+      [{ text: 'OK' }],
+    );
+  };
+
+  const handleRemoveMember = (targetUserId: string, targetName: string) => {
+    if (targetUserId === userId) return; // no te podés quitar a vos mismo como admin
+    Alert.alert(
+      'Quitar miembro',
+      `¿Querés quitar a ${targetName} del grupo?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Quitar', style: 'destructive', onPress: () => removeMember(id ?? '', targetUserId) },
+      ],
+    );
+  };
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
   const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
@@ -208,9 +264,10 @@ export default function GroupDetailScreen() {
           <View style={styles.membersSheet}>
             <View style={styles.membersHeader}>
               <Text style={styles.membersTitle}>Miembros ({group.members.length})</Text>
-              <IconButton icon="close" size={20} iconColor={Colors.textSecondary} onPress={() => setShowMembers(false)} />
+              <IconButton icon="close" size={20} iconColor={Colors.textSecondary} onPress={() => { setShowMembers(false); setShowInvitePanel(false); setInviteSearch(''); }} />
             </View>
-            <ScrollView contentContainerStyle={styles.membersList}>
+
+            <ScrollView contentContainerStyle={styles.membersList} keyboardShouldPersistTaps="handled">
               {group.members.map((member) => (
                 <View key={member.userId} style={styles.memberRow}>
                   <View style={[styles.memberAvatar, { backgroundColor: group.coverColor + '20' }]}>
@@ -225,8 +282,69 @@ export default function GroupDetailScreen() {
                       <Text style={styles.adminBadgeText}>Admin</Text>
                     </View>
                   )}
+                  {canInvite && member.userId !== userId && member.role !== 'admin' && (
+                    <Pressable
+                      style={styles.removeMemberBtn}
+                      onPress={() => handleRemoveMember(member.userId, member.userName)}
+                    >
+                      <MaterialCommunityIcons name="account-minus-outline" size={18} color={Colors.error} />
+                    </Pressable>
+                  )}
                 </View>
               ))}
+
+              {/* Invite section */}
+              {canInvite && (
+                <View style={styles.inviteSection}>
+                  {!showInvitePanel ? (
+                    <Pressable style={styles.inviteToggleBtn} onPress={() => setShowInvitePanel(true)}>
+                      <MaterialCommunityIcons name="account-plus-outline" size={18} color={Colors.primary} />
+                      <Text style={styles.inviteToggleBtnText}>Invitar miembros</Text>
+                    </Pressable>
+                  ) : (
+                    <View>
+                      <Text style={styles.inviteLabel}>Buscar y agregar</Text>
+                      <TextInput
+                        placeholder="Nombre del alumno o docente..."
+                        value={inviteSearch}
+                        onChangeText={setInviteSearch}
+                        mode="outlined"
+                        dense
+                        outlineColor={Colors.border}
+                        activeOutlineColor={Colors.primary}
+                        style={styles.inviteInput}
+                        autoFocus
+                        left={<TextInput.Icon icon="magnify" />}
+                      />
+                      {inviteResults.length > 0 && (
+                        <View style={styles.inviteResults}>
+                          {inviteResults.map((u) => (
+                            <Pressable key={u.id} style={styles.inviteResultRow} onPress={() => handleInvite(u)}>
+                              <View style={styles.inviteResultAvatar}>
+                                <Text style={styles.inviteResultAvatarText}>{u.name[0]}</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.inviteResultName}>{u.name}</Text>
+                                <Text style={styles.inviteResultMeta}>{u.role === 'docente' ? 'Docente' : u.grade}</Text>
+                              </View>
+                              <View style={styles.inviteBtn}>
+                                <MaterialCommunityIcons name="account-plus" size={14} color="#FFFFFF" />
+                                <Text style={styles.inviteBtnText}>Invitar</Text>
+                              </View>
+                            </Pressable>
+                          ))}
+                        </View>
+                      )}
+                      {inviteSearch.trim().length > 0 && inviteResults.length === 0 && (
+                        <Text style={styles.inviteNoResults}>No se encontraron usuarios disponibles</Text>
+                      )}
+                      <Pressable onPress={() => { setShowInvitePanel(false); setInviteSearch(''); }}>
+                        <Text style={styles.inviteCancelText}>Cancelar</Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -472,5 +590,105 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: Colors.primary,
+  },
+  removeMemberBtn: {
+    padding: 6,
+    borderRadius: 8,
+  },
+
+  // Invite section
+  inviteSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  inviteToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: Colors.primary + '10',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.primary + '30',
+  },
+  inviteToggleBtnText: {
+    color: Colors.primary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  inviteLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 8,
+  },
+  inviteInput: {
+    backgroundColor: '#FFFFFF',
+    marginBottom: 8,
+  },
+  inviteResults: {
+    gap: 4,
+    marginBottom: 8,
+  },
+  inviteResultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+  },
+  inviteResultAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inviteResultAvatarText: {
+    fontWeight: '700',
+    fontSize: 14,
+    color: Colors.primary,
+  },
+  inviteResultName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  inviteResultMeta: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 1,
+  },
+  inviteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  inviteBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  inviteNoResults: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  inviteCancelText: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 8,
   },
 });
