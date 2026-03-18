@@ -5,7 +5,7 @@ export const BREAKPOINTS = {
   desktop: 1100,
 };
 
-export const SIDEBAR_WIDTH = 220;
+export const SIDEBAR_WIDTH = 264;
 
 export function useBreakpoint() {
   const { width } = useWindowDimensions();

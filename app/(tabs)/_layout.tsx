@@ -40,7 +40,7 @@ const tabsByRole: Record<Role, TabConfig[]> = {
   ],
 };
 
-const allTabs = ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community'];
+const allTabs = ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos'];
 
 export default function TabsLayout() {
   const role = useAuthStore((s) => s.user?.role ?? 'alumno');
