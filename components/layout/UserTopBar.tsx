@@ -137,7 +137,7 @@ export default function UserTopBar() {
         {/* ── Left: logo / course selector (hidden when search open) ── */}
         {!showSearch && (
           <View style={styles.left}>
-            {!isDesktop ? (
+            {!isDesktop && role !== 'docente' ? (
               <Pressable style={styles.mobileLogoRow} onPress={() => router.replace('/(tabs)/wall' as any)}>
                 <View style={styles.mobileLogoIcon}>
                   <MaterialCommunityIcons name="school" size={18} color="#FFFFFF" />
@@ -145,19 +145,23 @@ export default function UserTopBar() {
                 <Text style={styles.mobileLogoText}>Humand School</Text>
               </Pressable>
             ) : role === 'docente' ? (
-              <View style={styles.courseSelectorRow}>
-                <Text style={styles.courseSelectorLabel}>Curso activo</Text>
-                <Pressable style={styles.courseSelector} onPress={() => { setCourseDropdownOpen(!courseDropdownOpen); setUserDropdownOpen(false); }}>
-                  <View style={styles.courseIcon}>
-                    <MaterialCommunityIcons name="google-classroom" size={15} color={Colors.primary} />
-                  </View>
-                  <Text style={styles.courseName}>{selectedCourse?.name ?? '—'}</Text>
-                  <MaterialCommunityIcons
-                    name={courseDropdownOpen ? 'chevron-up' : 'chevron-down'}
-                    size={15}
-                    color={Colors.primary}
-                  />
+              <View style={styles.docenteLeftRow}>
+              {!isDesktop && (
+                <Pressable style={styles.mobileLogoIcon} onPress={() => router.replace('/(tabs)/wall' as any)}>
+                  <MaterialCommunityIcons name="school" size={18} color="#FFFFFF" />
                 </Pressable>
+              )}
+              <Pressable style={styles.courseSelector} onPress={() => { setCourseDropdownOpen(!courseDropdownOpen); setUserDropdownOpen(false); }}>
+                <View style={styles.courseIcon}>
+                  <MaterialCommunityIcons name="google-classroom" size={15} color={Colors.primary} />
+                </View>
+                <Text style={styles.courseName}>{selectedCourse?.name ?? '—'}</Text>
+                <MaterialCommunityIcons
+                  name={courseDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                  size={15}
+                  color={Colors.primary}
+                />
+              </Pressable>
               </View>
             ) : null}
           </View>
@@ -416,6 +420,11 @@ const styles = StyleSheet.create({
   },
   left: {
     flex: 1,
+  },
+  docenteLeftRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   mobileLogoRow: {
     flexDirection: 'row',
