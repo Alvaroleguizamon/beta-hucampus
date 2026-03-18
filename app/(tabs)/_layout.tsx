@@ -52,7 +52,7 @@ export default function TabsLayout() {
     <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column' }}>
       {isDesktop && <DesktopSidebar />}
       <View style={{ flex: 1 }}>
-        {!isDesktop && <UserTopBar />}
+        <UserTopBar />
         <Tabs
           screenOptions={{
             tabBarActiveTintColor: Colors.primary,

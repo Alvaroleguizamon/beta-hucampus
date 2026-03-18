@@ -56,7 +56,7 @@ export const mockGrades: Grade[] = [
 export const mockCourses: Course[] = [
   {
     id: 'c1',
-    name: 'Matemática',
+    name: '3ro A',
     grade: '3ro A',
     subjectId: 's1',
     students: [
@@ -69,13 +69,46 @@ export const mockCourses: Course[] = [
   },
   {
     id: 'c2',
-    name: 'Matemática',
+    name: '4to B',
     grade: '4to B',
     subjectId: 's1',
     students: [
       { id: 'st6', name: 'Valentina Díaz' },
       { id: 'st7', name: 'Tomás Fernández' },
       { id: 'st8', name: 'Camila Ruiz' },
+    ],
+  },
+  {
+    id: 'c3',
+    name: '1ro A',
+    grade: '1ro A',
+    subjectId: 's2',
+    students: [
+      { id: 'st9', name: 'Agustina Torres' },
+      { id: 'st10', name: 'Nicolás Herrera' },
+      { id: 'st11', name: 'Florencia Castro' },
+    ],
+  },
+  {
+    id: 'c4',
+    name: '2do B',
+    grade: '2do B',
+    subjectId: 's3',
+    students: [
+      { id: 'st12', name: 'Ignacio Romero' },
+      { id: 'st13', name: 'Julieta Sánchez' },
+      { id: 'st14', name: 'Facundo Morales' },
+    ],
+  },
+  {
+    id: 'c5',
+    name: '5to C',
+    grade: '5to C',
+    subjectId: 's4',
+    students: [
+      { id: 'st15', name: 'Milagros Vega' },
+      { id: 'st16', name: 'Ezequiel Blanco' },
+      { id: 'st17', name: 'Rocío Mendoza' },
     ],
   },
 ];
