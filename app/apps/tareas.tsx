@@ -244,11 +244,19 @@ export default function TareasScreen() {
       .slice(0, 5);
   }, [tasks]);
 
+  // ─── Docente derived values (before early return for hooks consistency) ───
+  const selectedCourse = mockCourses.find((c) => c.id === selectedCourseId);
+  const courseStudents = selectedCourse?.students ?? [];
+
+  const filteredStudents = useMemo(() => {
+    if (!studentSearch.trim()) return courseStudents;
+    const q = studentSearch.toLowerCase();
+    return courseStudents.filter((s) => s.name.toLowerCase().includes(q));
+  }, [studentSearch, courseStudents]);
+
   // ─── Docente view ───
   if (role === 'docente') {
     const courseTasks = docenteTasks.filter((t) => t.courseId === selectedCourseId);
-    const selectedCourse = mockCourses.find((c) => c.id === selectedCourseId);
-    const courseStudents = selectedCourse?.students ?? [];
 
     const filteredCourseTasks = studentFilters.length > 0
       ? courseTasks.map((t) => ({
@@ -396,12 +404,6 @@ export default function TareasScreen() {
         })}
       </ScrollView>
     );
-
-    const filteredStudents = useMemo(() => {
-      if (!studentSearch.trim()) return courseStudents;
-      const q = studentSearch.toLowerCase();
-      return courseStudents.filter((s) => s.name.toLowerCase().includes(q));
-    }, [studentSearch, courseStudents]);
 
     const toggleStudent = (id: string) => {
       setStudentFilters((prev) =>
