@@ -16,7 +16,7 @@ La app está en modo MVP/demo: usa datos mock y no tiene backend real. El login 
 | Lenguaje | TypeScript 5.9 (strict mode) |
 | Routing | Expo Router 55 (file-based) |
 | UI | React Native Paper 5 (Material Design 3) |
-| Íconos | MaterialCommunityIcons (react-native-vector-icons) |
+| Íconos | MaterialCommunityIcons (@expo/vector-icons) |
 | Estado global | Zustand 5 |
 | Animaciones | React Native Reanimated 4 |
 | Gestos | React Native Gesture Handler 2 |
@@ -29,70 +29,85 @@ La app está en modo MVP/demo: usa datos mock y no tiene backend real. El login 
 
 ```
 humand-school/
-├── app/                        # Pantallas (Expo Router)
+├── app/
 │   ├── _layout.tsx             # Layout raíz + tema
 │   ├── index.tsx               # Redirección según auth
-│   ├── (auth)/                 # Flujo de autenticación
+│   ├── (auth)/
 │   │   ├── login.tsx
 │   │   └── select-role.tsx
-│   ├── (tabs)/                 # Navegación por tabs (varía según rol)
-│   │   ├── _layout.tsx         # Configuración de tabs por rol
-│   │   ├── wall.tsx            # Feed social
+│   ├── (tabs)/
+│   │   ├── _layout.tsx         # Tabs por rol + badges reactivos
+│   │   ├── wall.tsx            # Feed social (muro + grupos + noticias)
 │   │   ├── home.tsx            # Perfil
 │   │   ├── calendar.tsx        # Calendario + eventos
-│   │   ├── grades.tsx          # Menú de apps
-│   │   ├── communications.tsx  # Mensajes
+│   │   ├── grades.tsx          # Menú de apps con badges de tareas pendientes
+│   │   ├── communications.tsx  # Chat entre alumnos (solo alumno)
 │   │   ├── courses.tsx         # Cursos (docente)
 │   │   ├── attendance.tsx      # Asistencia
-│   │   ├── community.tsx       # Contactos/chat padres
-│   │   └── post-detail/[id].tsx
-│   └── apps/                   # Pantallas detalladas
-│       ├── notas.tsx
-│       ├── presentismo.tsx
-│       ├── viajes.tsx
-│       ├── tareas.tsx
-│       ├── autorizaciones.tsx
-│       ├── eventos.tsx
-│       ├── horarios.tsx
-│       ├── materias.tsx
-│       ├── material.tsx
-│       ├── agenda-personal.tsx
-│       └── noticias.tsx
-├── components/                 # Componentes reutilizables
-│   ├── ui/Card.tsx
+│   │   ├── community.tsx       # Contactos/chat padres (solo padre)
+│   │   └── grupos/
+│   │       ├── index.tsx       # Lista de grupos del usuario
+│   │       ├── [id].tsx        # Detalle de grupo (muro, miembros, invitar)
+│   │       └── nuevo.tsx       # Crear grupo
+│   └── apps/
+│       ├── tareas.tsx          # Tareas (alumno ve/entrega; docente crea/publica)
+│       ├── notas.tsx           # Notas por rol (alumno/padre/docente con selector)
+│       ├── alumnos.tsx         # Lista de alumnos del curso activo (docente)
+│       ├── presentismo.tsx     # Asistencia
+│       ├── viajes.tsx          # Viajes y salidas (reactivo a trips-store)
+│       ├── autorizaciones.tsx  # Autorizaciones de viajes (reactivo a trips-store)
+│       ├── eventos.tsx         # Eventos
+│       ├── horarios.tsx        # Horario semanal por día (docente)
+│       ├── materias.tsx        # Materias y horarios (alumno)
+│       ├── material.tsx        # Material de estudio
+│       └── noticias.tsx        # Comunicados / cuaderno digital
+├── components/
+│   ├── layout/
+│   │   ├── DesktopSidebar.tsx  # Sidebar desktop con nav + apps por rol
+│   │   └── UserTopBar.tsx      # Top bar con selector de curso (docente), notifs, cumpleaños
 │   ├── social/WallPostCard.tsx
-│   ├── feed/FeedCard.tsx
-│   ├── attendance/AttendanceRow.tsx
-│   ├── calendar/EventCard.tsx
-│   ├── grades/GradeCard.tsx
-│   ├── communications/MessageCard.tsx
-│   └── community/{ChatBubble,ContactCard}.tsx
+│   ├── community/
+│   │   ├── ChatBubble.tsx      # Burbuja de chat (recibe currentUserId)
+│   │   └── ContactCard.tsx
+│   └── ...
 ├── lib/
-│   ├── types.ts                # Interfaces TypeScript globales
+│   ├── types.ts                # Interfaces TypeScript + AppNotification
 │   ├── mock-data.ts            # Datos de desarrollo
-│   └── stores/                 # Zustand stores
-│       ├── auth-store.ts
-│       ├── social-store.ts
-│       ├── grades-store.ts
-│       ├── calendar-store.ts
-│       └── community-store.ts
+│   └── stores/
+│       ├── auth-store.ts       # Usuario, rol, login/logout
+│       ├── course-store.ts     # Curso activo del docente (selectedCourseId)
+│       ├── social-store.ts     # Posts del muro, likes, comentarios
+│       ├── groups-store.ts     # Grupos, posts de grupos, miembros
+│       ├── tasks-store.ts      # Tareas docente (publishedTasks + drafts)
+│       ├── grades-store.ts     # Notas por alumno y materia
+│       ├── trips-store.ts      # Viajes y autorizaciones (compartido entre pantallas)
+│       ├── community-store.ts  # Conversaciones y mensajes de padres
+│       ├── notifications-store.ts # Notificaciones in-app con unreadCount por rol
+│       ├── calendar-store.ts   # Eventos del calendario
+│       └── noticias-store.ts   # Comunicados institucionales
 ├── constants/
-│   ├── colors.ts               # Paleta de colores
-│   └── layout.ts               # Medidas y espaciados
-└── assets/                     # Imágenes, íconos, splash
+│   ├── colors.ts
+│   └── layout.ts
+└── assets/
 ```
 
 ---
 
-## Roles de Usuario
+## Roles de Usuario y Tabs
 
-La app tiene 3 roles con navegación y funcionalidades distintas:
+| Rol | Tabs (móvil) | Sidebar desktop |
+|-----|-------------|-----------------|
+| **Alumno** | Inicio, Agenda, Apps, Grupos, Perfil | Inicio, Agenda, Apps, Grupos, Perfil |
+| **Docente** | Inicio, Cursos, Apps, Agenda, Perfil | Inicio, Cursos, Apps, Agenda, Perfil |
+| **Padre** | Inicio, Agenda, Apps, Comunidad, Perfil | Inicio, Agenda, Apps, Comunidad, Perfil |
 
-| Rol | Tabs disponibles |
-|-----|-----------------|
-| **Alumno** | Wall, Calendario, Apps (notas/asistencia/materias/tareas/viajes/etc.), Comunicaciones, Perfil |
-| **Docente** | Wall, Cursos, Calendario, Apps (notas/asistencia/materias/horarios/etc.), Perfil |
-| **Padre** | Wall, Calendario, Apps (notas/asistencia/viajes/autorizaciones), Comunidad, Perfil |
+### Apps por rol
+
+**Alumno:** Tareas, Material de estudio, Notas, Materias y Horarios, Presentismo, Eventos, Viajes y Salidas, Autorizaciones
+
+**Docente:** Tareas, Horarios, Cargar notas, Presentismo, Material, Comunicados, Eventos, Viajes y Salidas, Alumnos
+
+**Padre:** Tareas, Notas, Presentismo, Cuaderno digital, Eventos, Viajes y Salidas, Autorizaciones
 
 ---
 
@@ -100,41 +115,76 @@ La app tiene 3 roles con navegación y funcionalidades distintas:
 
 | Store | Responsabilidad |
 |-------|----------------|
-| `auth-store` | Usuario logueado, rol seleccionado, logout |
-| `social-store` | Posts del wall, compañeros, likes, comentarios |
-| `grades-store` | Notas por materia y alumno |
+| `auth-store` | Usuario logueado (`u1`), rol, nombre, login/logout |
+| `course-store` | Curso activo del docente (`selectedCourseId`) — leído por topbar y pantallas |
+| `social-store` | Posts del muro, reacciones, comentarios, vistas |
+| `groups-store` | Grupos, posts de grupos, invitar/remover miembros. Genera grupos automáticos por curso |
+| `tasks-store` | `publishedTasks[]` (tareas de docentes) + `drafts[]`. `publishTask` emite notificación |
+| `grades-store` | Notas. `addGrade` emite notificación al alumno target |
+| `trips-store` | Viajes, attendees, autorizaciones. Fuente de verdad compartida entre viajes.tsx y autorizaciones.tsx |
+| `community-store` | Conversaciones y mensajes de padres. `sendMessage(convId, text, senderId, senderName)` |
+| `notifications-store` | `AppNotification[]` con `targetUserId?` y `targetRole?`. `getUnreadCount(userId, role)` |
 | `calendar-store` | Eventos del calendario académico |
-| `community-store` | Chats y contactos de padres |
+| `noticias-store` | Comunicados institucionales |
 
-Patrón usado:
+### Patrón cross-store (emisión de notificaciones)
+Los stores llaman a `useNotificationsStore.getState().addNotification(...)` directamente (import de módulo), sin hooks:
 ```typescript
-const useStore = create((set, get) => ({
-  state: initialValue,
-  action: (param) => set({ state: newValue })
-}))
+// Ejemplo en tasks-store.ts
+import { useNotificationsStore } from './notifications-store';
+publishTask: (task) => {
+  set(...);
+  useNotificationsStore.getState().addNotification({ type: 'tarea', targetRole: 'alumno', ... });
+}
 ```
+
+---
+
+## Usuarios Mock
+
+| ID | Nombre | Rol por defecto |
+|----|--------|----------------|
+| `u1` | Lucía Martínez | alumno (curso c1 — 3ro A) |
+| — | Prof. Carlos Romero | docente (al seleccionar rol) |
+| — | Martín González | padre (al seleccionar rol) |
+
+**Curso c1 (3ro A):** st1 Juan Pérez, st2 María González, st3 Lucas Rodríguez, st4 Sofía Martínez, st5 Mateo López, **u1** Lucía Martínez
+
+El usuario `u1` tiene grades seeded con `studentId: 'u1'` en `mockGrades` (g8–g12).
+
+El padre (`u1` con rol padre) ve las notas de `st1` (Juan Pérez) — mapeo hardcodeado en `notas.tsx`.
+
+---
+
+## Badges y Notificaciones
+
+- **Tab Apps** → `notifications-store.getUnreadCount(userId, role)` (notas, tareas, grupos, autorizaciones)
+- **Tab Chats/Comunidad** → suma de `unreadCount` de todas las conversaciones en `community-store`
+- **Ícono Tareas en Apps** → count de tareas pendientes del alumno en `tasks-store`
+- `markAsRead(convId)` en `community-store` limpia el badge al abrir un chat
 
 ---
 
 ## Modelos de Datos Clave (`lib/types.ts`)
 
 ```typescript
-// Roles
 type Role = 'alumno' | 'docente' | 'padre'
 
-// Usuario
-interface User { id, name, email, role, avatar }
+interface User { id, name, email, role, avatar? }
 
-// Académico
-interface Grade { subject, student, value (0-10), date, period }
-interface AttendanceRecord { student, date, status: 'presente'|'ausente'|'tardanza', course }
-interface CalendarEvent { title, date, type: 'examen'|'reunion'|'acto'|'feriado' }
+interface Group {
+  id, name, type: 'curso'|'materia'|'extracurricular'|'privado'
+  members: GroupMember[], coverColor, isAutomatic?
+}
 
-// Social
-interface WallPost { author, text, image?, date, likes[], comments[] }
+interface AppNotification {
+  id, type: 'tarea'|'comunicado'|'grupo'|'autorizacion'|'mensaje'
+  title, body, date, read: boolean
+  targetUserId?, targetRole?, deepLink?
+}
 
-// Viajes
-interface Trip { title, type, date, location, status, attendees[] }
+interface ChatMessage { id, senderId, senderName, text, date, time }
+interface ChatConversation { id, participantId, participantName, lastMessage, unreadCount }
 ```
 
 ---
@@ -142,76 +192,60 @@ interface Trip { title, type, date, location, status, attendees[] }
 ## Diseño y Estilos
 
 **Colores principales** (`constants/colors.ts`):
-- Primary: `#5B77D3` (azul)
-- Accent: `#0693E3` (celeste)
-- Background: `#F7F7F7`
-- Surface: `#FFFFFF`
-- Text Primary: `#1A1A1A`
-- Text Secondary: `#717171`
-- Success: `#4CAF50` / Error: `#F44336` / Warning: `#FF9800`
-
-**Layout** (`constants/layout.ts`):
-- Padding default: 16px | small: 8px | large: 24px
-- Border radius: 12px | large: 16px
+- Primary: `#5B77D3` | Accent: `#0693E3` | Background: `#F7F7F7`
+- Success: `#4CAF50` | Error: `#F44336` | Warning: `#FF9800`
+- Border: `#E0E0E0` | TextPrimary: `#1A1A1A` | TextSecondary: `#717171`
 
 **Patrones UI:**
 - `StyleSheet.create()` co-ubicado en cada archivo
-- `FlatList` para listas con headers
-- `Pressable` para elementos interactivos
-- Modales para contenido secundario (cumpleaños, notificaciones)
-- Tabs para cambio de contenido dentro de pantallas
+- `FlatList` con `ListHeaderComponent` para listas con secciones
+- `Pressable` para elementos interactivos (no `TouchableOpacity`)
+- Selectors de Zustand: **nunca usar `.filter()` directamente en el selector** — causa re-renders infinitos. Seleccionar el array completo y filtrar en `useMemo`.
+
+```typescript
+// ✅ Correcto
+const all = useStore((s) => s.items);
+const filtered = useMemo(() => all.filter(...), [all]);
+
+// ❌ Incorrecto — infinite loop
+const filtered = useStore((s) => s.items.filter(...));
+```
+
+---
+
+## Desktop vs Mobile
+
+- `useBreakpoint()` devuelve `{ isDesktop }` — threshold en `constants/layout.ts`
+- Desktop: muestra `DesktopSidebar` + oculta tab bar (`display: 'none'`)
+- `DesktopSidebar` tiene la misma lógica de tabs y apps por rol que `_layout.tsx` — **mantener sincronizados al agregar/quitar items**
 
 ---
 
 ## Cómo Correr el Proyecto
 
 ```bash
-# Instalar dependencias
 npm install
-
-# Iniciar servidor de desarrollo
-npm start
-
-# Plataformas específicas
-npm run ios       # Simulador iOS
-npm run android   # Emulador Android
-npm run web       # Navegador web
+npx expo start --clear   # --clear limpia caché de Metro
 ```
 
-> No requiere configuración de backend. Todo usa datos mock de `lib/mock-data.ts`.
+---
+
+## Convenciones
+
+- Componentes: PascalCase | Variables/funciones: camelCase
+- Rutas dinámicas: `[id].tsx` | Grupos de rutas: `(tabs)`, `(auth)`
+- Idioma UI: español argentino
+- TypeScript strict — evitar `as any` salvo en nombres de íconos
+- No hay persistencia entre sesiones (Zustand sin AsyncStorage)
+- Los datos están en `lib/mock-data.ts`
 
 ---
 
-## Convenciones del Código
+## Lo Que No Está Implementado
 
-- **Componentes:** PascalCase (`WallPostCard.tsx`)
-- **Variables/funciones:** camelCase
-- **Archivos de layout/config:** snake_case con underscore (`_layout.tsx`)
-- **Rutas dinámicas:** `[paramName].tsx` (ej: `[id].tsx`)
-- **Grupos de rutas:** entre paréntesis `(auth)`, `(tabs)`
-- **Idioma del código:** español para nombres de dominio (notas, presentismo, viajes)
-- **Tipado:** TypeScript strict — sin `any` implícito
-
----
-
-## Lo Que Aún No Está Implementado (MVP)
-
-- Backend/API real (actualmente todo es mock)
+- Backend/API real
 - Autenticación real
-- Notificaciones push en tiempo real
-- Subida de archivos/imágenes
-- Soporte para video/multimedia
+- Notificaciones push
+- Subida de archivos/imágenes reales
 - Modo oscuro
 - Sincronización offline
-- Funcionalidad de grupos completa
-
----
-
-## Notas Importantes para Desarrollo
-
-1. **El login acepta cualquier credencial** — es modo demo.
-2. **No hay persistencia** entre sesiones (Zustand sin persistencia configurada).
-3. **Los datos están en** `lib/mock-data.ts` — modificar ahí para cambiar el contenido visible.
-4. **El idioma de la UI es español argentino** — mantener consistencia al agregar textos.
-5. **Expo Router** maneja toda la navegación — no usar React Navigation directamente.
-6. **React Native Paper** es la librería de componentes base — usarla antes de crear componentes custom.
