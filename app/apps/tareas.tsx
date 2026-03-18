@@ -734,14 +734,14 @@ export default function TareasScreen() {
     // ─── Docente add draft modal ───
     const renderDocenteAddModal = () => (
       <Modal visible={showDocenteAddModal} transparent animationType="fade">
-        <View style={styles.addModalOverlay}>
-          <View style={[styles.addModalCard, isWide && { maxWidth: 900 }]}>
+        <Pressable style={styles.addModalOverlay} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
+          <Pressable style={[styles.addModalCard, isWide && { maxWidth: 900 }]} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
             <View style={styles.addHeader}>
               <Text style={styles.addTitle}>{editingDraftId ? 'Editar tarea' : 'Nueva tarea'}</Text>
               <IconButton icon="close" iconColor={Colors.textSecondary} size={20} onPress={() => { resetDraftForm(); setShowDocenteAddModal(false); }} />
             </View>
 
-            <ScrollView keyboardShouldPersistTaps="handled" style={styles.addModalScroll}>
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.addModalScroll} onScrollBeginDrag={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
               <TextInput
                 label="Título de la tarea"
                 value={draftTitle}
@@ -830,7 +830,7 @@ export default function TareasScreen() {
                     )}
                     <Pressable
                       style={[docenteStyles.studentDropdownBtn, showDraftStudentList && { borderColor: Colors.primary }]}
-                      onPress={() => setShowDraftStudentList(!showDraftStudentList)}
+                      onPress={(e) => { e.stopPropagation(); setShowDraftStudentList(!showDraftStudentList); }}
                     >
                       <MaterialCommunityIcons name="magnify" size={18} color={Colors.textSecondary} />
                       <Text style={{ flex: 1, fontSize: 14, color: selectedDraftStudents.length > 0 ? Colors.textPrimary : Colors.textSecondary }}>
@@ -841,7 +841,7 @@ export default function TareasScreen() {
                       <MaterialCommunityIcons name={showDraftStudentList ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
                     </Pressable>
                     {showDraftStudentList && (
-                      <View style={{ marginTop: 4 }}>
+                      <Pressable style={{ marginTop: 4 }} onPress={(e) => e.stopPropagation()}>
                         <TextInput
                           label="Buscar alumno..."
                           value={draftStudentSearch}
@@ -882,7 +882,7 @@ export default function TareasScreen() {
                             )}
                           </ScrollView>
                         </View>
-                      </View>
+                      </Pressable>
                     )}
                   </View>
                 );
@@ -897,28 +897,26 @@ export default function TareasScreen() {
                 <MaterialCommunityIcons name={showDraftCalendar ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
               </Pressable>
               {showDraftCalendar && (
-                <View style={{ maxWidth: 340, marginBottom: 12 }}>
-                  <Calendar
-                    onDayPress={(day: { dateString: string }) => {
-                      setDraftDueDate(day.dateString);
-                      setShowDraftCalendar(false);
-                    }}
-                    markedDates={draftDueDate ? { [draftDueDate]: { selected: true, selectedColor: Colors.primary } } : {}}
-                    minDate={new Date().toISOString().split('T')[0]}
-                    theme={{
-                      calendarBackground: '#FFFFFF',
-                      todayTextColor: Colors.primary,
-                      dayTextColor: Colors.textPrimary,
-                      textDisabledColor: '#D9D9D9',
-                      arrowColor: Colors.primary,
-                      monthTextColor: Colors.textPrimary,
-                      textMonthFontWeight: '600',
-                      textDayFontSize: 12,
-                      textMonthFontSize: 13,
-                    }}
-                    style={{ borderRadius: 10, borderWidth: 1, borderColor: Colors.border }}
-                  />
-                </View>
+                <Calendar
+                  onDayPress={(day: { dateString: string }) => {
+                    setDraftDueDate(day.dateString);
+                    setShowDraftCalendar(false);
+                  }}
+                  markedDates={draftDueDate ? { [draftDueDate]: { selected: true, selectedColor: Colors.primary } } : {}}
+                  minDate={new Date().toISOString().split('T')[0]}
+                  theme={{
+                    calendarBackground: '#FFFFFF',
+                    todayTextColor: Colors.primary,
+                    dayTextColor: Colors.textPrimary,
+                    textDisabledColor: '#D9D9D9',
+                    arrowColor: Colors.primary,
+                    monthTextColor: Colors.textPrimary,
+                    textMonthFontWeight: '600',
+                    textDayFontSize: 13,
+                    textMonthFontSize: 14,
+                  }}
+                  style={styles.calendarPicker}
+                />
               )}
 
               <Text style={styles.formLabel}>Prioridad</Text>
@@ -1063,8 +1061,8 @@ export default function TareasScreen() {
                 </Pressable>
               </View>
             </ScrollView>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     );
 
