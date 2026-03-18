@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, FlatList, Pressable, ScrollView, TextInput } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Text, Chip } from 'react-native-paper';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { mockAttendance, mockCourses } from '../../lib/mock-data';
 import { Colors } from '../../constants/colors';
@@ -17,6 +17,7 @@ LocaleConfig.locales['es'] = {
 LocaleConfig.defaultLocale = 'es';
 
 type AttendanceStatus = 'presente' | 'ausente' | 'tardanza';
+type StatusFilter = 'todos' | AttendanceStatus;
 
 const statusConfig: Record<AttendanceStatus, { color: string; label: string }> = {
   presente: { color: Colors.present, label: 'Presente' },
@@ -32,7 +33,18 @@ function formatDate(dateStr: string) {
   return `${parseInt(day)} ${months[parseInt(month) - 1]} ${year}`;
 }
 
-// ─── Historial desplegable de un alumno ──────────────────────────────────────
+function formatDateWithDay(dateStr: string) {
+  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return `${days[date.getDay()]} · ${formatDate(dateStr)}`;
+}
+
+function initials(name: string) {
+  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+}
+
+// ─── Historial desplegable ────────────────────────────────────────────────────
 
 function StudentHistory({ studentId, courseId }: { studentId: string; courseId: string }) {
   const history = mockAttendance
@@ -53,10 +65,8 @@ function StudentHistory({ studentId, courseId }: { studentId: string; courseId: 
         const cfg = statusConfig[record.status];
         return (
           <View key={record.id} style={styles.historyRow}>
-            <Text style={styles.historyDate}>{formatDate(record.date)}</Text>
-            <Text style={styles.historyTime}>
-              {record.checkInTime ? record.checkInTime : '—'}
-            </Text>
+            <Text style={styles.historyDate}>{formatDateWithDay(record.date)}</Text>
+            <Text style={styles.historyTime}>{record.checkInTime ?? '—'}</Text>
             <View style={[styles.historyBadge, { backgroundColor: cfg.color }]}>
               <Text style={styles.historyBadgeText}>{cfg.label}</Text>
             </View>
@@ -67,23 +77,18 @@ function StudentHistory({ studentId, courseId }: { studentId: string; courseId: 
   );
 }
 
-// ─── Fila de alumno (solo lectura) ───────────────────────────────────────────
+// ─── Card de alumno ───────────────────────────────────────────────────────────
 
-type StudentEntry = {
-  id: string;
-  name: string;
-  record: AttendanceRecord | undefined;
-};
+type StudentEntry = { id: string; name: string; record: AttendanceRecord | undefined };
 
-type StudentRowProps = {
+type StudentCardProps = {
   entry: StudentEntry;
-  index: number;
   override: AttendanceStatus | null;
   onOverride: (studentId: string, status: AttendanceStatus | null) => void;
   courseId: string;
 };
 
-function StudentRow({ entry, index, override, onOverride, courseId }: StudentRowProps) {
+function StudentCard({ entry, override, onOverride, courseId }: StudentCardProps) {
   const [expanded, setExpanded] = useState(false);
   const kioskStatus: AttendanceStatus = entry.record?.status ?? 'ausente';
   const status: AttendanceStatus = override ?? kioskStatus;
@@ -91,18 +96,26 @@ function StudentRow({ entry, index, override, onOverride, courseId }: StudentRow
   const isModified = override !== null && override !== kioskStatus;
 
   return (
-    <View style={index % 2 === 0 ? styles.rowWrapperAlt : styles.rowWrapper}>
-      <Pressable style={styles.studentRow} onPress={() => setExpanded((v) => !v)}>
-        <View style={[styles.statusBar, { backgroundColor: cfg.color }]} />
-        <View style={styles.nameCol}>
-          <Text style={styles.studentName} numberOfLines={1}>{entry.name}</Text>
-          {isModified && <Text style={styles.modifiedTag}>✏ Modificado</Text>}
+    <View style={styles.card}>
+      <Pressable style={styles.cardRow} onPress={() => setExpanded((v) => !v)}>
+        {/* Avatar */}
+        <View style={[styles.avatar, { backgroundColor: cfg.color + '22' }]}>
+          <Text style={[styles.avatarText, { color: cfg.color }]}>{initials(entry.name)}</Text>
         </View>
-        <Text style={styles.checkInTime}>{entry.record?.checkInTime ?? '—'}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: cfg.color + '22', borderColor: cfg.color }]}>
-          <Text style={[styles.statusBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
+
+        {/* Info */}
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardName}>{entry.name}</Text>
+          <View style={styles.cardMeta}>
+            <Text style={styles.cardTime}>
+              {entry.record?.checkInTime ? `${entry.record.checkInTime} hs` : 'Sin fichaje'}
+            </Text>
+            {isModified && <Text style={styles.modifiedTag}>✏ Modificado</Text>}
+          </View>
         </View>
-        <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
+
+        {/* Dot de estado */}
+        <View style={[styles.statusDot, { backgroundColor: cfg.color }]} />
       </Pressable>
 
       {expanded && (
@@ -111,28 +124,21 @@ function StudentRow({ entry, index, override, onOverride, courseId }: StudentRow
           <View style={styles.editSection}>
             <Text style={styles.editTitle}>Modificar marcaje</Text>
             <View style={styles.editButtons}>
-              {(['presente', 'tardanza', 'ausente'] as AttendanceStatus[]).map((s) => {
-                const active = status === s && (override === s || (override === null && kioskStatus === s));
-                const isOverriding = override === s;
-                return (
-                  <Pressable
-                    key={s}
-                    style={[
-                      styles.editBtn,
-                      { borderColor: statusConfig[s].color },
-                      isOverriding && { backgroundColor: statusConfig[s].color },
-                    ]}
-                    onPress={() => onOverride(entry.id, override === s ? null : s)}
-                  >
-                    <Text style={[
-                      styles.editBtnText,
-                      { color: isOverriding ? '#FFFFFF' : statusConfig[s].color },
-                    ]}>
-                      {statusConfig[s].label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+              {(['presente', 'tardanza', 'ausente'] as AttendanceStatus[]).map((s) => (
+                <Pressable
+                  key={s}
+                  style={[
+                    styles.editBtn,
+                    { borderColor: statusConfig[s].color },
+                    override === s && { backgroundColor: statusConfig[s].color },
+                  ]}
+                  onPress={() => onOverride(entry.id, override === s ? null : s)}
+                >
+                  <Text style={[styles.editBtnText, { color: override === s ? '#FFFFFF' : statusConfig[s].color }]}>
+                    {statusConfig[s].label}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
             {isModified && (
               <Pressable onPress={() => onOverride(entry.id, null)}>
@@ -141,7 +147,6 @@ function StudentRow({ entry, index, override, onOverride, courseId }: StudentRow
             )}
           </View>
 
-          {/* Historial */}
           <StudentHistory studentId={entry.id} courseId={courseId} />
         </>
       )}
@@ -157,6 +162,7 @@ function DocenteView() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, AttendanceStatus | null>>({});
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<StatusFilter>('todos');
 
   const course = mockCourses.find((c) => c.id === selectedCourseId)!;
 
@@ -183,28 +189,38 @@ function DocenteView() {
     ausente:  entries.filter((e) => effectiveStatus(e) === 'ausente').length,
   }), [entries, overrides]);
 
-  const filteredEntries = useMemo(() => {
-    if (!search.trim()) return entries;
-    const q = search.toLowerCase();
-    return entries.filter((e) => e.name.toLowerCase().includes(q));
-  }, [entries, search]);
+  const visibleEntries = useMemo(() => {
+    let list = entries;
+    if (filter !== 'todos') list = list.filter((e) => effectiveStatus(e) === filter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((e) => e.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [entries, filter, search, overrides]);
 
   const markedDates = useMemo(() => ({
     [selectedDate]: { selected: true, selectedColor: Colors.primary },
   }), [selectedDate]);
+
+  const filterLabels: Record<StatusFilter, string> = {
+    todos: 'Todos',
+    presente: 'Presentes',
+    tardanza: 'Tardanzas',
+    ausente: 'Ausentes',
+  };
 
   return (
     <View style={styles.container}>
 
       {/* Filtro de cursos */}
       <View style={styles.courseFilterContainer}>
-        <Text style={styles.filterLabel}>Curso</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {mockCourses.map((c) => (
             <Pressable
               key={c.id}
               style={[styles.courseChip, selectedCourseId === c.id && styles.courseChipActive]}
-              onPress={() => setSelectedCourseId(c.id)}
+              onPress={() => { setSelectedCourseId(c.id); setOverrides({}); }}
             >
               <Text style={[styles.courseChipText, selectedCourseId === c.id && styles.courseChipTextActive]}>
                 {c.grade} — {c.name}
@@ -225,15 +241,11 @@ function DocenteView() {
         <Text style={styles.dateChevron}>{calendarOpen ? '▲' : '▼'}</Text>
       </Pressable>
 
-      {/* Calendario desplegable */}
       {calendarOpen && (
         <Calendar
           current={selectedDate}
           markedDates={markedDates}
-          onDayPress={(day: { dateString: string }) => {
-            setSelectedDate(day.dateString);
-            setCalendarOpen(false);
-          }}
+          onDayPress={(day: { dateString: string }) => { setSelectedDate(day.dateString); setCalendarOpen(false); }}
           theme={{
             calendarBackground: '#FFFFFF',
             todayTextColor: Colors.primary,
@@ -247,16 +259,38 @@ function DocenteView() {
         />
       )}
 
-      {/* Resumen */}
-      <View style={styles.summaryBar}>
-        {(['presente', 'tardanza', 'ausente'] as AttendanceStatus[]).map((s) => (
-          <View key={s} style={styles.summaryItem}>
-            <View style={[styles.summaryDot, { backgroundColor: statusConfig[s].color }]} />
-            <Text style={styles.summaryCount}>{summary[s]}</Text>
-            <Text style={styles.summaryLabel}>{statusConfig[s].label}</Text>
-          </View>
+      {/* Stats bar */}
+      <View style={styles.statsBar}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statNumber, { color: Colors.present }]}>{summary.presente}</Text>
+          <Text style={styles.statLabel}>Presentes</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statNumber, { color: Colors.late }]}>{summary.tardanza}</Text>
+          <Text style={styles.statLabel}>Tardanzas</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statNumber, { color: Colors.absent }]}>{summary.ausente}</Text>
+          <Text style={styles.statLabel}>Ausentes</Text>
+        </View>
+      </View>
+
+      {/* Filtros de estado */}
+      <View style={styles.filters}>
+        {(['todos', 'presente', 'tardanza', 'ausente'] as StatusFilter[]).map((f) => (
+          <Chip
+            key={f}
+            selected={filter === f}
+            onPress={() => setFilter(f)}
+            style={[styles.chip, filter === f && styles.chipActive]}
+            textStyle={[styles.chipText, filter === f && styles.chipTextActive]}
+            showSelectedCheck={false}
+          >
+            {filterLabels[f]}
+          </Chip>
         ))}
-        <Text style={styles.kioskNote}>vía Humand Kiosk</Text>
       </View>
 
       {/* Buscador */}
@@ -272,21 +306,17 @@ function DocenteView() {
         />
       </View>
 
-      {/* Encabezado de columnas */}
-      <View style={styles.tableHeader}>
-        <Text style={[styles.colAlumno]}>Alumno</Text>
-        <Text style={styles.colHora}>Hora</Text>
-        <Text style={styles.colEstado}>Estado</Text>
-      </View>
-
-      {/* Lista */}
+      {/* Lista de cards */}
       <FlatList
-        data={filteredEntries}
+        data={visibleEntries}
         keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <StudentRow
+        contentContainerStyle={styles.list}
+        ListFooterComponent={
+          <Text style={styles.kioskNote}>Fichajes vía Humand Kiosk</Text>
+        }
+        renderItem={({ item }) => (
+          <StudentCard
             entry={item}
-            index={index}
             override={overrides[item.id] ?? null}
             onOverride={handleOverride}
             courseId={selectedCourseId}
@@ -322,21 +352,25 @@ function AlumnoView() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.statsRow}>
-        <View style={styles.mainStat}>
-          <Text style={styles.mainStatNumber}>{percentage}%</Text>
-          <Text style={styles.mainStatLabel}>Asistencia</Text>
+      <View style={styles.statsBar}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statNumber, { color: Colors.primary }]}>{percentage}%</Text>
+          <Text style={styles.statLabel}>Asistencia</Text>
         </View>
-        <View style={styles.miniStats}>
-          {(['presente', 'ausente', 'tardanza'] as AttendanceStatus[]).map((s) => (
-            <View key={s} style={styles.miniStat}>
-              <View style={[styles.miniDot, { backgroundColor: statusConfig[s].color }]} />
-              <Text style={styles.miniNumber}>
-                {s === 'presente' ? present : s === 'ausente' ? absent : late}
-              </Text>
-              <Text style={styles.miniLabel}>{statusConfig[s].label}</Text>
-            </View>
-          ))}
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statNumber, { color: Colors.present }]}>{present}</Text>
+          <Text style={styles.statLabel}>Presentes</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statNumber, { color: Colors.late }]}>{late}</Text>
+          <Text style={styles.statLabel}>Tardanzas</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statNumber, { color: Colors.absent }]}>{absent}</Text>
+          <Text style={styles.statLabel}>Ausentes</Text>
         </View>
       </View>
 
@@ -375,9 +409,7 @@ function AlumnoView() {
             <View style={styles.recentRow}>
               <View>
                 <Text style={styles.recentDate}>{formatDate(item.date)}</Text>
-                {item.checkInTime && (
-                  <Text style={styles.recentTime}>{item.checkInTime} hs</Text>
-                )}
+                {item.checkInTime && <Text style={styles.recentTime}>{item.checkInTime} hs</Text>}
               </View>
               <View style={[styles.recentBadge, { backgroundColor: cfg.color }]}>
                 <Text style={styles.recentBadgeText}>{cfg.label}</Text>
@@ -403,55 +435,57 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
 
   // Filtro de cursos
-  courseFilterContainer: { backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
-  filterLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 8, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  courseFilterContainer: { backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
   courseChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary, marginRight: 8 },
   courseChipActive: { backgroundColor: Colors.primary },
   courseChipText: { fontSize: 13, color: Colors.primary, fontWeight: '500' },
   courseChipTextActive: { color: '#FFFFFF' },
 
   // Selector de fecha
-  dateBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: Colors.border, marginTop: 1 },
+  dateBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border },
   dateBarLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dateBarIcon: { fontSize: 16 },
   dateText: { fontSize: 14, color: Colors.textPrimary, fontWeight: '500' },
   dateChevron: { fontSize: 11, color: Colors.textSecondary },
   inlineCalendar: { borderBottomWidth: 1, borderBottomColor: Colors.border },
 
-  // Resumen
-  summaryBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingVertical: 10, paddingHorizontal: 16, gap: 12, borderTopWidth: 1, borderTopColor: Colors.border, marginTop: 1 },
-  summaryItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  summaryDot: { width: 8, height: 8, borderRadius: 4 },
-  summaryCount: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
-  summaryLabel: { fontSize: 12, color: Colors.textSecondary },
-  kioskNote: { marginLeft: 'auto' as any, fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
+  // Stats bar (igual que tareas)
+  statsBar: { flexDirection: 'row', backgroundColor: '#FFFFFF', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  statItem: { flex: 1, alignItems: 'center' },
+  statNumber: { fontSize: 24, fontWeight: '700' },
+  statLabel: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  statDivider: { width: 1, backgroundColor: Colors.border },
+
+  // Filtros de estado (igual que tareas)
+  filters: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
+  chip: { backgroundColor: '#FFFFFF' },
+  chipActive: { backgroundColor: Colors.primary },
+  chipText: { color: Colors.textSecondary, fontSize: 13 },
+  chipTextActive: { color: '#FFFFFF' },
 
   // Buscador
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', marginHorizontal: 16, marginVertical: 10, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, gap: 8 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', marginHorizontal: 16, marginVertical: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, gap: 8 },
   searchIcon: { fontSize: 14 },
   searchInput: { flex: 1, fontSize: 14, color: Colors.textPrimary, padding: 0 },
 
-  // Encabezado de columnas
-  tableHeader: { flexDirection: 'row', alignItems: 'center', paddingLeft: 32, paddingRight: 32, paddingVertical: 8, backgroundColor: '#F0F0F0', borderBottomWidth: 1, borderBottomColor: Colors.border },
-  colAlumno: { flex: 1, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', color: Colors.textSecondary },
-  colHora: { width: 95, textAlign: 'center', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', color: Colors.textSecondary },
-  colEstado: { width: 125, textAlign: 'center', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', color: Colors.textSecondary },
+  // Lista
+  list: { paddingHorizontal: 16, paddingBottom: 32 },
+  kioskNote: { textAlign: 'center', fontSize: 12, color: Colors.textSecondary, marginTop: 12, marginBottom: 4 },
 
-  // Filas de alumno
-  rowWrapper: { backgroundColor: '#FFFFFF' },
-  rowWrapperAlt: { backgroundColor: '#FAFAFA' },
-  studentRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingRight: 14 },
-  statusBar: { width: 4, alignSelf: 'stretch', borderRadius: 2, marginRight: 12 },
-  nameCol: { flex: 1 },
-  studentName: { fontSize: 14, color: Colors.textPrimary, fontWeight: '500' },
-  modifiedTag: { fontSize: 11, color: Colors.warning, marginTop: 1 },
-  checkInTime: { width: 95, textAlign: 'center', fontSize: 14, color: Colors.textSecondary, fontVariant: ['tabular-nums'] as any },
-  statusBadge: { width: 125, paddingVertical: 3, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
-  statusBadgeText: { fontSize: 12, fontWeight: '600' },
-  chevron: { fontSize: 10, color: Colors.textSecondary, marginLeft: 8 },
+  // Card de alumno (igual que tareas)
+  card: { backgroundColor: '#FFFFFF', borderRadius: 12, marginBottom: 8, overflow: 'hidden' },
+  cardRow: { flexDirection: 'row', alignItems: 'center', paddingLeft: 12, paddingRight: 16, paddingVertical: 10 },
+  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  avatarText: { fontSize: 14, fontWeight: '700' },
+  cardInfo: { flex: 1 },
+  cardName: { fontSize: 15, fontWeight: '500', color: Colors.textPrimary },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 3 },
+  cardTime: { fontSize: 12, color: Colors.textSecondary },
+  modifiedTag: { fontSize: 11, color: Colors.warning, fontWeight: '500' },
+  statusDot: { width: 14, height: 14, borderRadius: 7 },
 
-  // Edición de marcaje
-  editSection: { marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#FFFBF0', borderRadius: 8, borderWidth: 1, borderColor: '#FFE0A0' },
+  // Edición
+  editSection: { marginHorizontal: 12, marginBottom: 10, padding: 12, backgroundColor: '#FFFBF0', borderRadius: 8, borderWidth: 1, borderColor: '#FFE0A0' },
   editTitle: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
   editButtons: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   editBtn: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1.5, alignItems: 'center' },
@@ -459,25 +493,16 @@ const styles = StyleSheet.create({
   revertText: { fontSize: 12, color: Colors.textSecondary, textDecorationLine: 'underline', textAlign: 'center' },
 
   // Historial
-  historyContainer: { marginHorizontal: 16, marginBottom: 10, backgroundColor: '#F0F4FF', borderRadius: 8, paddingVertical: 4, paddingHorizontal: 12 },
+  historyContainer: { marginHorizontal: 12, marginBottom: 10, backgroundColor: '#F0F4FF', borderRadius: 8, paddingVertical: 4, paddingHorizontal: 12 },
   historyRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: '#E0E8FF' },
   historyDate: { flex: 1, fontSize: 13, color: Colors.textPrimary },
   historyTime: { width: 44, textAlign: 'center', fontSize: 13, color: Colors.textSecondary },
   historyBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
   historyBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
-  historyEmpty: { marginHorizontal: 16, marginBottom: 10, paddingVertical: 10, alignItems: 'center' },
+  historyEmpty: { marginHorizontal: 12, marginBottom: 10, paddingVertical: 10, alignItems: 'center' },
   historyEmptyText: { fontSize: 13, color: Colors.textSecondary, fontStyle: 'italic' },
 
-  // Alumno / Padre
-  statsRow: { backgroundColor: '#FFFFFF', padding: 20, flexDirection: 'row', alignItems: 'center' },
-  mainStat: { alignItems: 'center', marginRight: 24 },
-  mainStatNumber: { fontSize: 36, fontWeight: '700', color: Colors.primary },
-  mainStatLabel: { fontSize: 13, color: Colors.textSecondary },
-  miniStats: { flex: 1, flexDirection: 'row', justifyContent: 'space-around' },
-  miniStat: { alignItems: 'center' },
-  miniDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 4 },
-  miniNumber: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
-  miniLabel: { fontSize: 11, color: Colors.textSecondary },
+  // Alumno
   calendar: { marginHorizontal: 16, marginTop: 16, borderRadius: 12 },
   legend: { flexDirection: 'row', justifyContent: 'center', gap: 20, paddingVertical: 12 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
