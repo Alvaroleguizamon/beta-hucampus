@@ -190,6 +190,60 @@ export default function TareasScreen() {
   const [showSendConfirm, setShowSendConfirm] = useState<string | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
 
+  // ─── Alumno/Padre state (must be before early returns for hooks consistency) ───
+  const [tasks, setTasks] = useState(initialTasks);
+  const [statusFilter, setStatusFilter] = useState<'todas' | 'pendientes' | 'entregadas'>('pendientes');
+  const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [mobileTab, setMobileTab] = useState<'tareas' | 'organizador'>('tareas');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
+  const [submissionText, setSubmissionText] = useState('');
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newSubject, setNewSubject] = useState('');
+  const [newDueDate, setNewDueDate] = useState('');
+  const [newPriority, setNewPriority] = useState<'alta' | 'media' | 'baja'>('media');
+  const [newGrupal, setNewGrupal] = useState(false);
+  const [newDescription, setNewDescription] = useState('');
+  const [selectedClassmates, setSelectedClassmates] = useState<string[]>([]);
+  const [classmateSearch, setClassmateSearch] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  const filteredClassmates = useMemo(() => {
+    if (!classmateSearch.trim()) return [];
+    const q = classmateSearch.toLowerCase();
+    return courseClassmates.filter(
+      (c) => c.name.toLowerCase().includes(q) && !selectedClassmates.includes(c.name)
+    );
+  }, [classmateSearch, selectedClassmates]);
+
+  const filtered = useMemo(() => {
+    let result = tasks;
+    if (statusFilter === 'pendientes') result = result.filter((t) => t.status === 'pendiente');
+    if (statusFilter === 'entregadas') result = result.filter((t) => t.status === 'entregado');
+    if (subjectFilter) result = result.filter((t) => t.subject === subjectFilter);
+    return result.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  }, [tasks, statusFilter, subjectFilter]);
+
+  const pending = tasks.filter((t) => t.status === 'pendiente').length;
+  const delivered = tasks.filter((t) => t.status === 'entregado').length;
+
+  const taskSubjects = useMemo(() => {
+    const unique = [...new Set(tasks.map((t) => t.subject))];
+    return unique.map((name) => {
+      const s = mockSubjects.find((ms) => ms.name === name);
+      return { name, color: s?.color ?? Colors.textSecondary };
+    });
+  }, [tasks]);
+
+  const upcomingDeadlines = useMemo(() => {
+    return tasks
+      .filter((t) => t.status === 'pendiente')
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+      .slice(0, 5);
+  }, [tasks]);
+
   // ─── Docente view ───
   if (role === 'docente') {
     const courseTasks = docenteTasks.filter((t) => t.courseId === selectedCourseId);
@@ -1063,37 +1117,6 @@ export default function TareasScreen() {
     );
   }
 
-  const [tasks, setTasks] = useState(initialTasks);
-  const [statusFilter, setStatusFilter] = useState<'todas' | 'pendientes' | 'entregadas'>('pendientes');
-  const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [mobileTab, setMobileTab] = useState<'tareas' | 'organizador'>('tareas');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
-
-  // Submission state
-  const [submissionText, setSubmissionText] = useState('');
-  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
-
-  // Add form state
-  const [newTitle, setNewTitle] = useState('');
-  const [newSubject, setNewSubject] = useState('');
-  const [newDueDate, setNewDueDate] = useState('');
-  const [newPriority, setNewPriority] = useState<'alta' | 'media' | 'baja'>('media');
-  const [newGrupal, setNewGrupal] = useState(false);
-  const [newDescription, setNewDescription] = useState('');
-  const [selectedClassmates, setSelectedClassmates] = useState<string[]>([]);
-  const [classmateSearch, setClassmateSearch] = useState('');
-  const [showCalendar, setShowCalendar] = useState(false);
-
-  const filteredClassmates = useMemo(() => {
-    if (!classmateSearch.trim()) return [];
-    const q = classmateSearch.toLowerCase();
-    return courseClassmates.filter(
-      (c) => c.name.toLowerCase().includes(q) && !selectedClassmates.includes(c.name)
-    );
-  }, [classmateSearch, selectedClassmates]);
-
   const resetForm = () => {
     setNewTitle('');
     setNewSubject('');
@@ -1182,33 +1205,6 @@ export default function TareasScreen() {
       ],
     );
   };
-
-  const filtered = useMemo(() => {
-    let result = tasks;
-    if (statusFilter === 'pendientes') result = result.filter((t) => t.status === 'pendiente');
-    if (statusFilter === 'entregadas') result = result.filter((t) => t.status === 'entregado');
-    if (subjectFilter) result = result.filter((t) => t.subject === subjectFilter);
-    return result.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-  }, [tasks, statusFilter, subjectFilter]);
-
-  const pending = tasks.filter((t) => t.status === 'pendiente').length;
-  const delivered = tasks.filter((t) => t.status === 'entregado').length;
-
-  const taskSubjects = useMemo(() => {
-    const unique = [...new Set(tasks.map((t) => t.subject))];
-    return unique.map((name) => {
-      const s = mockSubjects.find((ms) => ms.name === name);
-      return { name, color: s?.color ?? Colors.textSecondary };
-    });
-  }, [tasks]);
-
-  // Upcoming deadlines for organizer
-  const upcomingDeadlines = useMemo(() => {
-    return tasks
-      .filter((t) => t.status === 'pendiente')
-      .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-      .slice(0, 5);
-  }, [tasks]);
 
   // ─── Task Detail View ───
   if (selectedTask) {
