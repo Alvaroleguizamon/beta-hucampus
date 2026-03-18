@@ -43,6 +43,7 @@ export interface AttendanceRecord {
   date: string;
   status: 'presente' | 'ausente' | 'tardanza';
   courseId: string;
+  checkInTime?: string; // HH:MM — hora exacta del fichaje en kiosk; ausente si undefined
 }
 
 export interface Course {
