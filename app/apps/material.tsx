@@ -428,7 +428,14 @@ export default function MaterialScreen() {
                   <Text style={styles.materialDate}>{item.createdAt.split('T')[0]}</Text>
                 </View>
                 {isVideo && <MaterialCommunityIcons name="play-circle-outline" size={22} color={Colors.primary} />}
-                {isPDFWithUrl && <MaterialCommunityIcons name="eye-outline" size={22} color={Colors.primary} />}
+                {isPDFWithUrl && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Pressable hitSlop={8} onPress={(e) => { e.stopPropagation(); downloadFile(item.url!, item.name); }}>
+                      <MaterialCommunityIcons name="download-outline" size={22} color={Colors.primary} />
+                    </Pressable>
+                    <MaterialCommunityIcons name="eye-outline" size={22} color={Colors.primary} />
+                  </View>
+                )}
                 {isLink && <MaterialCommunityIcons name="open-in-new" size={22} color={Colors.primary} />}
                 {canDelete && (
                   <Pressable onPress={() => handleDelete(item.id)} hitSlop={8} style={{ padding: 4 }}>
