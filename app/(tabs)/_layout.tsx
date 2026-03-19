@@ -42,14 +42,19 @@ const tabsByRole: Record<Role, TabConfig[]> = {
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account' },
   ],
   admin: [
-    { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
     { name: 'admin', title: 'Admin', icon: 'shield-crown-outline', iconFocused: 'shield-crown' },
+    { name: 'wall', title: 'Muro', icon: 'home-outline', iconFocused: 'home' },
     { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar' },
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account' },
   ],
 };
 
-const allTabs = ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos', 'admin'];
+const allTabsByRole: Record<Role, string[]> = {
+  alumno: ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos', 'admin'],
+  docente: ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos', 'admin'],
+  padre: ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos', 'admin'],
+  admin: ['admin', 'wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos'],
+};
 
 export default function TabsLayout() {
   const user = useAuthStore((s) => s.user);
@@ -98,7 +103,7 @@ export default function TabsLayout() {
             headerShown: false,
           }}
         >
-          {allTabs.map((tabName) => {
+          {(allTabsByRole[role]).map((tabName) => {
             const config = visibleTabs.find((t) => t.name === tabName);
             const isVisible = visibleNames.includes(tabName);
 

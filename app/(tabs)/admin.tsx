@@ -246,9 +246,9 @@ export default function AdminScreen() {
             <View style={styles.courseIcon}>
               <MaterialCommunityIcons name="google-classroom" size={20} color={Colors.primary} />
             </View>
-            <View>
-              <Text style={styles.cardTitle}>{course.name}</Text>
-              <Text style={styles.cardMeta}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle} numberOfLines={1}>{course.name}</Text>
+              <Text style={styles.cardMeta} numberOfLines={1}>
                 {course.grade} · {course.students.length} alumnos · {course.schedules.length} bloques horarios
               </Text>
             </View>
@@ -290,7 +290,7 @@ export default function AdminScreen() {
         <View key={subject.id} style={styles.card}>
           <View style={styles.cardLeft}>
             <View style={[styles.subjectDot, { backgroundColor: subject.color }]} />
-            <Text style={styles.cardTitle}>{subject.name}</Text>
+            <Text style={styles.cardTitle} numberOfLines={1}>{subject.name}</Text>
           </View>
           <View style={styles.cardActions}>
             <Pressable
@@ -355,12 +355,12 @@ const styles = StyleSheet.create({
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   addBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
 
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: Colors.border },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 14, paddingLeft: 14, paddingRight: 10, marginBottom: 8, borderWidth: 1, borderColor: Colors.border },
   cardLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   cardTitle: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  cardMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  cardActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  iconBtn: { padding: 6, borderRadius: 8 },
+  cardMeta: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: 0, marginLeft: 12 },
+  iconBtn: { padding: 8, borderRadius: 8 },
 
   courseIcon: { width: 38, height: 38, borderRadius: 10, backgroundColor: `${Colors.primary}15`, justifyContent: 'center', alignItems: 'center' },
   subjectDot: { width: 14, height: 14, borderRadius: 7 },

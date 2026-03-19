@@ -48,8 +48,8 @@ const tabsByRole: Record<Role, TabConfig[]> = {
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account', route: '/(tabs)/home' },
   ],
   admin: [
-    { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home', route: '/(tabs)/wall' },
     { name: 'admin', title: 'Administración', icon: 'shield-crown-outline', iconFocused: 'shield-crown', route: '/(tabs)/admin' },
+    { name: 'wall', title: 'Muro', icon: 'home-outline', iconFocused: 'home', route: '/(tabs)/wall' },
     { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar', route: '/(tabs)/calendar' },
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account', route: '/(tabs)/home' },
   ],

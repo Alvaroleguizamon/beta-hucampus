@@ -15,7 +15,12 @@ export default function Index() {
     return () => clearTimeout(timeout);
   }, []);
 
+  const user = useAuthStore((s) => s.user);
+
   if (showSplash || loading) return <SplashView />;
-  if (isLoggedIn) return <Redirect href="/(tabs)/wall" />;
+  if (isLoggedIn) {
+    const dest = user?.role === 'admin' ? '/(tabs)/admin' : '/(tabs)/wall';
+    return <Redirect href={dest as any} />;
+  }
   return <Redirect href="/(auth)/login" />;
 }

@@ -19,8 +19,9 @@ const roles: { key: Role; label: string; description: string }[] = [
 ];
 
 export default function SelectRoleScreen() {
-  const handleSelect = (_role: Role) => {
-    router.replace('/(tabs)/wall' as any);
+  const handleSelect = (role: Role) => {
+    const destination = role === 'admin' ? '/(tabs)/admin' : '/(tabs)/wall';
+    router.replace(destination as any);
   };
 
   return (

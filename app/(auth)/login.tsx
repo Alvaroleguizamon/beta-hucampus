@@ -36,7 +36,8 @@ export default function LoginScreen() {
       setError(result.error);
       return;
     }
-    router.replace('/(tabs)/wall');
+    const role = useAuthStore.getState().user?.role;
+    router.replace(role === 'admin' ? '/(tabs)/admin' : '/(tabs)/wall');
   };
 
   const fillTestUser = (testEmail: string) => {
