@@ -89,12 +89,13 @@ function StudentDetail({ studentId, studentName, onBack }: { studentId: string; 
 }
 
 export default function AlumnosScreen() {
-  const selectedCourseId = useCourseStore((s) => s.selectedCourseId);
   const grades = useGradesStore((s) => s.grades);
   const courses = useCoursesStore((s) => s.courses);
-  const course = courses.find((c) => c.id === selectedCourseId) ?? courses[0];
+  const [selectedCourseId, setSelectedCourseId] = useState('');
 
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
+
+  const course = selectedCourseId ? courses.find((c) => c.id === selectedCourseId) : courses[0];
 
   const studentsWithStats = useMemo(() => {
     if (!course) return [];
@@ -125,9 +126,20 @@ export default function AlumnosScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.headerSub}>{course.name} · {course.students.length} alumnos</Text>
-      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseFilterScroll} contentContainerStyle={styles.courseFilterRow}>
+        {courses.map((c) => {
+          const active = selectedCourseId ? selectedCourseId === c.id : c.id === courses[0]?.id;
+          return (
+            <Pressable
+              key={c.id}
+              style={[styles.courseChip, active && styles.courseChipActive]}
+              onPress={() => setSelectedCourseId(c.id)}
+            >
+              <Text style={[styles.courseChipText, active && styles.courseChipTextActive]}>{c.grade}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
       <FlatList
         data={studentsWithStats}
         keyExtractor={(item) => item.id}
@@ -166,6 +178,12 @@ export default function AlumnosScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
+  courseFilterScroll: { flexGrow: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border },
+  courseFilterRow: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
+  courseChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary },
+  courseChipActive: { backgroundColor: Colors.primary },
+  courseChipText: { fontSize: 13, fontWeight: '500', color: Colors.primary },
+  courseChipTextActive: { color: '#FFFFFF' },
   container: { flex: 1 },
   header: {
     backgroundColor: '#FFFFFF',
