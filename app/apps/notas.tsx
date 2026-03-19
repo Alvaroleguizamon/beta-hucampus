@@ -140,16 +140,12 @@ function DocenteView() {
   const deleteGrade = useGradesStore((s) => s.deleteGrade);
   const courses = useCoursesStore((s) => s.courses);
   const [selectedCourseId, setSelectedCourseId] = useState('');
-  const [studentFilterIds, setStudentFilterIds] = useState<string[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string; course: string } | null>(null);
 
   // Filter subjects to only those assigned to this teacher
   const subjects = useMemo(
     () => allSubjects.filter((s) => s.teacherId === user?.id),
     [allSubjects, user?.id]
   );
-
-  const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [category, setCategory] = useState<'examen' | 'tp'>('examen');
   const [gradeModal, setGradeModal] = useState<GradeModalState | null>(null);
