@@ -117,7 +117,7 @@ function PersonPicker({
     <View style={pp.wrapper}>
       <View style={s.labelRow}>
         <Text style={s.fieldLabel}>{label}</Text>
-        {optional && value && (
+        {optional && !!value && (
           <Pressable onPress={() => onChange('')} style={pp.clearBtn}>
             <Text style={pp.clearText}>Quitar</Text>
           </Pressable>
