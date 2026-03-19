@@ -97,6 +97,7 @@ interface TasksState {
   submitPersonalDelivery: (taskId: string, content: string, type: 'texto' | 'archivo') => void;
   deletePersonalTask: (taskId: string) => void;
   publishTask: (task: DocenteTask) => Promise<void>;
+  updatePublishedTask: (id: string, updates: Partial<Pick<DocenteTask, 'title' | 'dueDate' | 'priority' | 'description' | 'attachments'>>) => void;
   saveDraft: (draft: Omit<DraftTask, 'id'>, editingId?: string) => void;
   removeDraft: (id: string) => void;
   submitDelivery: (taskId: string, studentId: string, content: string) => void;
@@ -284,6 +285,21 @@ export const useTasksStore = create<TasksState>((set, get) => ({
         }))
       );
       if (de) console.error('[tasks-store] publishTask deliveries error:', de);
+    }
+  },
+
+  updatePublishedTask: (id, updates) => {
+    set((s) => ({
+      publishedTasks: s.publishedTasks.map((t) => t.id === id ? { ...t, ...updates } : t),
+    }));
+    const db: Record<string, any> = {};
+    if (updates.title !== undefined) db.title = updates.title;
+    if (updates.dueDate !== undefined) db.due_date = updates.dueDate;
+    if (updates.priority !== undefined) db.priority = updates.priority;
+    if (updates.description !== undefined) db.description = updates.description ?? null;
+    if (Object.keys(db).length > 0) {
+      supabase.from('tasks').update(db).eq('id', id)
+        .then(({ error }) => { if (error) console.error('[tasks-store] updatePublishedTask error:', error); });
     }
   },
 
