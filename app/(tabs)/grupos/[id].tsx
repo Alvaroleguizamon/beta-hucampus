@@ -98,11 +98,11 @@ export default function GroupDetailScreen() {
   };
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
-  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     viewableItems.forEach(({ item }: any) => {
       markGroupPostViewed(id ?? '', item.id, userId);
     });
-  }, [id, userId, markGroupPostViewed]);
+  }).current;
 
   const insertFormat = (prefix: string, suffix: string) => {
     const { start, end } = selection;
