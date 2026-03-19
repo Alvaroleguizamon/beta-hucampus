@@ -139,6 +139,10 @@ function DocenteView() {
   const updateGrade = useGradesStore((s) => s.updateGrade);
   const deleteGrade = useGradesStore((s) => s.deleteGrade);
   const courses = useCoursesStore((s) => s.courses);
+  const allSubjects = useSubjectsStore((s) => s.subjects);
+  const user = useAuthStore((s) => s.user);
+  const { width: screenWidth } = useWindowDimensions();
+  const { isDesktop } = useBreakpoint();
   const [selectedCourseId, setSelectedCourseId] = useState('');
 
   // Filter subjects to only those assigned to this teacher
