@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   logoText: { color: '#FFFFFF', fontWeight: '700' },
   title: { color: Colors.textPrimary, fontWeight: '700' },
-  subtitle: { color: Colors.textSecondary, marginTop: 4 },
+  subtitle: { color: '#253570', fontWeight: '500', fontSize: 15, marginTop: 4 },
   form: { gap: 12 },
   input: { backgroundColor: '#FFFFFF' },
   error: { color: Colors.error, fontSize: 13, textAlign: 'center' },
