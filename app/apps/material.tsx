@@ -409,8 +409,8 @@ export default function MaterialScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   courseFilterScroll: { flexGrow: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border },
-  courseFilterRow: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-  courseChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary },
+  courseFilterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  courseChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary },
   courseChipActive: { backgroundColor: Colors.primary },
   courseChipText: { fontSize: 13, fontWeight: '500', color: Colors.primary },
   courseChipTextActive: { color: '#FFFFFF' },

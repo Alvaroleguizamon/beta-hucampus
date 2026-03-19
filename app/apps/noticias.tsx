@@ -1,11 +1,12 @@
-import React, { useLayoutEffect } from 'react';
-import { StyleSheet, View, FlatList, Pressable, Alert, Platform } from 'react-native';
+import React, { useState, useLayoutEffect } from 'react';
+import { StyleSheet, View, FlatList, Pressable, Alert, Platform, ScrollView } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { useNoticiasStore } from '../../lib/stores/noticias-store';
 import { useAuthStore } from '../../lib/stores/auth-store';
+import { useCoursesStore } from '../../lib/stores/courses-store';
 
 const categoryConfig = {
   comunicado: { color: Colors.primary, label: 'Comunicado' },
@@ -20,6 +21,8 @@ export default function NoticiasScreen() {
   const deletePost = useNoticiasStore((s) => s.deletePost);
   const role = useAuthStore((s) => s.user?.role);
   const canEdit = role === 'admin' || role === 'docente';
+  const courses = useCoursesStore((s) => s.courses);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
 
   const handleDelete = (id: string, title: string) => {
     if (Platform.OS === 'web') {
@@ -48,6 +51,22 @@ export default function NoticiasScreen() {
 
   return (
     <View style={styles.container}>
+      {role === 'docente' && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseFilterScroll} contentContainerStyle={styles.courseFilterRow}>
+          {courses.map((c) => {
+            const active = selectedCourseId === c.id;
+            return (
+              <Pressable
+                key={c.id}
+                style={[styles.courseChip, active && styles.courseChipActive]}
+                onPress={() => setSelectedCourseId(active ? '' : c.id)}
+              >
+                <Text style={[styles.courseChipText, active && styles.courseChipTextActive]}>{c.grade}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -121,6 +140,12 @@ export default function NoticiasScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  courseFilterScroll: { flexGrow: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border },
+  courseFilterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  courseChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary },
+  courseChipActive: { backgroundColor: Colors.primary },
+  courseChipText: { fontSize: 13, fontWeight: '500', color: Colors.primary },
+  courseChipTextActive: { color: '#FFFFFF' },
   list: { padding: 16, paddingBottom: 100 },
 
   card: {
