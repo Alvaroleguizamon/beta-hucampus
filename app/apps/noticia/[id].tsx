@@ -7,12 +7,13 @@ import { Colors } from '../../../constants/colors';
 import { useNoticiasStore } from '../../../lib/stores/noticias-store';
 import { useAuthStore } from '../../../lib/stores/auth-store';
 
-const categoryConfig = {
+const categoryConfig: Record<string, { color: string; label: string; icon: string }> = {
   comunicado: { color: Colors.primary, label: 'Comunicado', icon: 'bullhorn' },
   novedad: { color: Colors.accent, label: 'Novedad', icon: 'star-outline' },
   evento: { color: '#9C27B0', label: 'Evento', icon: 'calendar-star' },
   urgente: { color: Colors.error, label: 'Urgente', icon: 'alert-circle' },
 };
+const fallbackCfg = { color: Colors.primary, label: 'Comunicado', icon: 'bullhorn' };
 
 const audienceLabel = {
   todos: 'Toda la comunidad',
@@ -46,7 +47,7 @@ export default function NoticiaDetailScreen() {
     navigation.setOptions({
       title: 'Noticia',
       headerBackTitle: 'Noticias',
-      headerRight: canEdit ? () => (
+      headerRight: () => canEdit ? (
         <View style={{ flexDirection: 'row', gap: 4, marginRight: 8 }}>
           <Pressable
             style={styles.headerBtn}
@@ -58,7 +59,7 @@ export default function NoticiaDetailScreen() {
             <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.error} />
           </Pressable>
         </View>
-      ) : undefined,
+      ) : null,
     });
   }, [navigation, canEdit, id]);
 
@@ -74,7 +75,7 @@ export default function NoticiaDetailScreen() {
     );
   }
 
-  const cfg = categoryConfig[post.category];
+  const cfg = categoryConfig[post.category] ?? fallbackCfg;
   const audience = post.targetAudience ?? 'todos';
 
   return (
