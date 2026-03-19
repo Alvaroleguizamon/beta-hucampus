@@ -12,7 +12,7 @@ export const TIME_SLOTS = [
   '12:00', '12:50', '13:40', '14:30', '15:20', '16:10', '17:00',
 ];
 
-export const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+export const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
 interface AdminState {
   courses: AdminCourse[];

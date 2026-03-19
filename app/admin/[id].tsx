@@ -6,12 +6,165 @@ import {
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useAdminStore, DAYS, TIME_SLOTS } from '../../lib/stores/admin-store';
+import { useAdminStore, DAYS, TIME_SLOTS, SUBJECT_COLORS } from '../../lib/stores/admin-store';
 import { CourseSchedule } from '../../lib/types';
 import { Colors } from '../../constants/colors';
 
-const DAY_COLORS = ['#E3F2FD', '#F3E5F5', '#E8F5E9', '#FFF9C4', '#FCE4EC'];
-const DAY_TEXT   = ['#1565C0', '#6A1B9A', '#2E7D32', '#F57F17', '#880E4F'];
+const DAY_COLORS = ['#E3F2FD', '#F3E5F5', '#E8F5E9', '#FFF9C4', '#FCE4EC', '#FFF3E0', '#E8EAF6'];
+const DAY_TEXT   = ['#1565C0', '#6A1B9A', '#2E7D32', '#F57F17', '#880E4F', '#E65100', '#283593'];
+
+// ─── Time Picker Dropdown ─────────────────────────────────────────────────────
+
+function TimePicker({
+  label, value, options, onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={tp.wrapper}>
+      <Text style={s.fieldLabel}>{label}</Text>
+      <Pressable style={tp.btn} onPress={() => setOpen((o) => !o)}>
+        <Text style={tp.btnText}>{value}</Text>
+        <MaterialCommunityIcons
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={18}
+          color={Colors.textSecondary}
+        />
+      </Pressable>
+      {open && (
+        <View style={tp.dropdown}>
+          <ScrollView style={tp.dropdownScroll} nestedScrollEnabled>
+            {options.map((t) => (
+              <Pressable
+                key={t}
+                style={[tp.option, value === t && tp.optionActive]}
+                onPress={() => { onChange(t); setOpen(false); }}
+              >
+                <Text style={[tp.optionText, value === t && tp.optionTextActive]}>{t}</Text>
+                {value === t && (
+                  <MaterialCommunityIcons name="check" size={15} color={Colors.primary} />
+                )}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const tp = StyleSheet.create({
+  wrapper: { flex: 1, position: 'relative', zIndex: 10 },
+  btn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 4,
+  },
+  btnText: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
+  dropdown: {
+    position: 'absolute',
+    top: 72,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    zIndex: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  dropdownScroll: { maxHeight: 180 },
+  option: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10 },
+  optionActive: { backgroundColor: `${Colors.primary}10` },
+  optionText: { fontSize: 14, color: Colors.textPrimary },
+  optionTextActive: { color: Colors.primary, fontWeight: '600' },
+});
+
+// ─── Inline Subject Form Modal ─────────────────────────────────────────────────
+
+function InlineSubjectModal({
+  visible, onClose, onSave,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSave: (name: string, color: string) => Promise<void>;
+}) {
+  const [name, setName] = useState('');
+  const [color, setColor] = useState(SUBJECT_COLORS[0]);
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    if (visible) { setName(''); setColor(SUBJECT_COLORS[0]); }
+  }, [visible]);
+
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    await onSave(name.trim(), color);
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={s.overlay}>
+        <View style={s.inlineModal}>
+          <Text style={s.sheetTitle}>Nueva materia</Text>
+          <Text style={s.fieldLabel}>Nombre</Text>
+          <RNTextInput
+            style={s.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Ej: Matemática"
+            placeholderTextColor={Colors.textSecondary}
+            autoFocus
+          />
+          <Text style={s.fieldLabel}>Color</Text>
+          <View style={s.colorGrid}>
+            {SUBJECT_COLORS.map((c) => (
+              <Pressable
+                key={c}
+                style={[s.colorDot, { backgroundColor: c }, color === c && s.colorDotSelected]}
+                onPress={() => setColor(c)}
+              >
+                {color === c && <MaterialCommunityIcons name="check" size={13} color="#FFF" />}
+              </Pressable>
+            ))}
+          </View>
+          <View style={s.modalActions}>
+            <Pressable style={s.cancelBtn} onPress={onClose}>
+              <Text style={s.cancelBtnText}>Cancelar</Text>
+            </Pressable>
+            <Pressable
+              style={[s.saveBtn, !name.trim() && s.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={saving || !name.trim()}
+            >
+              {saving
+                ? <ActivityIndicator size={16} color="#FFF" />
+                : <Text style={s.saveBtnText}>Guardar</Text>}
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 // ─── Schedule Form Modal ──────────────────────────────────────────────────────
 
@@ -27,7 +180,7 @@ function ScheduleFormModal({
     startTime: string, endTime: string, room: string
   ) => Promise<void>;
 }) {
-  const { subjects, teachers } = useAdminStore();
+  const { subjects, teachers, createSubject } = useAdminStore();
   const [subjectId, setSubjectId] = useState(initial?.subjectId ?? '');
   const [teacherId, setTeacherId] = useState(initial?.teacherId ?? '');
   const [day, setDay] = useState(initial?.dayOfWeek ?? 1);
@@ -35,6 +188,7 @@ function ScheduleFormModal({
   const [endTime, setEndTime] = useState(initial?.endTime ?? TIME_SLOTS[1]);
   const [room, setRoom] = useState(initial?.room ?? '');
   const [saving, setSaving] = useState(false);
+  const [newSubjectModal, setNewSubjectModal] = useState(false);
 
   React.useEffect(() => {
     if (visible) {
@@ -57,125 +211,145 @@ function ScheduleFormModal({
     onClose();
   };
 
+  // End time options: only after start time
+  const startIdx = TIME_SLOTS.indexOf(startTime);
+  const endOptions = TIME_SLOTS.slice(startIdx + 1);
+
+  // Auto-advance end time if it's before start
+  React.useEffect(() => {
+    if (endOptions.length > 0 && !endOptions.includes(endTime)) {
+      setEndTime(endOptions[0]);
+    }
+  }, [startTime]);
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={s.overlay}>
-        <ScrollView style={s.sheet} contentContainerStyle={s.sheetContent} keyboardShouldPersistTaps="handled">
-          <View style={s.sheetHandle} />
-          <Text style={s.sheetTitle}>{initial ? 'Editar bloque' : 'Nuevo bloque horario'}</Text>
+    <>
+      <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+        <View style={s.overlay}>
+          <ScrollView
+            style={s.sheet}
+            contentContainerStyle={[s.sheetContent, { zIndex: 1 }]}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={s.sheetHandle} />
+            <Text style={s.sheetTitle}>{initial ? 'Editar bloque' : 'Nuevo bloque horario'}</Text>
 
-          {/* Day */}
-          <Text style={s.fieldLabel}>Día</Text>
-          <View style={s.chipRow}>
-            {DAYS.map((d, i) => (
+            {/* Day */}
+            <Text style={s.fieldLabel}>Día</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {DAYS.map((d, i) => (
+                  <Pressable
+                    key={d}
+                    style={[s.chip, day === i + 1 && { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
+                    onPress={() => setDay(i + 1)}
+                  >
+                    <Text style={[s.chipText, day === i + 1 && { color: '#FFF' }]}>{d.slice(0, 3)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+
+            {/* Time pickers */}
+            <View style={s.timeRow}>
+              <TimePicker
+                label="Desde"
+                value={startTime}
+                options={TIME_SLOTS.slice(0, -1)}
+                onChange={setStartTime}
+              />
+              <View style={{ width: 12 }} />
+              <TimePicker
+                label="Hasta"
+                value={endTime}
+                options={endOptions.length > 0 ? endOptions : TIME_SLOTS.slice(1)}
+                onChange={setEndTime}
+              />
+            </View>
+
+            {/* Subject */}
+            <View style={s.labelRow}>
+              <Text style={s.fieldLabel}>Materia</Text>
               <Pressable
-                key={d}
-                style={[s.chip, day === i + 1 && { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
-                onPress={() => setDay(i + 1)}
+                style={s.addInlineBtn}
+                onPress={() => setNewSubjectModal(true)}
               >
-                <Text style={[s.chipText, day === i + 1 && { color: '#FFF' }]}>{d.slice(0, 3)}</Text>
+                <MaterialCommunityIcons name="plus" size={14} color={Colors.primary} />
+                <Text style={s.addInlineBtnText}>Nueva</Text>
+              </Pressable>
+            </View>
+            <View style={s.subjectGrid}>
+              {subjects.map((sub) => (
+                <Pressable
+                  key={sub.id}
+                  style={[s.subjectChip, { borderColor: sub.color }, subjectId === sub.id && { backgroundColor: sub.color }]}
+                  onPress={() => setSubjectId(sub.id)}
+                >
+                  <View style={[s.subjectDot, { backgroundColor: sub.color }]} />
+                  <Text style={[s.subjectChipText, subjectId === sub.id && { color: '#FFF' }]}>{sub.name}</Text>
+                </Pressable>
+              ))}
+              {subjects.length === 0 && (
+                <Text style={s.emptyNote}>Sin materias. Creá la primera.</Text>
+              )}
+            </View>
+
+            {/* Teacher */}
+            <Text style={s.fieldLabel}>Docente</Text>
+            {teachers.length === 0 && (
+              <Text style={s.emptyNote}>No hay docentes disponibles</Text>
+            )}
+            {teachers.map((t) => (
+              <Pressable
+                key={t.id}
+                style={[s.teacherRow, teacherId === t.id && s.teacherRowActive]}
+                onPress={() => setTeacherId(t.id)}
+              >
+                <View style={s.teacherAvatar}>
+                  <Text style={s.teacherAvatarText}>{t.name[0]}</Text>
+                </View>
+                <Text style={[s.teacherName, teacherId === t.id && { color: Colors.primary, fontWeight: '600' }]}>{t.name}</Text>
+                {teacherId === t.id && <MaterialCommunityIcons name="check-circle" size={18} color={Colors.primary} />}
               </Pressable>
             ))}
-          </View>
 
-          {/* Time */}
-          <View style={s.timeRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.fieldLabel}>Desde</Text>
-              <View style={s.timeScroll}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {TIME_SLOTS.slice(0, -1).map((t) => (
-                    <Pressable
-                      key={t}
-                      style={[s.timeChip, startTime === t && { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
-                      onPress={() => setStartTime(t)}
-                    >
-                      <Text style={[s.timeChipText, startTime === t && { color: '#FFF' }]}>{t}</Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.fieldLabel}>Hasta</Text>
-              <View style={s.timeScroll}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {TIME_SLOTS.slice(1).map((t) => (
-                    <Pressable
-                      key={t}
-                      style={[s.timeChip, endTime === t && { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
-                      onPress={() => setEndTime(t)}
-                    >
-                      <Text style={[s.timeChipText, endTime === t && { color: '#FFF' }]}>{t}</Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-            </View>
-          </View>
+            {/* Room */}
+            <Text style={[s.fieldLabel, { marginTop: 16 }]}>Aula (opcional)</Text>
+            <RNTextInput
+              style={s.input}
+              value={room}
+              onChangeText={setRoom}
+              placeholder="Ej: Aula 12, Laboratorio"
+              placeholderTextColor={Colors.textSecondary}
+            />
 
-          {/* Subject */}
-          <Text style={s.fieldLabel}>Materia</Text>
-          <View style={s.subjectGrid}>
-            {subjects.map((sub) => (
-              <Pressable
-                key={sub.id}
-                style={[s.subjectChip, { borderColor: sub.color }, subjectId === sub.id && { backgroundColor: sub.color }]}
-                onPress={() => setSubjectId(sub.id)}
-              >
-                <View style={[s.subjectDot, { backgroundColor: sub.color }]} />
-                <Text style={[s.subjectChipText, subjectId === sub.id && { color: '#FFF' }]}>{sub.name}</Text>
+            {/* Actions */}
+            <View style={s.modalActions}>
+              <Pressable style={s.cancelBtn} onPress={onClose}>
+                <Text style={s.cancelBtnText}>Cancelar</Text>
               </Pressable>
-            ))}
-          </View>
+              <Pressable
+                style={[s.saveBtn, !canSave && s.saveBtnDisabled]}
+                onPress={handleSave}
+                disabled={saving || !canSave}
+              >
+                {saving
+                  ? <ActivityIndicator size={16} color="#FFF" />
+                  : <Text style={s.saveBtnText}>Guardar</Text>}
+              </Pressable>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
 
-          {/* Teacher */}
-          <Text style={s.fieldLabel}>Docente</Text>
-          {teachers.length === 0 && (
-            <Text style={s.emptyNote}>No hay docentes disponibles</Text>
-          )}
-          {teachers.map((t) => (
-            <Pressable
-              key={t.id}
-              style={[s.teacherRow, teacherId === t.id && s.teacherRowActive]}
-              onPress={() => setTeacherId(t.id)}
-            >
-              <View style={s.teacherAvatar}>
-                <Text style={s.teacherAvatarText}>{t.name[0]}</Text>
-              </View>
-              <Text style={[s.teacherName, teacherId === t.id && { color: Colors.primary, fontWeight: '600' }]}>{t.name}</Text>
-              {teacherId === t.id && <MaterialCommunityIcons name="check-circle" size={18} color={Colors.primary} />}
-            </Pressable>
-          ))}
-
-          {/* Room */}
-          <Text style={[s.fieldLabel, { marginTop: 16 }]}>Aula (opcional)</Text>
-          <RNTextInput
-            style={s.input}
-            value={room}
-            onChangeText={setRoom}
-            placeholder="Ej: Aula 12, Laboratorio"
-            placeholderTextColor={Colors.textSecondary}
-          />
-
-          {/* Actions */}
-          <View style={s.modalActions}>
-            <Pressable style={s.cancelBtn} onPress={onClose}>
-              <Text style={s.cancelBtnText}>Cancelar</Text>
-            </Pressable>
-            <Pressable
-              style={[s.saveBtn, !canSave && s.saveBtnDisabled]}
-              onPress={handleSave}
-              disabled={saving || !canSave}
-            >
-              {saving
-                ? <ActivityIndicator size={16} color="#FFF" />
-                : <Text style={s.saveBtnText}>Guardar</Text>}
-            </Pressable>
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
+      <InlineSubjectModal
+        visible={newSubjectModal}
+        onClose={() => setNewSubjectModal(false)}
+        onSave={async (name, color) => {
+          await createSubject(name, color);
+        }}
+      />
+    </>
   );
 }
 
@@ -241,7 +415,7 @@ function StudentPickerModal({
 // ─── Weekly Schedule Grid ─────────────────────────────────────────────────────
 
 function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEdit: (s: CourseSchedule) => void }) {
-  const CELL_W = 110;
+  const CELL_W = 100;
   const CELL_H = 54;
   const TIME_W = 52;
 
@@ -352,14 +526,14 @@ export default function CourseDetailScreen() {
     ]);
   };
 
-  // Group schedules by day for list view
   const schedulesByDay = useMemo(() => {
     const grouped: Record<number, CourseSchedule[]> = {};
     course.schedules.forEach((sch) => {
       if (!grouped[sch.dayOfWeek]) grouped[sch.dayOfWeek] = [];
       grouped[sch.dayOfWeek].push(sch);
     });
-    [1, 2, 3, 4, 5].forEach((d) => {
+    DAYS.forEach((_, i) => {
+      const d = i + 1;
       grouped[d] = (grouped[d] ?? []).sort((a, b) => a.startTime.localeCompare(b.startTime));
     });
     return grouped;
@@ -401,7 +575,6 @@ export default function CourseDetailScreen() {
           </View>
         ) : (
           <>
-            {/* Grid view */}
             <View style={s.gridContainer}>
               <ScheduleGrid
                 schedules={course.schedules}
@@ -409,14 +582,14 @@ export default function CourseDetailScreen() {
               />
             </View>
 
-            {/* List view by day */}
-            {[1, 2, 3, 4, 5].map((day) => {
+            {DAYS.map((dayName, di) => {
+              const day = di + 1;
               const blocks = schedulesByDay[day];
               if (!blocks || blocks.length === 0) return null;
               return (
                 <View key={day} style={s.dayGroup}>
-                  <View style={[s.dayBadge, { backgroundColor: DAY_COLORS[day - 1] }]}>
-                    <Text style={[s.dayBadgeText, { color: DAY_TEXT[day - 1] }]}>{DAYS[day - 1]}</Text>
+                  <View style={[s.dayBadge, { backgroundColor: DAY_COLORS[di] }]}>
+                    <Text style={[s.dayBadgeText, { color: DAY_TEXT[di] }]}>{dayName}</Text>
                   </View>
                   {blocks.map((sch) => (
                     <View key={sch.id} style={s.scheduleRow}>
@@ -474,7 +647,6 @@ export default function CourseDetailScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Schedule Modal */}
       <ScheduleFormModal
         visible={scheduleModal}
         onClose={() => setScheduleModal(false)}
@@ -489,7 +661,6 @@ export default function CourseDetailScreen() {
         }}
       />
 
-      {/* Student Modal */}
       <StudentPickerModal
         visible={studentModal}
         onClose={() => setStudentModal(false)}
@@ -555,15 +726,18 @@ const s = StyleSheet.create({
   sheetHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
   sheetTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary, marginBottom: 20 },
 
+  inlineModal: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, margin: 20 },
+
   fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 8 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  addInlineBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14 },
+  addInlineBtnText: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+
   chipRow: { flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap' },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border },
   chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
 
-  timeRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  timeScroll: { marginBottom: 4 },
-  timeChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1.5, borderColor: Colors.border, marginRight: 6 },
-  timeChipText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
+  timeRow: { flexDirection: 'row', marginBottom: 28, zIndex: 10 },
 
   subjectGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
   subjectChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
@@ -578,6 +752,11 @@ const s = StyleSheet.create({
   emptyNote: { fontSize: 13, color: Colors.textSecondary, marginBottom: 16 },
 
   input: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: Colors.textPrimary, marginBottom: 16 },
+
+  colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
+  colorDot: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  colorDotSelected: { borderWidth: 3, borderColor: 'rgba(0,0,0,0.25)' },
+
   modalActions: { flexDirection: 'row', gap: 10, justifyContent: 'flex-end', marginTop: 8 },
   cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: Colors.border },
   cancelBtnText: { fontSize: 14, color: Colors.textSecondary, fontWeight: '500' },
