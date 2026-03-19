@@ -692,13 +692,16 @@ const styles = StyleSheet.create({
   // Pinned noticias
   pinnedCard: {
     backgroundColor: '#FFFFFF',
+    marginHorizontal: 12,
     marginBottom: 8,
     padding: 16,
+    borderRadius: 14,
     borderLeftWidth: 4,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderRightWidth: 1,
     borderColor: Colors.border,
+    overflow: 'hidden',
   },
   pinnedCardHeader: {
     flexDirection: 'row',
