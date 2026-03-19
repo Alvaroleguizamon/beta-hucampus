@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { Text, Chip, IconButton } from 'react-native-paper';
 import { useLocalSearchParams, router } from 'expo-router';
-import { mockFeedPosts } from '../../lib/mock-data';
+import { useNoticiasStore } from '../../lib/stores/noticias-store';
 import { Colors } from '../../constants/colors';
 import { Layout } from '../../constants/layout';
 
@@ -15,7 +15,8 @@ const categoryConfig = {
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const post = mockFeedPosts.find((p) => p.id === id);
+  const posts = useNoticiasStore((s) => s.posts);
+  const post = posts.find((p) => p.id === id);
 
   if (!post) {
     return (

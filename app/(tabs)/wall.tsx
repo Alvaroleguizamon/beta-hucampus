@@ -108,12 +108,15 @@ export default function WallScreen() {
   };
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
-  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+  // Keep a ref to the latest handler so FlatList receives a stable function reference
+  const viewHandlerRef = useRef<(info: { viewableItems: any[] }) => void>(() => {});
+  viewHandlerRef.current = useCallback(({ viewableItems }: any) => {
     viewableItems.forEach(({ item }: any) => {
       if (item.groupId) markGroupPostViewed(item.groupId, item.id, userId);
       else markViewed(item.id, userId);
     });
   }, [markViewed, markGroupPostViewed, userId]);
+  const onViewableItemsChanged = useRef((info: any) => viewHandlerRef.current(info)).current;
 
   const feedContent = (
     <FlatList

@@ -4,8 +4,10 @@ import { Text, TextInput, IconButton, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Colors } from '../../constants/colors';
-import { mockSubjects, mockClassmates, mockCourses } from '../../lib/mock-data';
 import { useAuthStore } from '../../lib/stores/auth-store';
+import { useCoursesStore } from '../../lib/stores/courses-store';
+import { useSubjectsStore } from '../../lib/stores/subjects-store';
+import { useSocialStore } from '../../lib/stores/social-store';
 import { useTasksStore, DocenteTask, DraftTask, TaskAttachment, StudentDelivery } from '../../lib/stores/tasks-store';
 
 LocaleConfig.locales['es'] = {
@@ -51,8 +53,6 @@ const priorityConfig = {
   baja: { color: Colors.success, label: 'Baja' },
 };
 
-const courseClassmates = mockClassmates.filter((c) => c.grade === '3ro A');
-
 // ─── Helper functions ───
 const formatDate = (dateStr: string) => {
   const [, m, d] = dateStr.split('-');
@@ -75,6 +75,10 @@ export default function TareasScreen() {
   const isWide = Platform.OS === 'web' && width >= 768;
   const role = useAuthStore((s) => s.user?.role ?? 'alumno');
   const isReadOnly = role === 'padre';
+  const courses = useCoursesStore((s) => s.courses);
+  const subjects = useSubjectsStore((s) => s.subjects);
+  const classmates = useSocialStore((s) => s.classmates);
+  const courseClassmates = useMemo(() => classmates.filter((c) => c.grade === '3ro A'), [classmates]);
 
   // ─── Tasks store ───
   const publishedTasks = useTasksStore((s) => s.publishedTasks);
@@ -86,7 +90,7 @@ export default function TareasScreen() {
 
   // ─── Docente state ───
   const docenteTasks = publishedTasks;
-  const [selectedCourseId, setSelectedCourseId] = useState(mockCourses[0]?.id ?? '');
+  const [selectedCourseId, setSelectedCourseId] = useState('');
   const [studentFilters, setStudentFilters] = useState<string[]>([]);
   const [selectedDocenteTask, setSelectedDocenteTask] = useState<DocenteTask | null>(null);
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
@@ -97,7 +101,7 @@ export default function TareasScreen() {
   // Draft state — from store
   const drafts = storeDrafts;
   const [draftTitle, setDraftTitle] = useState('');
-  const [draftCourseId, setDraftCourseId] = useState(mockCourses[0]?.id ?? '');
+  const [draftCourseId, setDraftCourseId] = useState('');
   const [draftAssignTo, setDraftAssignTo] = useState<'curso' | 'alumnos'>('curso');
   const [draftStudentIds, setDraftStudentIds] = useState<string[]>([]);
   const [draftStudentSearch, setDraftStudentSearch] = useState('');
@@ -113,6 +117,14 @@ export default function TareasScreen() {
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [showDraftStudentList, setShowDraftStudentList] = useState(false);
 
+  // Init course selectors once courses load
+  React.useEffect(() => {
+    if (courses.length > 0) {
+      if (!selectedCourseId) setSelectedCourseId(courses[0].id);
+      if (!draftCourseId) setDraftCourseId(courses[0].id);
+    }
+  }, [courses]);
+
   // ─── Alumno/Padre state (must be before early returns for hooks consistency) ───
   const userId = useAuthStore((s) => s.user?.id ?? 'u1');
   const STUDENT_COURSE_ID = 'c1'; // Lucía Martínez is in 3ro A (c1)
@@ -122,8 +134,8 @@ export default function TareasScreen() {
     const fromDocente: Task[] = publishedTasks
       .filter((t) => t.courseId === STUDENT_COURSE_ID)
       .map((t) => {
-        const course = mockCourses.find((c) => c.id === t.courseId);
-        const subject = course ? mockSubjects.find((s) => s.id === course.subjectId) : null;
+        const course = courses.find((c) => c.id === t.courseId);
+        const subject = course ? subjects.find((s) => s.id === course.subjectId) : null;
         const delivery = t.deliveries.find((d) => d.studentId === userId);
         return {
           id: t.id,
@@ -185,7 +197,7 @@ export default function TareasScreen() {
   const taskSubjects = useMemo(() => {
     const unique = [...new Set(tasks.map((t) => t.subject))];
     return unique.map((name) => {
-      const s = mockSubjects.find((ms) => ms.name === name);
+      const s = subjects.find((ms) => ms.name === name);
       return { name, color: s?.color ?? Colors.textSecondary };
     });
   }, [tasks]);
@@ -198,7 +210,7 @@ export default function TareasScreen() {
   }, [tasks]);
 
   // ─── Docente derived values (before early return for hooks consistency) ───
-  const selectedCourse = mockCourses.find((c) => c.id === selectedCourseId);
+  const selectedCourse = courses.find((c) => c.id === selectedCourseId);
   const courseStudents = selectedCourse?.students ?? [];
 
   const filteredStudents = useMemo(() => {
@@ -221,7 +233,7 @@ export default function TareasScreen() {
     // Detail view for a docente task
     if (selectedDocenteTask) {
       const freshDT = docenteTasks.find((t) => t.id === selectedDocenteTask.id) ?? selectedDocenteTask;
-      const taskCourse = mockCourses.find((c) => c.id === freshDT.courseId);
+      const taskCourse = courses.find((c) => c.id === freshDT.courseId);
       const totalStudents = freshDT.deliveries.length;
       const deliveredCount = freshDT.deliveries.filter((d) => d.status === 'entregado').length;
       const pendingCount = totalStudents - deliveredCount;
@@ -341,7 +353,7 @@ export default function TareasScreen() {
     // ─── Docente main list ───
     const renderCourseTabs = () => (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border }} contentContainerStyle={docenteStyles.courseTabs}>
-        {mockCourses.map((c) => {
+        {courses.map((c) => {
           const active = selectedCourseId === c.id;
           return (
             <Pressable
@@ -519,7 +531,7 @@ export default function TareasScreen() {
     // ─── Docente draft helpers ───
     const resetDraftForm = () => {
       setDraftTitle('');
-      setDraftCourseId(mockCourses[0]?.id ?? '');
+      setDraftCourseId(courses[0]?.id ?? 'c1');
       setDraftAssignTo('curso');
       setDraftStudentIds([]);
       setDraftStudentSearch('');
@@ -569,7 +581,7 @@ export default function TareasScreen() {
     const sendDraft = (draftId: string) => {
       const draft = drafts.find((d) => d.id === draftId);
       if (!draft) return;
-      const course = mockCourses.find((c) => c.id === draft.courseId);
+      const course = courses.find((c) => c.id === draft.courseId);
       if (!course) return;
 
       const targetStudents = draft.assignTo === 'alumnos' && draft.selectedStudentIds.length > 0
@@ -613,7 +625,7 @@ export default function TareasScreen() {
             </View>
           ) : (
             drafts.map((draft) => {
-              const course = mockCourses.find((c) => c.id === draft.courseId);
+              const course = courses.find((c) => c.id === draft.courseId);
               const dl = getDaysLeft(draft.dueDate);
               return (
                 <Pressable key={draft.id} style={docenteStyles.draftCard} onPress={() => editDraft(draft)}>
@@ -656,7 +668,7 @@ export default function TareasScreen() {
               <Text style={styles.confirmBody}>
                 {(() => {
                   const draft = drafts.find((d) => d.id === showSendConfirm);
-                  const course = mockCourses.find((c) => c.id === draft?.courseId);
+                  const course = courses.find((c) => c.id === draft?.courseId);
                   if (!draft) return '';
                   const targetCount = draft.assignTo === 'alumnos' && draft.selectedStudentIds.length > 0
                     ? `${draft.selectedStudentIds.length} alumno${draft.selectedStudentIds.length > 1 ? 's' : ''}`
@@ -716,7 +728,7 @@ export default function TareasScreen() {
 
               <Text style={styles.formLabel}>Curso</Text>
               <View style={styles.subjectSelectList}>
-                {mockCourses.map((c) => {
+                {courses.map((c) => {
                   const selected = draftCourseId === c.id;
                   return (
                     <Pressable
@@ -751,7 +763,7 @@ export default function TareasScreen() {
               </View>
 
               {draftAssignTo === 'alumnos' && (() => {
-                const draftCourse = mockCourses.find((c) => c.id === draftCourseId);
+                const draftCourse = courses.find((c) => c.id === draftCourseId);
                 const draftCourseStudents = draftCourse?.students ?? [];
                 const filteredDraftStudents = draftStudentSearch.trim()
                   ? draftCourseStudents.filter((s) => s.name.toLowerCase().includes(draftStudentSearch.toLowerCase()))
@@ -1120,7 +1132,7 @@ export default function TareasScreen() {
 
   const addTask = () => {
     if (!newTitle.trim()) return;
-    const subjectData = mockSubjects.find((s) => s.name === newSubject);
+    const subjectData = subjects.find((s) => s.name === newSubject);
     const integrantes = newGrupal && selectedClassmates.length > 0 ? selectedClassmates : undefined;
 
     setPersonalTasks((prev) => [{
@@ -1427,7 +1439,7 @@ export default function TareasScreen() {
 
             <Text style={styles.formLabel}>Materia</Text>
             <View style={styles.subjectSelectList}>
-              {mockSubjects.map((s) => {
+              {subjects.map((s) => {
                 const selected = newSubject === s.name;
                 return (
                   <Pressable

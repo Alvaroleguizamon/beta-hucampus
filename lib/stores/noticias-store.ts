@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { FeedPost } from '../types';
-import { mockFeedPosts } from '../mock-data';
+import { supabase } from '../supabase';
 
 interface NoticiasStore {
   posts: FeedPost[];
+  loading: boolean;
+  initialize: () => Promise<void>;
   addPost: (post: Omit<FeedPost, 'id'>) => void;
   updatePost: (id: string, updates: Partial<FeedPost>) => void;
   deletePost: (id: string) => void;
@@ -11,14 +13,45 @@ interface NoticiasStore {
 }
 
 export const useNoticiasStore = create<NoticiasStore>((set, get) => ({
-  posts: mockFeedPosts,
+  posts: [],
+  loading: true,
 
-  addPost: (post) => {
-    const newPost: FeedPost = {
-      ...post,
-      id: `f${Date.now()}`,
-    };
+  initialize: async () => {
+    const { data } = await supabase
+      .from('feed_posts')
+      .select('*')
+      .order('post_date', { ascending: false });
+    if (!data) { set({ loading: false }); return; }
+    set({
+      posts: data.map((r) => ({
+        id: r.id,
+        title: r.title,
+        body: r.body,
+        author: r.author,
+        date: r.post_date,
+        category: r.category as FeedPost['category'],
+        image: r.image_url ?? undefined,
+        targetAudience: r.target_audience ?? undefined,
+        pinned: r.pinned ?? false,
+      })),
+      loading: false,
+    });
+  },
+
+  addPost: async (post) => {
+    const newPost: FeedPost = { ...post, id: `f${Date.now()}` };
     set((state) => ({ posts: [newPost, ...state.posts] }));
+    supabase.from('feed_posts').insert({
+      id: newPost.id,
+      title: newPost.title,
+      body: newPost.body,
+      author: newPost.author,
+      post_date: newPost.date,
+      category: newPost.category,
+      image_url: newPost.image ?? null,
+      target_audience: newPost.targetAudience ?? null,
+      pinned: newPost.pinned ?? false,
+    });
   },
 
   updatePost: (id, updates) => {
@@ -29,9 +62,8 @@ export const useNoticiasStore = create<NoticiasStore>((set, get) => ({
 
   deletePost: (id) => {
     set((state) => ({ posts: state.posts.filter((p) => p.id !== id) }));
+    supabase.from('feed_posts').delete().eq('id', id);
   },
 
-  getPost: (id) => {
-    return get().posts.find((p) => p.id === id);
-  },
+  getPost: (id) => get().posts.find((p) => p.id === id),
 }));

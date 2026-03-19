@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import WebView from 'react-native-webview';
 import { Colors } from '../../constants/colors';
-import { mockSubjects } from '../../lib/mock-data';
+import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { useBreakpoint, SIDEBAR_WIDTH } from '../../hooks/useBreakpoint';
 
 interface MaterialBase {
@@ -178,7 +178,7 @@ function PDFDetail({ item, onBack }: { item: MaterialFile; onBack: () => void })
 function VideoDetail({ item, onBack, subject, subjectId, onSelectVideo }: {
   item: MaterialVideo;
   onBack: () => void;
-  subject?: typeof mockSubjects[0];
+  subject?: { name: string; color: string; teacher: string };
   subjectId?: string;
   onSelectVideo: (v: MaterialVideo) => void;
 }) {
@@ -280,6 +280,7 @@ function VideoDetail({ item, onBack, subject, subjectId, onSelectVideo }: {
 }
 
 export default function MaterialScreen() {
+  const subjects = useSubjectsStore((s) => s.subjects);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<MaterialVideo | null>(null);
   const [selectedPDF, setSelectedPDF] = useState<MaterialFile | null>(null);
@@ -289,7 +290,7 @@ export default function MaterialScreen() {
   }
 
   if (selectedVideo) {
-    const subject = mockSubjects.find((s) => s.id === (selectedSubject ?? ''));
+    const subject = subjects.find((s) => s.id === (selectedSubject ?? ''));
     return (
       <VideoDetail
         item={selectedVideo}
@@ -302,7 +303,7 @@ export default function MaterialScreen() {
   }
 
   if (selectedSubject) {
-    const subject = mockSubjects.find((s) => s.id === selectedSubject);
+    const subject = subjects.find((s) => s.id === selectedSubject);
     const materials = materialBySubject[selectedSubject] ?? [];
 
     return (
@@ -361,7 +362,7 @@ export default function MaterialScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={mockSubjects}
+        data={subjects}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => {

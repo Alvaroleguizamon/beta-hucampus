@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, FlatList } from 'react-native';
 import { Text, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { mockCalendarEvents } from '../../lib/mock-data';
+import { useCalendarStore } from '../../lib/stores/calendar-store';
 import { Colors } from '../../constants/colors';
 import { CalendarEvent } from '../../lib/types';
 
@@ -14,12 +14,13 @@ const typeConfig: Record<CalendarEvent['type'], { color: string; icon: string; l
 };
 
 export default function EventosScreen() {
+  const events = useCalendarStore((s) => s.events);
   const today = new Date().toISOString().split('T')[0];
-  const upcoming = mockCalendarEvents
+  const upcoming = events
     .filter((e) => e.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const past = mockCalendarEvents
+  const past = events
     .filter((e) => e.date < today)
     .sort((a, b) => b.date.localeCompare(a.date));
 

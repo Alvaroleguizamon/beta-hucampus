@@ -5,22 +5,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useGroupsStore } from '../../../lib/stores/groups-store';
 import { useAuthStore } from '../../../lib/stores/auth-store';
+import { useCoursesStore } from '../../../lib/stores/courses-store';
 import { WallPostCard } from '../../../components/social/WallPostCard';
 import { Colors } from '../../../constants/colors';
-import { mockCourses } from '../../../lib/mock-data';
-
-// Pool de todos los usuarios conocidos para buscar al invitar
-const ALL_USERS = [
-  ...mockCourses.flatMap((c) =>
-    c.students.map((s) => ({ id: s.id, name: s.name, role: 'alumno' as const, grade: c.grade })),
-  ),
-  { id: 'doc1', name: 'Prof. García', role: 'docente' as const, grade: '' },
-  { id: 'doc2', name: 'Prof. Martínez', role: 'docente' as const, grade: '' },
-  { id: 'doc3', name: 'Prof. López', role: 'docente' as const, grade: '' },
-  { id: 'doc4', name: 'Prof. Fernández', role: 'docente' as const, grade: '' },
-  { id: 'doc5', name: 'Prof. Rodríguez', role: 'docente' as const, grade: '' },
-  { id: 'u1', name: 'Lucía Martínez', role: 'alumno' as const, grade: '3ro A' },
-];
 
 const TYPE_LABEL: Record<string, string> = {
   curso: 'Curso',
@@ -46,12 +33,23 @@ export default function GroupDetailScreen() {
   const userId = user?.id ?? 'u1';
   const role = user?.role ?? 'alumno';
 
+  const courses = useCoursesStore((s) => s.courses);
   const group = groups.find((g) => g.id === id);
   const posts = groupPosts[id ?? ''] ?? [];
   const isMember = group?.members.some((m) => m.userId === userId) ?? false;
   const isAdmin = isGroupAdmin(id ?? '', userId);
   const canPost = isMember;
   const canInvite = isAdmin || role === 'docente';
+
+  // Build searchable user pool from Supabase courses
+  const allUsers = useMemo(() => [
+    ...courses.flatMap((c) =>
+      c.students.map((s) => ({ id: s.id, name: s.name, role: 'alumno' as const, grade: c.grade }))
+    ),
+    { id: 'doc1', name: 'Prof. García', role: 'docente' as const, grade: '' },
+    { id: 'doc2', name: 'Prof. Martínez', role: 'docente' as const, grade: '' },
+    { id: 'u1', name: 'Lucía Martínez', role: 'alumno' as const, grade: '3ro A' },
+  ], [courses]);
 
   const [showComposer, setShowComposer] = useState(false);
   const [postText, setPostText] = useState('');
@@ -67,12 +65,12 @@ export default function GroupDetailScreen() {
   const inviteResults = useMemo(() => {
     if (!inviteSearch.trim()) return [];
     const q = inviteSearch.toLowerCase();
-    return ALL_USERS.filter(
+    return allUsers.filter(
       (u) => !memberIds.has(u.id) && u.name.toLowerCase().includes(q),
     ).slice(0, 8);
   }, [inviteSearch, memberIds]);
 
-  const handleInvite = (targetUser: typeof ALL_USERS[0]) => {
+  const handleInvite = (targetUser: typeof allUsers[0]) => {
     inviteMember(id ?? '', {
       userId: targetUser.id,
       userName: targetUser.name,

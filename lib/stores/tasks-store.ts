@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { supabase } from '../supabase';
 import { useNotificationsStore } from './notifications-store';
 
 export interface StudentDelivery {
@@ -39,88 +40,11 @@ export interface DraftTask {
   attachments: TaskAttachment[];
 }
 
-const initialPublishedTasks: DocenteTask[] = [
-  {
-    id: 'dt1',
-    title: 'Resolver ejercicios pág. 45-48',
-    courseId: 'c1',
-    dueDate: '2026-03-20',
-    priority: 'alta',
-    description: 'Resolver todos los ejercicios de las páginas 45 a 48. Mostrar procedimiento completo.',
-    attachments: [
-      { id: 'att1', type: 'archivo', name: 'Guía_ejercicios_U3.pdf' },
-      { id: 'att2', type: 'link', name: 'Video explicativo - Ecuaciones', url: 'https://example.com/video' },
-    ],
-    deliveries: [
-      { studentId: 'st1', studentName: 'Juan Pérez', status: 'entregado', submissionDate: '2026-03-18', submissionContent: 'Ejercicios resueltos.' },
-      { studentId: 'st2', studentName: 'María González', status: 'entregado', submissionDate: '2026-03-19', submissionContent: 'Adjunto PDF con resolución.' },
-      { studentId: 'st3', studentName: 'Lucas Rodríguez', status: 'pendiente' },
-      { studentId: 'st4', studentName: 'Sofía Martínez', status: 'pendiente' },
-      { studentId: 'st5', studentName: 'Mateo López', status: 'entregado', submissionDate: '2026-03-17', submissionContent: 'Resuelto completo.' },
-      { studentId: 'u1', studentName: 'Lucía Martínez', status: 'pendiente' },
-    ],
-  },
-  {
-    id: 'dt2',
-    title: 'Estudiar para parcial - Unidades 1-3',
-    courseId: 'c1',
-    dueDate: '2026-03-25',
-    priority: 'media',
-    description: 'Estudiar unidades 1 a 3 para el parcial.',
-    deliveries: [
-      { studentId: 'st1', studentName: 'Juan Pérez', status: 'pendiente' },
-      { studentId: 'st2', studentName: 'María González', status: 'pendiente' },
-      { studentId: 'st3', studentName: 'Lucas Rodríguez', status: 'pendiente' },
-      { studentId: 'st4', studentName: 'Sofía Martínez', status: 'pendiente' },
-      { studentId: 'st5', studentName: 'Mateo López', status: 'pendiente' },
-      { studentId: 'u1', studentName: 'Lucía Martínez', status: 'pendiente' },
-    ],
-  },
-  {
-    id: 'dt3',
-    title: 'Trabajo práctico - Ecuaciones cuadráticas',
-    courseId: 'c2',
-    dueDate: '2026-03-22',
-    priority: 'alta',
-    description: 'Resolver guía de ecuaciones cuadráticas.',
-    deliveries: [
-      { studentId: 'st6', studentName: 'Valentina Díaz', status: 'entregado', submissionDate: '2026-03-20', submissionContent: 'Guía resuelta.' },
-      { studentId: 'st7', studentName: 'Tomás Fernández', status: 'pendiente' },
-      { studentId: 'st8', studentName: 'Camila Ruiz', status: 'entregado', submissionDate: '2026-03-21', submissionContent: 'Adjunto archivo.' },
-    ],
-  },
-  {
-    id: 'dt4',
-    title: 'Ejercicios de repaso',
-    courseId: 'c2',
-    dueDate: '2026-03-28',
-    priority: 'baja',
-    description: 'Completar ejercicios de repaso del cuadernillo.',
-    deliveries: [
-      { studentId: 'st6', studentName: 'Valentina Díaz', status: 'pendiente' },
-      { studentId: 'st7', studentName: 'Tomás Fernández', status: 'pendiente' },
-      { studentId: 'st8', studentName: 'Camila Ruiz', status: 'pendiente' },
-    ],
-  },
-];
-
-const initialDrafts: DraftTask[] = [
-  {
-    id: 'draft1',
-    title: 'Ejercicios de funciones',
-    courseId: 'c1',
-    assignTo: 'curso',
-    selectedStudentIds: [],
-    dueDate: '2026-04-01',
-    priority: 'media',
-    description: 'Resolver ejercicios 1 a 15 de la guía de funciones lineales.',
-    attachments: [],
-  },
-];
-
 interface TasksState {
   publishedTasks: DocenteTask[];
   drafts: DraftTask[];
+  loading: boolean;
+  initialize: () => Promise<void>;
   publishTask: (task: DocenteTask) => void;
   saveDraft: (draft: Omit<DraftTask, 'id'>, editingId?: string) => void;
   removeDraft: (id: string) => void;
@@ -128,8 +52,75 @@ interface TasksState {
 }
 
 export const useTasksStore = create<TasksState>((set) => ({
-  publishedTasks: initialPublishedTasks,
-  drafts: initialDrafts,
+  publishedTasks: [],
+  drafts: [],
+  loading: true,
+
+  initialize: async () => {
+    const [tasksRes, deliveriesRes, attachmentsRes, profilesRes] = await Promise.all([
+      supabase.from('tasks').select('*'),
+      supabase.from('task_deliveries').select('*'),
+      supabase.from('task_attachments').select('*'),
+      supabase.from('profiles').select('id, name'),
+    ]);
+    const profileMap: Record<string, string> = Object.fromEntries(
+      (profilesRes.data ?? []).map((p) => [p.id, p.name])
+    );
+    const allDeliveries = deliveriesRes.data ?? [];
+    const allAttachments = attachmentsRes.data ?? [];
+    const allTasks = tasksRes.data ?? [];
+
+    const published: DocenteTask[] = allTasks
+      .filter((t) => !t.is_draft)
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        courseId: t.course_id,
+        dueDate: t.due_date,
+        priority: t.priority as DocenteTask['priority'],
+        description: t.description ?? undefined,
+        attachments: allAttachments
+          .filter((a) => a.task_id === t.id)
+          .map((a) => ({
+            id: a.id,
+            type: a.type as TaskAttachment['type'],
+            name: a.name,
+            url: a.url ?? undefined,
+          })),
+        deliveries: allDeliveries
+          .filter((d) => d.task_id === t.id)
+          .map((d) => ({
+            studentId: d.student_id,
+            studentName: profileMap[d.student_id] ?? d.student_id,
+            status: d.status as StudentDelivery['status'],
+            submissionDate: d.submission_date ?? undefined,
+            submissionContent: d.submission_content ?? undefined,
+          })),
+      }));
+
+    const drafts: DraftTask[] = allTasks
+      .filter((t) => t.is_draft)
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        courseId: t.course_id,
+        assignTo: 'curso' as const,
+        selectedStudentIds: [],
+        dueDate: t.due_date,
+        priority: t.priority as DraftTask['priority'],
+        description: t.description ?? '',
+        attachments: allAttachments
+          .filter((a) => a.task_id === t.id)
+          .map((a) => ({
+            id: a.id,
+            type: a.type as TaskAttachment['type'],
+            name: a.name,
+            url: a.url ?? undefined,
+          })),
+      }));
+
+    set({ publishedTasks: published, drafts, loading: false });
+  },
 
   publishTask: (task) => {
     set((s) => ({ publishedTasks: [task, ...s.publishedTasks] }));
@@ -141,6 +132,15 @@ export const useTasksStore = create<TasksState>((set) => ({
       targetRole: 'alumno',
       deepLink: '/(tabs)/grades',
     });
+    supabase.from('tasks').insert({
+      id: task.id,
+      title: task.title,
+      course_id: task.courseId,
+      due_date: task.dueDate,
+      priority: task.priority,
+      description: task.description ?? null,
+      is_draft: false,
+    });
   },
 
   saveDraft: (draftData, editingId) =>
@@ -148,19 +148,30 @@ export const useTasksStore = create<TasksState>((set) => ({
       if (editingId) {
         return {
           drafts: s.drafts.map((d) =>
-            d.id === editingId ? { ...d, ...draftData } : d,
+            d.id === editingId ? { ...d, ...draftData } : d
           ),
         };
       }
-      return {
-        drafts: [{ id: `draft${Date.now()}`, ...draftData }, ...s.drafts],
-      };
+      const newDraft = { id: `draft${Date.now()}`, ...draftData };
+      supabase.from('tasks').insert({
+        id: newDraft.id,
+        title: newDraft.title,
+        course_id: newDraft.courseId,
+        due_date: newDraft.dueDate,
+        priority: newDraft.priority,
+        description: newDraft.description,
+        is_draft: true,
+      });
+      return { drafts: [newDraft, ...s.drafts] };
     }),
 
-  removeDraft: (id) =>
-    set((s) => ({ drafts: s.drafts.filter((d) => d.id !== id) })),
+  removeDraft: (id) => {
+    set((s) => ({ drafts: s.drafts.filter((d) => d.id !== id) }));
+    supabase.from('tasks').delete().eq('id', id);
+  },
 
-  submitDelivery: (taskId, studentId, content) =>
+  submitDelivery: (taskId, studentId, content) => {
+    const today = new Date().toISOString().split('T')[0];
     set((s) => ({
       publishedTasks: s.publishedTasks.map((task) =>
         task.id !== taskId
@@ -173,11 +184,21 @@ export const useTasksStore = create<TasksState>((set) => ({
                   : {
                       ...d,
                       status: 'entregado' as const,
-                      submissionDate: new Date().toISOString().split('T')[0],
+                      submissionDate: today,
                       submissionContent: content,
-                    },
+                    }
               ),
-            },
+            }
       ),
-    })),
+    }));
+    supabase
+      .from('task_deliveries')
+      .update({
+        status: 'entregado',
+        submission_date: today,
+        submission_content: content,
+      })
+      .eq('task_id', taskId)
+      .eq('student_id', studentId);
+  },
 }));

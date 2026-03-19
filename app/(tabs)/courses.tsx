@@ -3,19 +3,22 @@ import { StyleSheet, View, FlatList } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Card } from '../../components/ui/Card';
-import { mockCourses, mockSubjects } from '../../lib/mock-data';
+import { useCoursesStore } from '../../lib/stores/courses-store';
+import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { Colors } from '../../constants/colors';
 import { Layout } from '../../constants/layout';
 
 export default function CoursesScreen() {
+  const courses = useCoursesStore((s) => s.courses);
+  const subjects = useSubjectsStore((s) => s.subjects);
   return (
     <View style={styles.container}>
       <FlatList
-        data={mockCourses}
+        data={courses}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => {
-          const subject = mockSubjects.find((s) => s.id === item.subjectId);
+          const subject = subjects.find((s) => s.id === item.subjectId);
           return (
             <Card>
               <View style={styles.row}>

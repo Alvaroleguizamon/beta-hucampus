@@ -1,67 +1,42 @@
 import { create } from 'zustand';
 import { AppNotification, Role } from '../types';
-
-const seedNotifications: AppNotification[] = [
-  {
-    id: 'n1',
-    type: 'tarea',
-    title: 'Nueva tarea publicada',
-    body: 'Ejercicios de fracciones — entrega 20/03',
-    date: '2026-03-10',
-    read: false,
-    targetRole: 'alumno',
-    deepLink: '/(tabs)/grades',
-  },
-  {
-    id: 'n2',
-    type: 'comunicado',
-    title: 'Reunión de padres',
-    body: 'El jueves 20/03 a las 18 hs en el salón principal.',
-    date: '2026-03-12',
-    read: false,
-    deepLink: '/(tabs)/communications',
-  },
-  {
-    id: 'n3',
-    type: 'grupo',
-    title: 'Invitación a grupo',
-    body: 'Fuiste invitado al grupo Robótica 2026.',
-    date: '2026-03-14',
-    read: false,
-    targetRole: 'alumno',
-    deepLink: '/(tabs)/grupos',
-  },
-  {
-    id: 'n4',
-    type: 'autorizacion',
-    title: 'Autorización pendiente',
-    body: 'Excursión al Planetario requiere tu autorización.',
-    date: '2026-03-15',
-    read: false,
-    targetRole: 'padre',
-    deepLink: '/(tabs)/grades',
-  },
-  {
-    id: 'n5',
-    type: 'comunicado',
-    title: 'Acto del 24 de Marzo',
-    body: 'Recordatorio: acto institucional el lunes 24/03.',
-    date: '2026-03-16',
-    read: true,
-    deepLink: '/(tabs)/wall',
-  },
-];
+import { supabase } from '../supabase';
 
 interface NotificationsState {
   notifications: AppNotification[];
+  loading: boolean;
+  initialize: (userId: string, role: Role) => Promise<void>;
   addNotification: (notification: Omit<AppNotification, 'id' | 'read'>) => void;
-  markRead: (id: string) => void;
+  markRead: (id: string, userId: string) => void;
   markAllRead: (userId: string, role: Role) => void;
   getUnreadCount: (userId: string, role: Role) => number;
 }
 
 export const useNotificationsStore = create<NotificationsState>((set, get) => ({
-  notifications: seedNotifications,
+  notifications: [],
+  loading: true,
+
+  initialize: async (userId, role) => {
+    const [notifRes, readsRes] = await Promise.all([
+      supabase.from('notifications').select('*').order('notif_date', { ascending: false }),
+      supabase.from('notification_reads').select('notification_id').eq('user_id', userId),
+    ]);
+    const readIds = new Set((readsRes.data ?? []).map((r) => r.notification_id));
+    set({
+      notifications: (notifRes.data ?? []).map((n) => ({
+        id: n.id,
+        type: n.notif_type as AppNotification['type'],
+        title: n.title,
+        body: n.body,
+        date: n.notif_date,
+        read: readIds.has(n.id),
+        targetUserId: n.target_user_id ?? undefined,
+        targetRole: n.target_role ?? undefined,
+        deepLink: n.deep_link ?? undefined,
+      })),
+      loading: false,
+    });
+  },
 
   addNotification: (notification) => {
     const newNotif: AppNotification = {
@@ -70,17 +45,34 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
       read: false,
     };
     set((state) => ({ notifications: [newNotif, ...state.notifications] }));
+    supabase.from('notifications').insert({
+      id: newNotif.id,
+      notif_type: newNotif.type,
+      title: newNotif.title,
+      body: newNotif.body,
+      notif_date: newNotif.date,
+      target_user_id: newNotif.targetUserId ?? null,
+      target_role: newNotif.targetRole ?? null,
+      deep_link: newNotif.deepLink ?? null,
+    });
   },
 
-  markRead: (id) => {
+  markRead: (id, userId) => {
     set((state) => ({
       notifications: state.notifications.map((n) =>
         n.id === id ? { ...n, read: true } : n
       ),
     }));
+    supabase.from('notification_reads').upsert({ notification_id: id, user_id: userId });
   },
 
   markAllRead: (userId, role) => {
+    const toMark = get().notifications.filter((n) => {
+      if (n.read) return false;
+      const isForUser = !n.targetUserId || n.targetUserId === userId;
+      const isForRole = !n.targetRole || n.targetRole === role;
+      return isForUser && isForRole;
+    });
     set((state) => ({
       notifications: state.notifications.map((n) => {
         if (n.read) return n;
@@ -89,14 +81,18 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
         return isForUser && isForRole ? { ...n, read: true } : n;
       }),
     }));
+    if (toMark.length > 0) {
+      supabase.from('notification_reads').upsert(
+        toMark.map((n) => ({ notification_id: n.id, user_id: userId }))
+      );
+    }
   },
 
-  getUnreadCount: (userId, role) => {
-    return get().notifications.filter((n) => {
+  getUnreadCount: (userId, role) =>
+    get().notifications.filter((n) => {
       if (n.read) return false;
       const isForUser = !n.targetUserId || n.targetUserId === userId;
       const isForRole = !n.targetRole || n.targetRole === role;
       return isForUser && isForRole;
-    }).length;
-  },
+    }).length,
 }));

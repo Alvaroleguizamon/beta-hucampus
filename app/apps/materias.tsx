@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, FlatList, ScrollView } from 'react-native';
 import { Text, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { mockSubjects } from '../../lib/mock-data';
+import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { Colors } from '../../constants/colors';
 
 const subjectDetails: Record<string, { schedule: string; room: string }> = {
@@ -49,6 +49,7 @@ const schedule: Record<string, { time: string; subject: string; color: string; r
 };
 
 export default function MateriasScreen() {
+  const subjects = useSubjectsStore((s) => s.subjects);
   const [tab, setTab] = useState('horarios');
   const today = new Date().getDay();
   const todayIndex = today >= 1 && today <= 5 ? today - 1 : 0;
@@ -67,7 +68,7 @@ export default function MateriasScreen() {
 
       {tab === 'materias' ? (
         <FlatList
-          data={mockSubjects}
+          data={subjects}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {

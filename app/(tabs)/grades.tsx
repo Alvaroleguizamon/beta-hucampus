@@ -5,8 +5,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { useTasksStore } from '../../lib/stores/tasks-store';
+import { useCoursesStore } from '../../lib/stores/courses-store';
 import { Colors } from '../../constants/colors';
-import { mockCourses } from '../../lib/mock-data';
 
 type AppItem = {
   icon: string;
@@ -62,16 +62,17 @@ export default function GradesScreen() {
   const apps = appsByRole[role];
 
   const publishedTasks = useTasksStore((s) => s.publishedTasks);
+  const courses = useCoursesStore((s) => s.courses);
   const pendingTasksCount = React.useMemo(() => {
     if (role !== 'alumno') return 0;
-    const course = mockCourses.find((c) => c.students.some((s) => s.id === userId) || userId === 'u1');
+    const course = courses.find((c) => c.students.some((s) => s.id === userId));
     const courseId = course?.id ?? 'c1';
     return publishedTasks.filter((t) => {
       if (t.courseId !== courseId) return false;
       const delivery = t.deliveries.find((d) => d.studentId === userId);
       return !delivery || delivery.status === 'pendiente';
     }).length;
-  }, [publishedTasks, userId, role]);
+  }, [publishedTasks, userId, role, courses]);
 
   function getBadgeForApp(label: string): number | undefined {
     if (label === 'Tareas' && pendingTasksCount > 0) return pendingTasksCount;
