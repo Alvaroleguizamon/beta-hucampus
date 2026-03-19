@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { router } from 'expo-router';
 import { useCalendarStore } from '../../lib/stores/calendar-store';
-import { mockTrips } from '../../lib/mock-data';
+import { useTripsStore } from '../../lib/stores/trips-store';
 import { Colors } from '../../constants/colors';
 import { CalendarEvent } from '../../lib/types';
 import { tripTypeConfig } from '../apps/viajes';
@@ -45,6 +45,7 @@ type AgendaItem = {
 
 export default function CalendarScreen() {
   const events = useCalendarStore((s) => s.events);
+  const trips = useTripsStore((s) => s.trips);
   const today = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(today);
 
@@ -58,7 +59,7 @@ export default function CalendarScreen() {
       kind: 'event' as const,
       type: e.type,
     }));
-    mockTrips.forEach((t) => {
+    trips.forEach((t) => {
       items.push({
         id: t.id,
         title: t.title,
@@ -70,7 +71,7 @@ export default function CalendarScreen() {
       });
     });
     return items;
-  }, [events]);
+  }, [events, trips]);
 
   const markedDates = useMemo(() => {
     const marks: Record<string, any> = {};

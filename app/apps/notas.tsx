@@ -4,7 +4,8 @@ import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { useGradesStore } from '../../lib/stores/grades-store';
-import { mockSubjects, mockCourses } from '../../lib/mock-data';
+import { useCoursesStore } from '../../lib/stores/courses-store';
+import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { Colors } from '../../constants/colors';
 
 // Padre → child mapping para este demo
@@ -20,9 +21,10 @@ function getGradeColor(value: number) {
 
 function GradesList({ studentId }: { studentId: string }) {
   const grades = useGradesStore((s) => s.grades);
+  const subjects = useSubjectsStore((s) => s.subjects);
   const studentGrades = grades.filter((g) => g.studentId === studentId);
 
-  const bySubject = mockSubjects.map((subject) => {
+  const bySubject = subjects.map((subject) => {
     const subGrades = studentGrades.filter((g) => g.subjectId === subject.id);
     const avg = subGrades.length
       ? subGrades.reduce((s, g) => s + g.value, 0) / subGrades.length
@@ -116,10 +118,11 @@ function PadreView({ userId }: { userId: string }) {
 // ─── Vista docente ────────────────────────────────────────────────────────────
 function DocenteView() {
   const grades = useGradesStore((s) => s.grades);
+  const courses = useCoursesStore((s) => s.courses);
   const allStudents = useMemo(() => {
     const seen = new Set<string>();
     const list: { id: string; name: string; course: string }[] = [];
-    mockCourses.forEach((c) => {
+    courses.forEach((c) => {
       c.students.forEach((s) => {
         if (!seen.has(s.id)) {
           seen.add(s.id);

@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCourseStore } from '../../lib/stores/course-store';
 import { useGradesStore } from '../../lib/stores/grades-store';
-import { mockCourses } from '../../lib/mock-data';
+import { useCoursesStore } from '../../lib/stores/courses-store';
 import { Colors } from '../../constants/colors';
 
 function getGradeColor(value: number) {
@@ -91,17 +91,21 @@ function StudentDetail({ studentId, studentName, onBack }: { studentId: string; 
 export default function AlumnosScreen() {
   const selectedCourseId = useCourseStore((s) => s.selectedCourseId);
   const grades = useGradesStore((s) => s.grades);
-  const course = mockCourses.find((c) => c.id === selectedCourseId) ?? mockCourses[0];
+  const courses = useCoursesStore((s) => s.courses);
+  const course = courses.find((c) => c.id === selectedCourseId) ?? courses[0];
 
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
 
   const studentsWithStats = useMemo(() => {
+    if (!course) return [];
     return course.students.map((s) => {
       const sg = grades.filter((g) => g.studentId === s.id);
       const avg = sg.length ? sg.reduce((acc, g) => acc + g.value, 0) / sg.length : null;
       return { ...s, gradeCount: sg.length, avg };
     });
   }, [course, grades]);
+
+  if (!course) return null;
 
   if (selectedStudent) {
     return (

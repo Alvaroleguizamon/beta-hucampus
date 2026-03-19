@@ -1,54 +1,14 @@
 import { create } from 'zustand';
 import { Group, GroupMember, WallPost, ReactionType, Role } from '../types';
-import { mockGroups, mockGroupPosts, mockCourses } from '../mock-data';
+import { supabase } from '../supabase';
 import { useNotificationsStore } from './notifications-store';
-
-// Color por tipo de curso para grupos automáticos
-const COURSE_COLORS = ['#7C6BC4', '#5B77D3', '#0693E3', '#00897B', '#43A047'];
-
-function buildCourseGroups(): Group[] {
-  const existing = new Set(mockGroups.map((g) => g.id));
-  const auto: Group[] = [];
-  mockCourses.forEach((course, idx) => {
-    const gid = `grp-curso-${course.id}`;
-    if (existing.has(gid)) return;
-    // No crear grp-3a si ya existe (mockGroups ya lo tiene)
-    if (mockGroups.some((g) => g.type === 'curso' && g.name.includes(course.grade))) return;
-    auto.push({
-      id: gid,
-      name: `${course.grade} - 2026`,
-      description: `Grupo oficial del curso ${course.grade}.`,
-      type: 'curso',
-      isAutomatic: true,
-      createdBy: 'admin',
-      createdByName: 'Dirección',
-      createdAt: '2026-03-01',
-      coverColor: COURSE_COLORS[idx % COURSE_COLORS.length],
-      members: [
-        ...course.students.map((s) => ({
-          userId: s.id,
-          userName: s.name,
-          role: 'miembro' as const,
-          joinedAt: '2026-03-01',
-        })),
-      ],
-    });
-  });
-  return auto;
-}
-
-const buildInitialPosts = (): Record<string, WallPost[]> => {
-  const map: Record<string, WallPost[]> = {};
-  for (const post of mockGroupPosts) {
-    if (!map[post.groupId!]) map[post.groupId!] = [];
-    map[post.groupId!].push(post);
-  }
-  return map;
-};
 
 interface GroupsState {
   groups: Group[];
   groupPosts: Record<string, WallPost[]>;
+  loading: boolean;
+
+  initialize: () => Promise<void>;
 
   getUserGroups: (userId: string) => Group[];
   getGroupFeedForUser: (userId: string) => WallPost[];
@@ -82,8 +42,93 @@ interface GroupsState {
 }
 
 export const useGroupsStore = create<GroupsState>((set, get) => ({
-  groups: [...mockGroups, ...buildCourseGroups()],
-  groupPosts: buildInitialPosts(),
+  groups: [],
+  groupPosts: {},
+  loading: true,
+
+  initialize: async () => {
+    const [groupsRes, membersRes] = await Promise.all([
+      supabase.from('groups').select('*').order('created_at', { ascending: false }),
+      supabase.from('group_members').select('*'),
+    ]);
+    const groups = groupsRes.data ?? [];
+    const members = membersRes.data ?? [];
+
+    const builtGroups: Group[] = groups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      description: g.description ?? undefined,
+      type: g.group_type as Group['type'],
+      createdBy: g.created_by,
+      createdByName: g.created_by_name,
+      createdAt: g.created_at?.split('T')[0] ?? '',
+      coverColor: g.cover_color,
+      isAutomatic: g.is_automatic,
+      members: members
+        .filter((m) => m.group_id === g.id)
+        .map((m) => ({
+          userId: m.user_id,
+          userName: m.user_name,
+          role: m.member_role as GroupMember['role'],
+          joinedAt: m.joined_at,
+        })),
+    }));
+
+    // Fetch group posts for all groups
+    const groupIds = groups.map((g) => g.id);
+    let groupPosts: Record<string, WallPost[]> = {};
+    if (groupIds.length > 0) {
+      const postsRes = await supabase
+        .from('wall_posts')
+        .select('*')
+        .in('group_id', groupIds)
+        .order('post_date', { ascending: false });
+      const posts = postsRes.data ?? [];
+      if (posts.length > 0) {
+        const postIds = posts.map((p) => p.id);
+        const [reactionsRes, commentsRes, viewsRes] = await Promise.all([
+          supabase.from('wall_reactions').select('*').in('post_id', postIds),
+          supabase.from('wall_comments').select('*').in('post_id', postIds).order('created_at'),
+          supabase.from('wall_views').select('*').in('post_id', postIds),
+        ]);
+        const reactions = reactionsRes.data ?? [];
+        const comments = commentsRes.data ?? [];
+        const views = viewsRes.data ?? [];
+
+        for (const p of posts) {
+          const wallPost: WallPost = {
+            id: p.id,
+            authorId: p.author_id,
+            authorName: p.author_name,
+            authorRole: p.author_role as Role | undefined,
+            text: p.text,
+            image: p.image_url ?? undefined,
+            date: p.post_date,
+            groupId: p.group_id ?? undefined,
+            groupName: p.group_name ?? undefined,
+            likes: [],
+            reactions: Object.fromEntries(
+              reactions.filter((r) => r.post_id === p.id).map((r) => [r.user_id, r.reaction as ReactionType])
+            ),
+            comments: comments
+              .filter((c) => c.post_id === p.id)
+              .map((c) => ({
+                id: c.id,
+                authorId: c.author_id,
+                authorName: c.author_name,
+                text: c.text,
+                date: c.comment_date,
+              })),
+            viewedBy: views.filter((v) => v.post_id === p.id).map((v) => v.user_id),
+          };
+          if (!groupPosts[p.group_id!]) groupPosts[p.group_id!] = [];
+          groupPosts[p.group_id!].push(wallPost);
+        }
+      }
+    }
+
+    set({ groups: builtGroups, groupPosts, loading: false });
+  },
 
   getUserGroups: (userId) =>
     get().groups.filter((g) => g.members.some((m) => m.userId === userId)),
@@ -99,12 +144,12 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
   isGroupAdmin: (groupId, userId) => {
     const group = get().groups.find((g) => g.id === groupId);
     if (!group) return false;
-    const member = group.members.find((m) => m.userId === userId);
-    return member?.role === 'admin';
+    return group.members.find((m) => m.userId === userId)?.role === 'admin';
   },
 
   createGroup: (name, type, description, creatorId, creatorName, coverColor) => {
     const id = `grp-${Date.now()}`;
+    const today = new Date().toISOString().split('T')[0];
     const newGroup: Group = {
       id,
       name,
@@ -112,18 +157,38 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
       type,
       createdBy: creatorId,
       createdByName: creatorName,
-      createdAt: new Date().toISOString().split('T')[0],
+      createdAt: today,
       coverColor,
       isAutomatic: false,
-      members: [{ userId: creatorId, userName: creatorName, role: 'admin', joinedAt: new Date().toISOString().split('T')[0] }],
+      members: [{ userId: creatorId, userName: creatorName, role: 'admin', joinedAt: today }],
     };
     set((state) => ({ groups: [newGroup, ...state.groups] }));
+    supabase.from('groups').insert({
+      id,
+      name,
+      description,
+      group_type: type,
+      created_by: creatorId,
+      created_by_name: creatorName,
+      cover_color: coverColor,
+      is_automatic: false,
+    }).then(() =>
+      supabase.from('group_members').insert({
+        group_id: id,
+        user_id: creatorId,
+        user_name: creatorName,
+        member_role: 'admin',
+        joined_at: today,
+      })
+    );
     return id;
   },
 
   addGroupPost: (groupId, groupName, text, authorId, authorName, authorRole, image) => {
+    const id = `gp${Date.now()}`;
+    const date = new Date().toISOString().split('T')[0];
     const post: WallPost = {
-      id: `gp${Date.now()}`,
+      id,
       groupId,
       groupName,
       authorId,
@@ -131,7 +196,7 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
       authorRole,
       text,
       image,
-      date: new Date().toISOString().split('T')[0],
+      date,
       likes: [],
       reactions: {},
       viewedBy: [],
@@ -143,6 +208,17 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
         [groupId]: [post, ...(state.groupPosts[groupId] ?? [])],
       },
     }));
+    supabase.from('wall_posts').insert({
+      id,
+      group_id: groupId,
+      group_name: groupName,
+      author_id: authorId,
+      author_name: authorName,
+      author_role: authorRole,
+      text,
+      image_url: image ?? null,
+      post_date: date,
+    });
   },
 
   setGroupPostReaction: (groupId, postId, userId, reaction) => {
@@ -158,6 +234,11 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
         }),
       },
     }));
+    if (reaction === null) {
+      supabase.from('wall_reactions').delete().eq('post_id', postId).eq('user_id', userId);
+    } else {
+      supabase.from('wall_reactions').upsert({ post_id: postId, user_id: userId, reaction });
+    }
   },
 
   markGroupPostViewed: (groupId, postId, userId) => {
@@ -171,9 +252,12 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
         }),
       },
     }));
+    supabase.from('wall_views').upsert({ post_id: postId, user_id: userId });
   },
 
   addGroupPostComment: (groupId, postId, userId, userName, text) => {
+    const id = `gc${Date.now()}`;
+    const date = new Date().toISOString().split('T')[0];
     set((state) => ({
       groupPosts: {
         ...state.groupPosts,
@@ -184,12 +268,20 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
                 ...p,
                 comments: [
                   ...p.comments,
-                  { id: `gc${Date.now()}`, authorId: userId, authorName: userName, text, date: new Date().toISOString().split('T')[0] },
+                  { id, authorId: userId, authorName: userName, text, date },
                 ],
-              },
+              }
         ),
       },
     }));
+    supabase.from('wall_comments').insert({
+      id,
+      post_id: postId,
+      author_id: userId,
+      author_name: userName,
+      text,
+      comment_date: date,
+    });
   },
 
   inviteMember: (groupId, member) => {
@@ -198,7 +290,7 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
       groups: state.groups.map((g) =>
         g.id !== groupId
           ? g
-          : { ...g, members: [...g.members.filter((m) => m.userId !== member.userId), member] },
+          : { ...g, members: [...g.members.filter((m) => m.userId !== member.userId), member] }
       ),
     }));
     if (group) {
@@ -211,13 +303,21 @@ export const useGroupsStore = create<GroupsState>((set, get) => ({
         deepLink: `/(tabs)/grupos/${groupId}`,
       });
     }
+    supabase.from('group_members').upsert({
+      group_id: groupId,
+      user_id: member.userId,
+      user_name: member.userName,
+      member_role: member.role,
+      joined_at: member.joinedAt,
+    });
   },
 
   removeMember: (groupId, userId) => {
     set((state) => ({
       groups: state.groups.map((g) =>
-        g.id !== groupId ? g : { ...g, members: g.members.filter((m) => m.userId !== userId) },
+        g.id !== groupId ? g : { ...g, members: g.members.filter((m) => m.userId !== userId) }
       ),
     }));
+    supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', userId);
   },
 }));

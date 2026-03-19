@@ -27,7 +27,7 @@ export default function CommunityScreen() {
   };
 
   const handleChat = (contact: ParentContact) => {
-    const convId = startConversation(contact.id, contact.name);
+    const convId = startConversation(contact.id, contact.name, userId, userName);
     openChat(convId, contact.name);
     setTab('chats');
   };

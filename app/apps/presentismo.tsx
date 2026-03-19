@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, FlatList, Pressable, ScrollView, TextInput } from 'react-native';
 import { Text, Chip } from 'react-native-paper';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { mockAttendance, mockCourses } from '../../lib/mock-data';
+import { useAttendanceStore } from '../../lib/stores/attendance-store';
+import { useCoursesStore } from '../../lib/stores/courses-store';
 import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { AttendanceRecord } from '../../lib/types';
@@ -47,7 +48,8 @@ function initials(name: string) {
 // ─── Historial desplegable ────────────────────────────────────────────────────
 
 function StudentHistory({ studentId, courseId }: { studentId: string; courseId: string }) {
-  const history = mockAttendance
+  const attendance = useAttendanceStore((s) => s.records);
+  const history = attendance
     .filter((a) => a.studentId === studentId && a.courseId === courseId)
     .sort((a, b) => b.date.localeCompare(a.date));
 
@@ -157,14 +159,16 @@ function StudentCard({ entry, override, onOverride, courseId }: StudentCardProps
 // ─── Vista Docente ────────────────────────────────────────────────────────────
 
 function DocenteView() {
-  const [selectedCourseId, setSelectedCourseId] = useState(mockCourses[0].id);
+  const courses = useCoursesStore((s) => s.courses);
+  const attendance = useAttendanceStore((s) => s.records);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [overrides, setOverrides] = useState<Record<string, AttendanceStatus | null>>({});
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('todos');
 
-  const course = mockCourses.find((c) => c.id === selectedCourseId)!;
+  const course = courses.find((c) => c.id === selectedCourseId) ?? courses[0];;
 
   const handleOverride = (studentId: string, status: AttendanceStatus | null) => {
     setOverrides((prev) => ({ ...prev, [studentId]: status }));
@@ -174,7 +178,7 @@ function DocenteView() {
     return course.students.map((s) => ({
       id: s.id,
       name: s.name,
-      record: mockAttendance.find(
+      record: attendance.find(
         (a) => a.studentId === s.id && a.courseId === selectedCourseId && a.date === selectedDate
       ),
     }));
@@ -216,7 +220,7 @@ function DocenteView() {
       {/* Filtro de cursos */}
       <View style={styles.courseFilterContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {mockCourses.map((c) => (
+          {courses.map((c) => (
             <Pressable
               key={c.id}
               style={[styles.courseChip, selectedCourseId === c.id && styles.courseChipActive]}
@@ -330,7 +334,8 @@ function DocenteView() {
 // ─── Vista Alumno/Padre ───────────────────────────────────────────────────────
 
 function AlumnoView() {
-  const records = mockAttendance.filter((a) => a.studentId === 'st1');
+  const allRecords = useAttendanceStore((s) => s.records);
+  const records = allRecords.filter((a) => a.studentId === 'st1');
   const present  = records.filter((a) => a.status === 'presente').length;
   const absent   = records.filter((a) => a.status === 'ausente').length;
   const late     = records.filter((a) => a.status === 'tardanza').length;

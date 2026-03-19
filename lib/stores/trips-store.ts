@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Trip, TripAttendee } from '../types';
-import { mockTrips, mockTripAttendees } from '../mock-data';
+import { supabase } from '../supabase';
 
 export interface Authorization {
   id: string;
@@ -13,6 +13,7 @@ export interface Authorization {
   authorizedDate?: string;
 }
 
+// Static authorizations (not yet in DB schema — kept local for now)
 const initialAuthorizations: Authorization[] = [
   {
     id: 'auth1',
@@ -74,14 +75,62 @@ interface TripsState {
   trips: Trip[];
   attendees: Record<string, TripAttendee[]>;
   authorizations: Authorization[];
+  loading: boolean;
+  initialize: () => Promise<void>;
   authorize: (authId: string, authorizedBy: string) => void;
   reject: (authId: string) => void;
 }
 
 export const useTripsStore = create<TripsState>((set) => ({
-  trips: [...mockTrips],
-  attendees: { ...mockTripAttendees },
+  trips: [],
+  attendees: {},
   authorizations: initialAuthorizations,
+  loading: true,
+
+  initialize: async () => {
+    const [tripsRes, attendeesRes, profilesRes] = await Promise.all([
+      supabase.from('trips').select('*').order('trip_date'),
+      supabase.from('trip_attendees').select('*'),
+      supabase.from('profiles').select('id, name'),
+    ]);
+    const profileMap: Record<string, string> = Object.fromEntries(
+      (profilesRes.data ?? []).map((p) => [p.id, p.name])
+    );
+
+    const trips: Trip[] = (tripsRes.data ?? []).map((t) => ({
+      id: t.id,
+      title: t.title,
+      type: t.trip_type as Trip['type'],
+      date: t.trip_date,
+      location: t.location,
+      status: t.status as Trip['status'],
+      details: {
+        horarioSalida: t.horario_salida ?? '',
+        horarioRegreso: t.horario_regreso ?? '',
+        puntoEncuentro: t.punto_encuentro ?? '',
+        transporte: t.transporte ?? '',
+        descripcion: t.description ?? '',
+        queLlevar: t.que_llevar ?? [],
+        autorizacionRequerida: t.authorization_required,
+        autorizacionEstado: 'pendiente' as const, // will be updated from attendees
+        contactoEmergencia: t.contact_emergency ?? '',
+      },
+    }));
+
+    const attendeeRows = attendeesRes.data ?? [];
+    const attendees: Record<string, TripAttendee[]> = {};
+    for (const a of attendeeRows) {
+      if (!attendees[a.trip_id]) attendees[a.trip_id] = [];
+      attendees[a.trip_id].push({
+        studentId: a.student_id,
+        studentName: profileMap[a.student_id] ?? a.student_id,
+        authorized: a.authorized,
+        authorizedBy: a.authorized_by ?? null,
+      });
+    }
+
+    set({ trips, attendees, loading: false });
+  },
 
   authorize: (authId, authorizedBy) => {
     const today = new Date().toISOString().split('T')[0];
@@ -89,17 +138,13 @@ export const useTripsStore = create<TripsState>((set) => ({
       authorizations: s.authorizations.map((a) =>
         a.id !== authId
           ? a
-          : { ...a, status: 'autorizado' as const, authorizedBy, authorizedDate: today },
+          : { ...a, status: 'autorizado' as const, authorizedBy, authorizedDate: today }
       ),
-      // Also update the matching trip's autorizacionEstado
       trips: s.trips.map((t) => {
         const matchingAuth = s.authorizations.find((a) => a.id === authId);
         if (!matchingAuth) return t;
         if (!t.title.toLowerCase().includes(matchingAuth.title.toLowerCase().slice(0, 10))) return t;
-        return {
-          ...t,
-          details: { ...t.details, autorizacionEstado: 'autorizado' as const },
-        };
+        return { ...t, details: { ...t.details, autorizacionEstado: 'autorizado' as const } };
       }),
     }));
   },
@@ -107,7 +152,7 @@ export const useTripsStore = create<TripsState>((set) => ({
   reject: (authId) =>
     set((s) => ({
       authorizations: s.authorizations.map((a) =>
-        a.id !== authId ? a : { ...a, status: 'rechazado' as const },
+        a.id !== authId ? a : { ...a, status: 'rechazado' as const }
       ),
     })),
 }));

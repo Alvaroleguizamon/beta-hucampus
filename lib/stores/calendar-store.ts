@@ -1,23 +1,42 @@
 import { create } from 'zustand';
 import { CalendarEvent } from '../types';
-import { mockCalendarEvents } from '../mock-data';
+import { supabase } from '../supabase';
 
 interface CalendarState {
   events: CalendarEvent[];
+  loading: boolean;
   selectedDate: string | null;
+  initialize: () => Promise<void>;
   setSelectedDate: (date: string | null) => void;
   getEventsByDate: (date: string) => CalendarEvent[];
   getEventsByType: (type: CalendarEvent['type']) => CalendarEvent[];
 }
 
 export const useCalendarStore = create<CalendarState>((set, get) => ({
-  events: mockCalendarEvents,
+  events: [],
+  loading: true,
   selectedDate: null,
+
+  initialize: async () => {
+    const { data } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .order('event_date');
+    if (!data) { set({ loading: false }); return; }
+    set({
+      events: data.map((r) => ({
+        id: r.id,
+        title: r.title,
+        date: r.event_date,
+        type: r.event_type as CalendarEvent['type'],
+        description: r.description ?? undefined,
+        subjectId: r.subject_id ?? undefined,
+      })),
+      loading: false,
+    });
+  },
+
   setSelectedDate: (date) => set({ selectedDate: date }),
-  getEventsByDate: (date) => {
-    return get().events.filter((e) => e.date === date);
-  },
-  getEventsByType: (type) => {
-    return get().events.filter((e) => e.type === type);
-  },
+  getEventsByDate: (date) => get().events.filter((e) => e.date === date),
+  getEventsByType: (type) => get().events.filter((e) => e.type === type),
 }));

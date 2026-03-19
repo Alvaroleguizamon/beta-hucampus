@@ -4,7 +4,8 @@ import { Text, Button } from 'react-native-paper';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { AttendanceRow } from '../../components/attendance/AttendanceRow';
-import { mockAttendance, mockCourses } from '../../lib/mock-data';
+import { useAttendanceStore } from '../../lib/stores/attendance-store';
+import { useCoursesStore } from '../../lib/stores/courses-store';
 import { Colors } from '../../constants/colors';
 import { Layout } from '../../constants/layout';
 import { AttendanceRecord } from '../../lib/types';
@@ -20,11 +21,13 @@ LocaleConfig.defaultLocale = 'es';
 
 export default function AttendanceScreen() {
   const role = useAuthStore((s) => s.user?.role ?? 'alumno');
-  const [selectedCourse, setSelectedCourse] = useState(mockCourses[0]?.id ?? '');
+  const courses = useCoursesStore((s) => s.courses);
+  const attendance = useAttendanceStore((s) => s.records);
+  const [selectedCourse, setSelectedCourse] = useState('');
   const [todayAttendance, setTodayAttendance] = useState<Record<string, AttendanceRecord['status']>>({});
 
   if (role === 'docente') {
-    const course = mockCourses.find((c) => c.id === selectedCourse);
+    const course = courses.find((c) => c.id === selectedCourse);
     const today = new Date().toISOString().split('T')[0];
 
     return (
@@ -33,7 +36,7 @@ export default function AttendanceScreen() {
           <Text variant="titleMedium" style={styles.sectionTitle}>Tomar asistencia</Text>
 
           <View style={styles.courseSelector}>
-            {mockCourses.map((c) => (
+            {courses.map((c) => (
               <Button
                 key={c.id}
                 mode={selectedCourse === c.id ? 'contained' : 'outlined'}
@@ -93,7 +96,7 @@ export default function AttendanceScreen() {
   }
 
   // Alumno o Padre — con calendario visual
-  const studentAttendance = mockAttendance.filter((a) => a.studentId === 'st1');
+  const studentAttendance = attendance.filter((a) => a.studentId === 'st1');
   const total = studentAttendance.length;
   const present = studentAttendance.filter((a) => a.status === 'presente').length;
   const absent = studentAttendance.filter((a) => a.status === 'ausente').length;
