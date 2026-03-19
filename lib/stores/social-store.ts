@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { WallPost, Classmate, ReactionType, Role } from '../types';
-import { supabase } from '../supabase';
+import { supabase, supabaseAdmin } from '../supabase';
 
 // ─── Image Upload ──────────────────────────────────────────────────────────────
 // Uploads a local image URI to Supabase Storage and returns the public URL.
@@ -22,13 +22,13 @@ export async function uploadPostImage(uri: string): Promise<string> {
     body = await res.blob();
   }
 
-  const { error } = await supabase.storage
+  const { error } = await supabaseAdmin.storage
     .from('post-images')
     .upload(fileName, body, { contentType: mimeType, upsert: false });
 
   if (error) throw new Error(`Upload failed: ${error.message}`);
 
-  const { data } = supabase.storage.from('post-images').getPublicUrl(fileName);
+  const { data } = supabaseAdmin.storage.from('post-images').getPublicUrl(fileName);
   return data.publicUrl;
 }
 
