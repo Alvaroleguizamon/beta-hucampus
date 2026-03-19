@@ -577,22 +577,28 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
     ? Math.max(MIN_CELL_W, Math.floor((containerWidth - TIME_W) / visibleDayIndices.length))
     : MIN_CELL_W;
 
-  const startHour = 7;
-  const endHour = 18;
-  const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+  // Use TIME_SLOTS as rows (each slot = 50 min), exclude the last which is end-only.
+  const slots = TIME_SLOTS.slice(0, -1);
 
-  function getBlock(day: number, hour: number) {
+  function parseMins(t: string) {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function getBlock(day: number, slotTime: string) {
+    const slotMins = parseMins(slotTime);
     return schedules.find((sc) => {
-      const startMins = parseInt(sc.startTime.split(':')[0]) * 60 + parseInt(sc.startTime.split(':')[1]);
-      const endMins = parseInt(sc.endTime.split(':')[0]) * 60 + parseInt(sc.endTime.split(':')[1]);
-      return sc.dayOfWeek === day && hour * 60 >= startMins && hour * 60 < endMins;
+      const startMins = parseMins(sc.startTime);
+      const endMins = parseMins(sc.endTime);
+      return sc.dayOfWeek === day && slotMins >= startMins && slotMins < endMins;
     });
   }
 
   function blockHeight(sc: CourseSchedule) {
-    const startMins = parseInt(sc.startTime.split(':')[0]) * 60 + parseInt(sc.startTime.split(':')[1]);
-    const endMins = parseInt(sc.endTime.split(':')[0]) * 60 + parseInt(sc.endTime.split(':')[1]);
-    return ((endMins - startMins) / 60) * CELL_H;
+    const startMins = parseMins(sc.startTime);
+    const endMins = parseMins(sc.endTime);
+    // Each slot is 50 min
+    return ((endMins - startMins) / 50) * CELL_H;
   }
 
   return (
@@ -608,16 +614,16 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
               </View>
             ))}
           </View>
-          {/* Rows */}
-          {hours.map((hour) => (
-            <View key={hour} style={{ flexDirection: 'row' }}>
+          {/* Rows — one per TIME_SLOT */}
+          {slots.map((slotTime) => (
+            <View key={slotTime} style={{ flexDirection: 'row' }}>
               <View style={[s.gridTimeCell, { width: TIME_W, height: CELL_H }]}>
-                <Text style={s.gridTimeText}>{`${hour}:00`}</Text>
+                <Text style={s.gridTimeText}>{slotTime}</Text>
               </View>
               {visibleDayIndices.map((di) => {
                 const day = di + 1;
-                const block = getBlock(day, hour);
-                const isFirst = block && parseInt(block.startTime.split(':')[0]) === hour;
+                const block = getBlock(day, slotTime);
+                const isFirst = block && block.startTime === slotTime;
                 if (block && !isFirst) {
                   return <View key={day} style={{ flex: 1, minWidth: CELL_W, height: CELL_H, borderBottomWidth: 1, borderBottomColor: Colors.border }} />;
                 }
