@@ -54,6 +54,7 @@ export default function WallScreen() {
 
   const tabs: { key: SubTab; label: string }[] = [
     { key: 'muro', label: 'Muro' },
+    ...(role === 'alumno' || role === 'docente' || role === 'padre' ? [{ key: 'grupos' as SubTab, label: 'Grupos' }] : []),
     { key: 'noticias', label: 'Comunicados' },
   ];
 

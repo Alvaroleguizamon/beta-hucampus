@@ -24,6 +24,7 @@ export interface Subject {
   id: string;
   name: string;
   teacher: string;
+  teacherId?: string;
   color: string;
 }
 
@@ -37,6 +38,7 @@ export interface Grade {
   date: string;
   description: string;
   period: string;
+  category: 'examen' | 'tp';
 }
 
 export interface AttendanceRecord {
