@@ -619,18 +619,19 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
                 }
                 if (block && isFirst) {
                   return (
-                    <Pressable
-                      key={day}
-                      style={[s.gridBlock, { flex: 1, minWidth: CELL_W - 4, height: blockHeight(block) - 4, backgroundColor: block.subjectColor + 'CC', borderColor: block.subjectColor }]}
-                      onPress={() => onEdit(block)}
-                    >
-                      <Text style={s.gridBlockSubject} numberOfLines={1}>{block.subjectName}</Text>
-                      <Text style={s.gridBlockTeacher} numberOfLines={1}>{block.teacherName.split(' ')[0]}</Text>
-                      {!!block.assistantName && (
-                        <Text style={s.gridBlockRoom} numberOfLines={1}>+{block.assistantName.split(' ')[0]}</Text>
-                      )}
-                      {!!block.room && <Text style={s.gridBlockRoom} numberOfLines={1}>{block.room}</Text>}
-                    </Pressable>
+                    <View key={day} style={{ flex: 1, minWidth: CELL_W, height: CELL_H, overflow: 'visible' }}>
+                      <Pressable
+                        style={[s.gridBlock, { height: blockHeight(block) - 4, backgroundColor: block.subjectColor + 'CC', borderColor: block.subjectColor }]}
+                        onPress={() => onEdit(block)}
+                      >
+                        <Text style={s.gridBlockSubject} numberOfLines={1}>{block.subjectName}</Text>
+                        <Text style={s.gridBlockTeacher} numberOfLines={1}>{block.teacherName.split(' ')[0]}</Text>
+                        {!!block.assistantName && (
+                          <Text style={s.gridBlockRoom} numberOfLines={1}>+{block.assistantName.split(' ')[0]}</Text>
+                        )}
+                        {!!block.room && <Text style={s.gridBlockRoom} numberOfLines={1}>{block.room}</Text>}
+                      </Pressable>
+                    </View>
                   );
                 }
                 return <View key={day} style={[s.gridEmptyCell, { flex: 1, minWidth: CELL_W, height: CELL_H }]} />;
@@ -654,6 +655,20 @@ export default function CourseDetailScreen() {
   const [editingSchedule, setEditingSchedule] = useState<CourseSchedule | null>(null);
   const [studentModal, setStudentModal] = useState(false);
 
+  // ⚠️ All hooks must be called before any early return
+  const schedulesByDay = useMemo(() => {
+    const grouped: Record<number, CourseSchedule[]> = {};
+    (course?.schedules ?? []).forEach((sch) => {
+      if (!grouped[sch.dayOfWeek]) grouped[sch.dayOfWeek] = [];
+      grouped[sch.dayOfWeek].push(sch);
+    });
+    DAYS.forEach((_, i) => {
+      const d = i + 1;
+      grouped[d] = (grouped[d] ?? []).sort((a, b) => a.startTime.localeCompare(b.startTime));
+    });
+    return grouped;
+  }, [course?.schedules]);
+
   if (!course) {
     return (
       <View style={s.center}>
@@ -668,19 +683,6 @@ export default function CourseDetailScreen() {
       { text: 'Eliminar', style: 'destructive', onPress: () => deleteSchedule(sch.id, course.id) },
     ]);
   };
-
-  const schedulesByDay = useMemo(() => {
-    const grouped: Record<number, CourseSchedule[]> = {};
-    course.schedules.forEach((sch) => {
-      if (!grouped[sch.dayOfWeek]) grouped[sch.dayOfWeek] = [];
-      grouped[sch.dayOfWeek].push(sch);
-    });
-    DAYS.forEach((_, i) => {
-      const d = i + 1;
-      grouped[d] = (grouped[d] ?? []).sort((a, b) => a.startTime.localeCompare(b.startTime));
-    });
-    return grouped;
-  }, [course.schedules]);
 
   return (
     <View style={s.screen}>
