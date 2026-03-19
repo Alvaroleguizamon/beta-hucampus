@@ -58,7 +58,7 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, (showMenu || showReactionPicker) && { zIndex: 100 }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -511,11 +511,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 20,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 20,
+    zIndex: 999,
     minWidth: 140,
     overflow: 'hidden',
   },
