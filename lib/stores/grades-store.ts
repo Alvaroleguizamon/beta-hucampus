@@ -8,6 +8,8 @@ interface GradesState {
   loading: boolean;
   initialize: () => Promise<void>;
   addGrade: (grade: Omit<Grade, 'id'>) => void;
+  updateGrade: (id: string, value: number) => void;
+  deleteGrade: (id: string) => void;
   getGradesByStudent: (studentId: string) => Grade[];
   getGradesBySubject: (subjectId: string) => Grade[];
 }
@@ -39,6 +41,7 @@ export const useGradesStore = create<GradesState>((set, get) => ({
         date: g.grade_date,
         description: g.description ?? '',
         period: g.period,
+        category: (g.category ?? 'examen') as 'examen' | 'tp',
       })),
       loading: false,
     });
@@ -63,7 +66,22 @@ export const useGradesStore = create<GradesState>((set, get) => ({
       description: newGrade.description,
       period: newGrade.period,
       grade_date: newGrade.date,
+      category: newGrade.category,
     });
+  },
+
+  updateGrade: (id, value) => {
+    set((state) => ({
+      grades: state.grades.map((g) => g.id === id ? { ...g, value } : g),
+    }));
+    supabase.from('grades').update({ value }).eq('id', id)
+      .then(({ error }) => { if (error) console.error('[grades-store] updateGrade error:', error); });
+  },
+
+  deleteGrade: (id) => {
+    set((state) => ({ grades: state.grades.filter((g) => g.id !== id) }));
+    supabase.from('grades').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[grades-store] deleteGrade error:', error); });
   },
 
   getGradesByStudent: (studentId) => get().grades.filter((g) => g.studentId === studentId),

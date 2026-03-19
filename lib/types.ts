@@ -37,6 +37,7 @@ export interface Grade {
   date: string;
   description: string;
   period: string;
+  category: 'examen' | 'tp';
 }
 
 export interface AttendanceRecord {
