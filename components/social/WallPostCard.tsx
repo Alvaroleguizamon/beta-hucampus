@@ -446,6 +446,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    paddingRight: 4,
   },
   impressionsText: {
     fontSize: 13,
