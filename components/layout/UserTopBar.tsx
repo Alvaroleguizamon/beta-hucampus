@@ -282,7 +282,7 @@ export default function UserTopBar() {
           <View style={styles.optionDivider} />
           <Pressable
             style={styles.option}
-            onPress={() => { setUserDropdownOpen(false); logout(); router.replace('/'); }}
+            onPress={async () => { setUserDropdownOpen(false); await logout(); router.replace('/'); }}
           >
             <MaterialCommunityIcons name="logout" size={17} color={Colors.error} />
             <Text style={[styles.optionText, { color: Colors.error }]}>Cerrar sesión</Text>
