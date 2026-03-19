@@ -205,7 +205,7 @@ function DocenteView() {
                 <Pressable
                   key={s.id}
                   style={[styles.chip, selectedSubjectId === s.id && styles.chipActive]}
-                  onPress={() => handleSelectSubject(s.id)}
+                  onPress={() => setSelectedSubjectId(s.id)}
                 >
                   <Text style={[styles.chipText, selectedSubjectId === s.id && styles.chipTextActive]}>
                     {s.name}
