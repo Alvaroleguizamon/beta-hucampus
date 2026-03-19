@@ -1614,22 +1614,38 @@ export default function TareasScreen() {
             />
 
             <Text style={styles.formLabel}>Materia</Text>
-            <View style={styles.subjectSelectList}>
-              {subjects.map((s) => {
-                const selected = newSubject === s.name;
-                return (
-                  <Pressable
-                    key={s.id}
-                    style={[styles.subjectSelectRow, selected && { backgroundColor: s.color + '10', borderColor: s.color }]}
-                    onPress={() => setNewSubject(selected ? '' : s.name)}
-                  >
-                    <View style={[styles.subjectSelectDot, { backgroundColor: s.color }]} />
-                    <Text style={[styles.subjectSelectText, selected && { color: s.color, fontWeight: '600' }]}>{s.name}</Text>
-                    {selected && <MaterialCommunityIcons name="check" size={18} color={s.color} />}
-                  </Pressable>
-                );
-              })}
-            </View>
+            <Pressable style={styles.datePickerBtn} onPress={() => setShowSubjectDropdown(!showSubjectDropdown)}>
+              {newSubject ? (
+                <>
+                  <View style={[styles.subjectSelectDot, { backgroundColor: subjects.find((s) => s.name === newSubject)?.color ?? Colors.primary }]} />
+                  <Text style={[styles.datePickerText, { flex: 1 }]}>{newSubject}</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialCommunityIcons name="book-open-variant" size={20} color={Colors.primary} />
+                  <Text style={[styles.datePickerText, { color: Colors.textSecondary, flex: 1 }]}>Seleccionar materia</Text>
+                </>
+              )}
+              <MaterialCommunityIcons name={showSubjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
+            </Pressable>
+            {showSubjectDropdown && (
+              <View style={styles.subjectSelectList}>
+                {subjects.map((s) => {
+                  const selected = newSubject === s.name;
+                  return (
+                    <Pressable
+                      key={s.id}
+                      style={[styles.subjectSelectRow, selected && { backgroundColor: s.color + '10', borderColor: s.color }]}
+                      onPress={() => { setNewSubject(selected ? '' : s.name); setShowSubjectDropdown(false); }}
+                    >
+                      <View style={[styles.subjectSelectDot, { backgroundColor: s.color }]} />
+                      <Text style={[styles.subjectSelectText, selected && { color: s.color, fontWeight: '600' }]}>{s.name}</Text>
+                      {selected && <MaterialCommunityIcons name="check" size={18} color={s.color} />}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
 
             <Text style={styles.formLabel}>Fecha de entrega</Text>
             <Pressable style={styles.datePickerBtn} onPress={() => setShowCalendar(!showCalendar)}>
