@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleSheet, View, FlatList } from 'react-native';
-import { Text, Chip } from 'react-native-paper';
+import { StyleSheet, View, FlatList, Pressable, Alert, Platform } from 'react-native';
+import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCalendarStore } from '../../lib/stores/calendar-store';
+import { useAuthStore } from '../../lib/stores/auth-store';
 import { Colors } from '../../constants/colors';
 import { CalendarEvent } from '../../lib/types';
 
@@ -15,6 +16,10 @@ const typeConfig: Record<CalendarEvent['type'], { color: string; icon: string; l
 
 export default function EventosScreen() {
   const events = useCalendarStore((s) => s.events);
+  const deleteEvent = useCalendarStore((s) => s.deleteEvent);
+  const role = useAuthStore((s) => s.user?.role);
+  const canEdit = role === 'docente' || role === 'admin';
+
   const today = new Date().toISOString().split('T')[0];
   const upcoming = events
     .filter((e) => e.date >= today)
@@ -23,6 +28,18 @@ export default function EventosScreen() {
   const past = events
     .filter((e) => e.date < today)
     .sort((a, b) => b.date.localeCompare(a.date));
+
+  const handleDelete = (event: CalendarEvent) => {
+    const doDelete = () => deleteEvent(event.id);
+    if (Platform.OS === 'web') {
+      if (window.confirm(`¿Eliminar "${event.title}"? Esta acción no se puede deshacer.`)) doDelete();
+    } else {
+      Alert.alert('Eliminar evento', `¿Eliminar "${event.title}"?`, [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: doDelete },
+      ]);
+    }
+  };
 
   const renderEvent = (event: CalendarEvent) => {
     const cfg = typeConfig[event.type];
@@ -44,6 +61,11 @@ export default function EventosScreen() {
             <Text style={styles.eventDesc}>{event.description}</Text>
           )}
         </View>
+        {canEdit && (
+          <Pressable onPress={() => handleDelete(event)} hitSlop={8} style={styles.deleteBtn}>
+            <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.error} />
+          </Pressable>
+        )}
       </View>
     );
   };
@@ -87,12 +109,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 10,
     overflow: 'hidden',
+    alignItems: 'center',
   },
   dateBox: {
     width: 60,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 12,
+    alignSelf: 'stretch',
   },
   dateDay: { fontSize: 22, fontWeight: '700' },
   dateMonth: { fontSize: 12, fontWeight: '600', marginTop: 2 },
@@ -101,6 +125,7 @@ const styles = StyleSheet.create({
   eventType: { fontSize: 12, fontWeight: '600' },
   eventTitle: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
   eventDesc: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
+  deleteBtn: { padding: 12 },
   empty: { alignItems: 'center', paddingVertical: 40 },
   emptyText: { color: Colors.textSecondary, marginTop: 12 },
 });
