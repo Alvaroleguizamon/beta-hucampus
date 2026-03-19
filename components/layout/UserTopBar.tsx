@@ -10,6 +10,7 @@ import { mockCourses, mockBirthdays } from '../../lib/mock-data';
 import { Colors } from '../../constants/colors';
 import { Role } from '../../lib/types';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
+import HuCampusLogo from '../ui/HuCampusLogo';
 
 interface Notification {
   id: string;
@@ -140,11 +141,8 @@ export default function UserTopBar() {
         {!showSearch && (
           <View style={styles.left}>
             {!isDesktop && role !== 'docente' ? (
-              <Pressable style={styles.mobileLogoRow} onPress={() => router.replace('/(tabs)/wall' as any)}>
-                <View style={styles.mobileLogoIcon}>
-                  <MaterialCommunityIcons name="school" size={18} color="#FFFFFF" />
-                </View>
-                <Text style={styles.mobileLogoText}>Hu Campus</Text>
+              <Pressable onPress={() => router.replace('/(tabs)/wall' as any)}>
+                <HuCampusLogo width={100} />
               </Pressable>
             ) : role === 'docente' ? (
               <View style={styles.docenteLeftRow}>

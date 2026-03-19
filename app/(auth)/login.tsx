@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { Colors } from '../../constants/colors';
 import { Layout } from '../../constants/layout';
+import HuCampusLogo from '../../components/ui/HuCampusLogo';
 
 const TEST_USERS = [
   { email: 'lucia@school.edu',    label: 'Alumno',   role: 'Lucía Martínez' },
@@ -51,12 +52,7 @@ export default function LoginScreen() {
     >
       <View style={styles.content}>
         <View style={styles.logoContainer}>
-          <View style={styles.logo}>
-            <Text variant="headlineLarge" style={styles.logoText}>H</Text>
-          </View>
-          <Text variant="headlineMedium" style={styles.title}>
-            Hu Campus
-          </Text>
+          <HuCampusLogo width={180} />
           <Text variant="bodyLarge" style={styles.subtitle}>
             Tu colegio en una app
           </Text>

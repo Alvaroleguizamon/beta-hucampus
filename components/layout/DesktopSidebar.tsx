@@ -6,6 +6,7 @@ import { Colors } from '../../constants/colors';
 import { SIDEBAR_WIDTH } from '../../hooks/useBreakpoint';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { Role } from '../../lib/types';
+import HuCampusLogo from '../ui/HuCampusLogo';
 
 type TabConfig = {
   name: string;
@@ -112,10 +113,7 @@ export default function DesktopSidebar() {
   return (
     <View style={styles.sidebar}>
       <View style={styles.logoContainer}>
-        <View style={styles.logoIcon}>
-          <MaterialCommunityIcons name="school" size={22} color="#FFFFFF" />
-        </View>
-        <Text style={styles.logoText}>Hu Campus</Text>
+        <HuCampusLogo width={140} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
