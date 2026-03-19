@@ -7,6 +7,7 @@ import { useGradesStore } from '../../lib/stores/grades-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { Colors } from '../../constants/colors';
+import CourseFilter from '../../components/ui/CourseFilter';
 
 // Padre → child mapping para este demo
 const PADRE_CHILD: Record<string, { id: string; name: string }> = {
@@ -160,22 +161,7 @@ function DocenteView() {
 
   return (
     <View style={styles.root}>
-      {/* Filtro de cursos */}
-      <View style={styles.courseFilterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {courses.map((c) => (
-            <Pressable
-              key={c.id}
-              style={[styles.courseChip, selectedCourseId === c.id && styles.courseChipActive]}
-              onPress={() => setSelectedCourseId(selectedCourseId === c.id ? '' : c.id)}
-            >
-              <Text style={[styles.courseChipText, selectedCourseId === c.id && styles.courseChipTextActive]}>
-                {c.grade}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
+      <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={setSelectedCourseId} />
 
       <ScrollView style={styles.container}>
         <Text style={styles.sectionLabel}>Seleccioná un alumno</Text>
@@ -344,9 +330,4 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
 
   // Filtro de cursos
-  courseFilterContainer: { backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  courseChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary, marginRight: 8 },
-  courseChipActive: { backgroundColor: Colors.primary },
-  courseChipText: { fontSize: 13, color: Colors.primary, fontWeight: '500' },
-  courseChipTextActive: { color: '#FFFFFF' },
 });

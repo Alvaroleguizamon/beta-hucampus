@@ -7,6 +7,7 @@ import { useCoursesStore } from '../../lib/stores/courses-store';
 import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { AttendanceRecord } from '../../lib/types';
+import CourseFilter from '../../components/ui/CourseFilter';
 
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
@@ -217,22 +218,7 @@ function DocenteView() {
   return (
     <View style={styles.container}>
 
-      {/* Filtro de cursos */}
-      <View style={styles.courseFilterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {courses.map((c) => (
-            <Pressable
-              key={c.id}
-              style={[styles.courseChip, selectedCourseId === c.id && styles.courseChipActive]}
-              onPress={() => { setSelectedCourseId(c.id); setOverrides({}); }}
-            >
-              <Text style={[styles.courseChipText, selectedCourseId === c.id && styles.courseChipTextActive]}>
-                {c.grade}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
+      <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={(id) => { setSelectedCourseId(id); setOverrides({}); }} />
 
       {/* Selector de fecha */}
       <Pressable style={styles.dateBar} onPress={() => setCalendarOpen((v) => !v)}>
@@ -440,11 +426,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
 
   // Filtro de cursos
-  courseFilterContainer: { backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  courseChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary, marginRight: 8 },
-  courseChipActive: { backgroundColor: Colors.primary },
-  courseChipText: { fontSize: 13, color: Colors.primary, fontWeight: '500' },
-  courseChipTextActive: { color: '#FFFFFF' },
 
   // Selector de fecha
   dateBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border },

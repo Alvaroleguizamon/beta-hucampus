@@ -8,6 +8,7 @@ import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { useBreakpoint, SIDEBAR_WIDTH } from '../../hooks/useBreakpoint';
+import CourseFilter from '../../components/ui/CourseFilter';
 
 interface MaterialBase {
   id: string;
@@ -367,20 +368,7 @@ export default function MaterialScreen() {
   return (
     <View style={styles.container}>
       {role === 'docente' && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseFilterScroll} contentContainerStyle={styles.courseFilterRow}>
-          {courses.map((c) => {
-            const active = selectedCourseId ? selectedCourseId === c.id : c.id === courses[0]?.id;
-            return (
-              <Pressable
-                key={c.id}
-                style={[styles.courseChip, active && styles.courseChipActive]}
-                onPress={() => setSelectedCourseId(c.id)}
-              >
-                <Text style={[styles.courseChipText, active && styles.courseChipTextActive]}>{c.grade}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <CourseFilter courses={courses} selectedCourseId={selectedCourseId || courses[0]?.id || ''} onSelect={setSelectedCourseId} />
       )}
       <FlatList
         data={subjects}
@@ -408,12 +396,6 @@ export default function MaterialScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  courseFilterScroll: { flexGrow: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border },
-  courseFilterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
-  courseChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary },
-  courseChipActive: { backgroundColor: Colors.primary },
-  courseChipText: { fontSize: 13, fontWeight: '500', color: Colors.primary },
-  courseChipTextActive: { color: '#FFFFFF' },
   list: { padding: 16 },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 16, paddingBottom: 0 },
   backText: { color: Colors.primary, fontSize: 15, fontWeight: '500' },

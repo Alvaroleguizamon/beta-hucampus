@@ -5,6 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Colors } from '../../constants/colors';
+import CourseFilter from '../../components/ui/CourseFilter';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import { useSubjectsStore } from '../../lib/stores/subjects-store';
@@ -261,22 +262,7 @@ export default function TareasScreen() {
 
     // ─── Docente main list ───
     const renderCourseTabs = () => (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border }} contentContainerStyle={docenteStyles.courseTabs}>
-        {courses.map((c) => {
-          const active = selectedCourseId === c.id;
-          return (
-            <Pressable
-              key={c.id}
-              style={[docenteStyles.courseTab, active && docenteStyles.courseTabActive]}
-              onPress={() => { setSelectedCourseId(c.id); setStudentFilters([]); setShowStudentDropdown(false); setStudentSearch(''); }}
-            >
-              <Text style={[docenteStyles.courseTabText, active && docenteStyles.courseTabTextActive]}>
-                {c.grade}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={(id) => { setSelectedCourseId(id); setStudentFilters([]); setShowStudentDropdown(false); setStudentSearch(''); }} />
     );
 
     const toggleStudent = (id: string) => {
@@ -2472,30 +2458,6 @@ const docenteStyles = StyleSheet.create({
   },
   editTaskBtnText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
 
-  courseTabs: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  courseTab: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-  },
-  courseTabActive: {
-    backgroundColor: Colors.primary,
-  },
-  courseTabText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.primary,
-  },
-  courseTabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
   docenteStatsBar: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',

@@ -6,6 +6,7 @@ import { useCourseStore } from '../../lib/stores/course-store';
 import { useGradesStore } from '../../lib/stores/grades-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import { Colors } from '../../constants/colors';
+import CourseFilter from '../../components/ui/CourseFilter';
 
 function getGradeColor(value: number) {
   if (value >= 7) return Colors.success;
@@ -126,20 +127,7 @@ export default function AlumnosScreen() {
 
   return (
     <View style={styles.root}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.courseFilterScroll} contentContainerStyle={styles.courseFilterRow}>
-        {courses.map((c) => {
-          const active = selectedCourseId ? selectedCourseId === c.id : c.id === courses[0]?.id;
-          return (
-            <Pressable
-              key={c.id}
-              style={[styles.courseChip, active && styles.courseChipActive]}
-              onPress={() => setSelectedCourseId(c.id)}
-            >
-              <Text style={[styles.courseChipText, active && styles.courseChipTextActive]}>{c.grade}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <CourseFilter courses={courses} selectedCourseId={selectedCourseId || courses[0]?.id || ''} onSelect={setSelectedCourseId} />
       <FlatList
         data={studentsWithStats}
         keyExtractor={(item) => item.id}
@@ -178,12 +166,6 @@ export default function AlumnosScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
-  courseFilterScroll: { flexGrow: 0, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: Colors.border },
-  courseFilterRow: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-  courseChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary },
-  courseChipActive: { backgroundColor: Colors.primary },
-  courseChipText: { fontSize: 13, fontWeight: '500', color: Colors.primary },
-  courseChipTextActive: { color: '#FFFFFF' },
   container: { flex: 1 },
   header: {
     backgroundColor: '#FFFFFF',
