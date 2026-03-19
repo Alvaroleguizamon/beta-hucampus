@@ -96,7 +96,7 @@ interface TasksState {
   addPersonalTask: (task: Omit<PersonalTask, 'id' | 'ownerId'>, userId: string) => Promise<PersonalTask>;
   submitPersonalDelivery: (taskId: string, content: string, type: 'texto' | 'archivo') => void;
   deletePersonalTask: (taskId: string) => void;
-  publishTask: (task: DocenteTask) => void;
+  publishTask: (task: DocenteTask) => Promise<void>;
   saveDraft: (draft: Omit<DraftTask, 'id'>, editingId?: string) => void;
   removeDraft: (id: string) => void;
   submitDelivery: (taskId: string, studentId: string, content: string) => void;
@@ -254,7 +254,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       .then(({ error }) => { if (error) console.error('[tasks-store] deletePersonalTask error:', error); });
   },
 
-  publishTask: (task) => {
+  publishTask: async (task) => {
     set((s) => ({ publishedTasks: [task, ...s.publishedTasks] }));
     useNotificationsStore.getState().addNotification({
       type: 'tarea',
@@ -264,7 +264,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       targetRole: 'alumno',
       deepLink: '/(tabs)/grades',
     });
-    supabase.from('tasks').insert({
+    const { error } = await supabase.from('tasks').insert({
       id: task.id,
       title: task.title,
       course_id: task.courseId,
@@ -273,6 +273,18 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       description: task.description ?? null,
       is_draft: false,
     });
+    if (error) { console.error('[tasks-store] publishTask error:', error); return; }
+    // Insert a delivery row for each assigned student
+    if (task.deliveries.length > 0) {
+      const { error: de } = await supabase.from('task_deliveries').insert(
+        task.deliveries.map((d) => ({
+          task_id: task.id,
+          student_id: d.studentId,
+          status: 'pendiente',
+        }))
+      );
+      if (de) console.error('[tasks-store] publishTask deliveries error:', de);
+    }
   },
 
   saveDraft: (draftData, editingId) =>
