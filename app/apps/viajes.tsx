@@ -43,7 +43,8 @@ export default function ViajesScreen() {
   const role = useAuthStore((s) => s.user?.role ?? 'alumno');
   const trips = useTripsStore((s) => s.trips);
   const attendees = useTripsStore((s) => s.attendees);
-  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const selectedTrip = selectedTripId ? trips.find((t) => t.id === selectedTripId) ?? null : null;
   const [weekOffset, setWeekOffset] = useState(0);
   const [reminded, setReminded] = useState<Record<string, boolean>>({});
   const userName = useAuthStore((s) => s.user?.name ?? 'Alumno');
@@ -52,7 +53,7 @@ export default function ViajesScreen() {
     useNotificationsStore.getState().addNotification({
       type: 'autorizacion',
       title: 'Autorización pendiente',
-      body: `${userName} necesita tu autorización para "${tripTitle}"`,
+      body: `${userName} necesita tu autorización para "${tripTitle}".\nIngresá a Autorizaciones para firmar.`,
       date: new Date().toISOString().split('T')[0],
       targetRole: 'padre',
       deepLink: '/apps/autorizaciones',
@@ -87,7 +88,7 @@ export default function ViajesScreen() {
 
     return (
       <ScrollView style={styles.container}>
-        <Pressable style={styles.backRow} onPress={() => setSelectedTrip(null)}>
+        <Pressable style={styles.backRow} onPress={() => setSelectedTripId(null)}>
           <MaterialCommunityIcons name="arrow-left" size={20} color={Colors.primary} />
           <Text style={styles.backText}>Viajes y Salidas</Text>
         </Pressable>
@@ -188,7 +189,7 @@ export default function ViajesScreen() {
                 ) : (
                   <Pressable style={styles.reminderBtn} onPress={() => sendAuthReminder(selectedTrip.id, selectedTrip.title)}>
                     <MaterialCommunityIcons name="bell-ring-outline" size={18} color="#FFFFFF" />
-                    <Text style={styles.reminderBtnText}>Notificar a padre/madre</Text>
+                    <Text style={styles.reminderBtnText}>Notificar a padre/madre/tutor</Text>
                   </Pressable>
                 )
               )}
@@ -276,7 +277,7 @@ export default function ViajesScreen() {
                     <Pressable
                       key={dateStr}
                       style={styles.weekDayCol}
-                      onPress={() => { if (tripOnDay) setSelectedTrip(tripOnDay); }}
+                      onPress={() => { if (tripOnDay) setSelectedTripId(tripOnDay.id); }}
                     >
                       <Text style={[styles.weekDayLabel, isToday && styles.weekDayLabelToday]}>
                         {dayLabels[day.getDay()]}
@@ -300,7 +301,7 @@ export default function ViajesScreen() {
                   {weekTrips.map((trip) => {
                     const tCfg = tripTypeConfig[trip.type];
                     return (
-                      <Pressable key={trip.id} style={styles.weekEventRow} onPress={() => setSelectedTrip(trip)}>
+                      <Pressable key={trip.id} style={styles.weekEventRow} onPress={() => setSelectedTripId(trip.id)}>
                         <View style={[styles.weekEventDot, { backgroundColor: tCfg.color }]} />
                         <View style={styles.weekEventInfo}>
                           <Text style={styles.weekEventTitle} numberOfLines={1}>{trip.title}</Text>
@@ -324,7 +325,7 @@ export default function ViajesScreen() {
           const tCfg = tripTypeConfig[item.type];
           const sCfg = statusConfig[item.status];
           return (
-            <Pressable style={styles.tripCard} onPress={() => setSelectedTrip(item)}>
+            <Pressable style={styles.tripCard} onPress={() => setSelectedTripId(item.id)}>
               <View style={[styles.tripIconBox, { backgroundColor: tCfg.color + '15' }]}>
                 <MaterialCommunityIcons name={tCfg.icon as any} size={28} color={tCfg.color} />
               </View>
