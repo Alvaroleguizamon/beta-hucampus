@@ -44,6 +44,7 @@ export default function ViajesScreen() {
   const trips = useTripsStore((s) => s.trips);
   const attendees = useTripsStore((s) => s.attendees);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const selectedTrip = selectedTripId ? trips.find((t) => t.id === selectedTripId) ?? null : null;
   const [weekOffset, setWeekOffset] = useState(0);
   const [reminded, setReminded] = useState<Record<string, boolean>>({});
@@ -156,12 +157,20 @@ export default function ViajesScreen() {
 
           <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>¿Qué llevar?</Text>
-            {d.queLlevar.map((item, i) => (
-              <View key={i} style={styles.checkItem}>
-                <MaterialCommunityIcons name="checkbox-blank-outline" size={20} color={Colors.textSecondary} />
-                <Text style={styles.checkText}>{item}</Text>
-              </View>
-            ))}
+            {d.queLlevar.map((item, i) => {
+              const key = `${selectedTrip.id}-${i}`;
+              const checked = !!checkedItems[key];
+              return (
+                <Pressable key={i} style={styles.checkItem} onPress={() => setCheckedItems((prev) => ({ ...prev, [key]: !checked }))}>
+                  <MaterialCommunityIcons
+                    name={checked ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                    size={20}
+                    color={checked ? Colors.primary : Colors.textSecondary}
+                  />
+                  <Text style={[styles.checkText, checked && styles.checkTextDone]}>{item}</Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           {d.autorizacionRequerida && (
@@ -427,6 +436,7 @@ const styles = StyleSheet.create({
   descText: { fontSize: 14, color: Colors.textPrimary, lineHeight: 22 },
   checkItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   checkText: { fontSize: 14, color: Colors.textPrimary },
+  checkTextDone: { textDecorationLine: 'line-through', color: Colors.textSecondary },
   authRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   authText: { fontSize: 15, fontWeight: '600' },
   reminderBtn: {
