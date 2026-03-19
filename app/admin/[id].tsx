@@ -564,9 +564,15 @@ function StudentPickerModal({
 // ─── Weekly Schedule Grid ─────────────────────────────────────────────────────
 
 function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEdit: (s: CourseSchedule) => void }) {
-  const CELL_W = 100;
+  const [containerWidth, setContainerWidth] = useState(0);
   const CELL_H = 54;
   const TIME_W = 52;
+  const MIN_CELL_W = 80;
+  // Fill container: distribute remaining width evenly across all 7 days
+  const CELL_W = containerWidth > 0
+    ? Math.max(MIN_CELL_W, Math.floor((containerWidth - TIME_W) / DAYS.length))
+    : MIN_CELL_W;
+
   const startHour = 7;
   const endHour = 18;
   const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
@@ -586,50 +592,54 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
   }
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <View>
-        <View style={{ flexDirection: 'row' }}>
-          <View style={{ width: TIME_W }} />
-          {DAYS.map((d, i) => (
-            <View key={d} style={[s.gridDayHeader, { width: CELL_W, backgroundColor: DAY_COLORS[i] }]}>
-              <Text style={[s.gridDayText, { color: DAY_TEXT[i] }]}>{d.slice(0, 3).toUpperCase()}</Text>
+    <View onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
+      <ScrollView horizontal={CELL_W <= MIN_CELL_W} showsHorizontalScrollIndicator={false}>
+        <View style={{ width: containerWidth > 0 ? containerWidth : undefined }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row' }}>
+            <View style={{ width: TIME_W }} />
+            {DAYS.map((d, i) => (
+              <View key={d} style={[s.gridDayHeader, { flex: 1, minWidth: CELL_W, backgroundColor: DAY_COLORS[i] }]}>
+                <Text style={[s.gridDayText, { color: DAY_TEXT[i] }]}>{d.slice(0, 3).toUpperCase()}</Text>
+              </View>
+            ))}
+          </View>
+          {/* Rows */}
+          {hours.map((hour) => (
+            <View key={hour} style={{ flexDirection: 'row' }}>
+              <View style={[s.gridTimeCell, { width: TIME_W, height: CELL_H }]}>
+                <Text style={s.gridTimeText}>{`${hour}:00`}</Text>
+              </View>
+              {DAYS.map((_, di) => {
+                const day = di + 1;
+                const block = getBlock(day, hour);
+                const isFirst = block && parseInt(block.startTime.split(':')[0]) === hour;
+                if (block && !isFirst) {
+                  return <View key={day} style={{ flex: 1, minWidth: CELL_W, height: CELL_H, borderBottomWidth: 1, borderBottomColor: Colors.border }} />;
+                }
+                if (block && isFirst) {
+                  return (
+                    <Pressable
+                      key={day}
+                      style={[s.gridBlock, { flex: 1, minWidth: CELL_W - 4, height: blockHeight(block) - 4, backgroundColor: block.subjectColor + 'CC', borderColor: block.subjectColor }]}
+                      onPress={() => onEdit(block)}
+                    >
+                      <Text style={s.gridBlockSubject} numberOfLines={1}>{block.subjectName}</Text>
+                      <Text style={s.gridBlockTeacher} numberOfLines={1}>{block.teacherName.split(' ')[0]}</Text>
+                      {!!block.assistantName && (
+                        <Text style={s.gridBlockRoom} numberOfLines={1}>+{block.assistantName.split(' ')[0]}</Text>
+                      )}
+                      {!!block.room && <Text style={s.gridBlockRoom} numberOfLines={1}>{block.room}</Text>}
+                    </Pressable>
+                  );
+                }
+                return <View key={day} style={[s.gridEmptyCell, { flex: 1, minWidth: CELL_W, height: CELL_H }]} />;
+              })}
             </View>
           ))}
         </View>
-        {hours.map((hour) => (
-          <View key={hour} style={{ flexDirection: 'row' }}>
-            <View style={[s.gridTimeCell, { width: TIME_W, height: CELL_H }]}>
-              <Text style={s.gridTimeText}>{`${hour}:00`}</Text>
-            </View>
-            {DAYS.map((_, di) => {
-              const day = di + 1;
-              const block = getBlock(day, hour);
-              const isFirst = block && parseInt(block.startTime.split(':')[0]) === hour;
-              if (block && !isFirst) {
-                return <View key={day} style={{ width: CELL_W, height: CELL_H, borderBottomWidth: 1, borderBottomColor: Colors.border }} />;
-              }
-              if (block && isFirst) {
-                return (
-                  <Pressable
-                    key={day}
-                    style={[s.gridBlock, { width: CELL_W - 4, height: blockHeight(block) - 4, backgroundColor: block.subjectColor + 'CC', borderColor: block.subjectColor }]}
-                    onPress={() => onEdit(block)}
-                  >
-                    <Text style={s.gridBlockSubject} numberOfLines={1}>{block.subjectName}</Text>
-                    <Text style={s.gridBlockTeacher} numberOfLines={1}>{block.teacherName.split(' ')[0]}</Text>
-                    {block.assistantName && (
-                      <Text style={s.gridBlockRoom} numberOfLines={1}>+{block.assistantName.split(' ')[0]}</Text>
-                    )}
-                    {block.room && <Text style={s.gridBlockRoom} numberOfLines={1}>{block.room}</Text>}
-                  </Pressable>
-                );
-              }
-              return <View key={day} style={[s.gridEmptyCell, { width: CELL_W, height: CELL_H }]} />;
-            })}
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
