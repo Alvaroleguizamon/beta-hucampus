@@ -14,8 +14,9 @@ export default function AdminLayout() {
     <SafeAreaView style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#FFFFFF' }} edges={['top']}>
       {isDesktop && <DesktopSidebar />}
       <View style={{ flex: 1 }}>
-        <UserTopBar />
-        {!isDesktop && (
+        {isDesktop ? (
+          <UserTopBar />
+        ) : (
           <View style={styles.header}>
             <Pressable onPress={() => router.back()} hitSlop={8} style={styles.backBtn}>
               <MaterialCommunityIcons name="chevron-left" size={28} color={Colors.primary} />
