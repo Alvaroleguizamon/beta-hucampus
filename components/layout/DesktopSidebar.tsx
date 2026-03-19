@@ -86,8 +86,6 @@ const appsByRole: Record<Role, AppItem[]> = {
     { icon: 'account-box-outline', label: 'Contactos', color: '#0693E3', bgColor: '#E6F6FD', route: '/apps/contactos' },
   ],
   admin: [
-    { icon: 'google-classroom', label: 'Cursos', color: Colors.primary, bgColor: `${Colors.primary}15`, route: '/(tabs)/admin' },
-    { icon: 'book-open-variant', label: 'Materias', color: '#27AE60', bgColor: '#E8F8EF', route: '/(tabs)/admin' },
     { icon: 'calendar-check', label: 'Presentismo', color: '#4CAF50', bgColor: '#EAF7EB', route: '/apps/presentismo' },
     { icon: 'account-group', label: 'Alumnos', color: '#9C27B0', bgColor: '#F3E5F5', route: '/apps/alumnos' },
     { icon: 'message-text-outline', label: 'Comunicados', color: '#E67E22', bgColor: '#FDF2E6', route: '/apps/noticias' },

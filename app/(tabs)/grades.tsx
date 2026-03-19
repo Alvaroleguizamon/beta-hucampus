@@ -49,7 +49,6 @@ const padreApps: AppItem[] = [
 ];
 
 const adminApps: AppItem[] = [
-  { icon: 'google-classroom', label: 'Cursos', color: '#5B77D3', bgColor: '#EEF1FB', route: '/(tabs)/admin' },
   { icon: 'calendar-check', label: 'Presentismo', color: '#4CAF50', bgColor: '#EAF7EB', route: '/apps/presentismo' },
   { icon: 'account-group', label: 'Alumnos', color: '#9C27B0', bgColor: '#F3E5F5', route: '/apps/alumnos' },
   { icon: 'message-text-outline', label: 'Comunicados', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/noticias' },
