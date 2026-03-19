@@ -1,8 +1,8 @@
-# AGENT.md — Humand School
+# AGENT.md — Hu School
 
 ## Descripción del Proyecto
 
-**Humand School** es una aplicación móvil/web de gestión escolar multi-rol construida con React Native + Expo. Permite a alumnos, docentes y padres acceder a funcionalidades académicas, sociales y comunicacionales desde una sola plataforma.
+**Hu School** es una aplicación móvil/web de gestión escolar multi-rol construida con React Native + Expo. Permite a alumnos, docentes y padres acceder a funcionalidades académicas, sociales y comunicacionales desde una sola plataforma.
 
 La app está en modo MVP/demo: usa datos mock y no tiene backend real. El login acepta cualquier credencial.
 

@@ -143,7 +143,7 @@ export default function UserTopBar() {
                 <View style={styles.mobileLogoIcon}>
                   <MaterialCommunityIcons name="school" size={18} color="#FFFFFF" />
                 </View>
-                <Text style={styles.mobileLogoText}>Humand School</Text>
+                <Text style={styles.mobileLogoText}>Hu School</Text>
               </Pressable>
             ) : role === 'docente' ? (
               <View style={styles.docenteLeftRow}>

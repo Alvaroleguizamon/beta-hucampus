@@ -1,4 +1,4 @@
-# Humand School
+# Hu School
 
 Plataforma educativa mobile-first desarrollada con React Native y Expo. Conecta alumnos, docentes y padres en un ecosistema escolar completo.
 
@@ -161,7 +161,7 @@ La app soporta tres roles con funcionalidades diferenciadas:
 
 ## Header / TopBar
 
-- **Mobile:** logo Humand School (clickeable para ir al inicio) + iconos compactos
+- **Mobile:** logo Hu School (clickeable para ir al inicio) + iconos compactos
 - **Docente:** selector de curso activo que cambia el contexto global
 - Buscador expandible con animacion slide
 - Panel lateral (side panel) para notificaciones y cumpleanos con animacion suave

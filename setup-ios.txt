@@ -1,4 +1,4 @@
-SETUP iOS SIMULATOR - Humand School
+SETUP iOS SIMULATOR - Hu School
 ====================================
 
 Para correr la app en el simulador de iPhone desde tu Mac, necesitas:
