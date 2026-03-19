@@ -664,40 +664,40 @@ export default function TareasScreen() {
               {!editingPublishedTask && (() => {
                 const selectedCourse = courses.find((c) => c.id === draftCourseId);
                 return (
-                  <Pressable
-                    style={[styles.datePickerBtn, showCourseDropdown && { borderColor: Colors.primary }]}
-                    onPress={(e) => { e.stopPropagation(); setShowCourseDropdown(!showCourseDropdown); }}
-                  >
-                    <MaterialCommunityIcons name="google-classroom" size={20} color={Colors.primary} />
-                    <Text style={[styles.datePickerText, selectedCourse && { color: Colors.textPrimary }]}>
-                      {selectedCourse ? `${selectedCourse.name} — ${selectedCourse.grade}` : 'Seleccionar curso'}
-                    </Text>
-                    <MaterialCommunityIcons name={showCourseDropdown ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
-                  </Pressable>
+                  <View style={{ zIndex: 20, marginBottom: 12 }}>
+                    <Pressable
+                      style={[styles.datePickerBtn, { marginBottom: 0 }, showCourseDropdown && { borderColor: Colors.primary }]}
+                      onPress={(e) => { e.stopPropagation(); setShowCourseDropdown(!showCourseDropdown); }}
+                    >
+                      <MaterialCommunityIcons name="google-classroom" size={20} color={Colors.primary} />
+                      <Text style={[styles.datePickerText, selectedCourse && { color: Colors.textPrimary }]}>
+                        {selectedCourse ? `${selectedCourse.name} — ${selectedCourse.grade}` : 'Seleccionar curso'}
+                      </Text>
+                      <MaterialCommunityIcons name={showCourseDropdown ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
+                    </Pressable>
+                    {showCourseDropdown && (
+                      <Pressable style={docenteStyles.courseDropdownList} onPress={(e) => e.stopPropagation()}>
+                        {courses.map((c) => {
+                          const selected = draftCourseId === c.id;
+                          return (
+                            <Pressable
+                              key={c.id}
+                              style={[docenteStyles.courseDropdownItem, selected && { backgroundColor: Colors.primary + '10' }]}
+                              onPress={() => { setDraftCourseId(c.id); setDraftStudentIds([]); setShowCourseDropdown(false); }}
+                            >
+                              <MaterialCommunityIcons name="google-classroom" size={16} color={selected ? Colors.primary : Colors.textSecondary} />
+                              <Text style={[docenteStyles.courseDropdownText, selected && { color: Colors.primary, fontWeight: '600' }]}>
+                                {c.name} — {c.grade}
+                              </Text>
+                              {selected && <MaterialCommunityIcons name="check" size={16} color={Colors.primary} />}
+                            </Pressable>
+                          );
+                        })}
+                      </Pressable>
+                    )}
+                  </View>
                 );
               })()}
-              {!editingPublishedTask && showCourseDropdown && (
-                <Pressable style={{ marginTop: 4 }} onPress={(e) => e.stopPropagation()}>
-                  <View style={docenteStyles.courseDropdownList}>
-                    {courses.map((c) => {
-                      const selected = draftCourseId === c.id;
-                      return (
-                        <Pressable
-                          key={c.id}
-                          style={[docenteStyles.courseDropdownItem, selected && { backgroundColor: Colors.primary + '10' }]}
-                          onPress={() => { setDraftCourseId(c.id); setDraftStudentIds([]); setShowCourseDropdown(false); }}
-                        >
-                          <MaterialCommunityIcons name="google-classroom" size={16} color={selected ? Colors.primary : Colors.textSecondary} />
-                          <Text style={[docenteStyles.courseDropdownText, selected && { color: Colors.primary, fontWeight: '600' }]}>
-                            {c.name} — {c.grade}
-                          </Text>
-                          {selected && <MaterialCommunityIcons name="check" size={16} color={Colors.primary} />}
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </Pressable>
-              )}
 
               {!editingPublishedTask && <Text style={styles.formLabel}>Asignar a</Text>}
               <View style={[docenteStyles.assignToggle, editingPublishedTask && { display: 'none' }]}>
@@ -2818,12 +2818,21 @@ const docenteStyles = StyleSheet.create({
     color: Colors.primary,
   },
   courseDropdownList: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 10,
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
-    marginBottom: 12,
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   courseDropdownItem: {
     flexDirection: 'row',
