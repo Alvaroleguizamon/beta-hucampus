@@ -45,9 +45,7 @@ function TimePicker({
                 onPress={() => { onChange(t); setOpen(false); }}
               >
                 <Text style={[tp.optionText, value === t && tp.optionTextActive]}>{t}</Text>
-                {value === t && (
-                  <MaterialCommunityIcons name="check" size={15} color={Colors.primary} />
-                )}
+                {value === t && <MaterialCommunityIcons name="check" size={15} color={Colors.primary} />}
               </Pressable>
             ))}
           </ScrollView>
@@ -93,6 +91,156 @@ const tp = StyleSheet.create({
   optionActive: { backgroundColor: `${Colors.primary}10` },
   optionText: { fontSize: 14, color: Colors.textPrimary },
   optionTextActive: { color: Colors.primary, fontWeight: '600' },
+});
+
+// ─── Person Picker (searchable) ────────────────────────────────────────────────
+
+function PersonPicker({
+  label, value, people, onChange, placeholder, optional,
+}: {
+  label: string;
+  value: string;
+  people: { id: string; name: string }[];
+  onChange: (id: string) => void;
+  placeholder?: string;
+  optional?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const selected = people.find((p) => p.id === value);
+  const filtered = people.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()));
+
+  const handleClose = () => { setOpen(false); setQuery(''); };
+  const handleSelect = (id: string) => { onChange(id); handleClose(); };
+
+  return (
+    <View style={pp.wrapper}>
+      <View style={s.labelRow}>
+        <Text style={s.fieldLabel}>{label}</Text>
+        {optional && value && (
+          <Pressable onPress={() => onChange('')} style={pp.clearBtn}>
+            <Text style={pp.clearText}>Quitar</Text>
+          </Pressable>
+        )}
+      </View>
+      <Pressable style={[pp.btn, open && pp.btnOpen]} onPress={() => setOpen((o) => !o)}>
+        {selected ? (
+          <View style={pp.selectedRow}>
+            <View style={pp.avatar}>
+              <Text style={pp.avatarText}>{selected.name[0]}</Text>
+            </View>
+            <Text style={pp.selectedName}>{selected.name}</Text>
+          </View>
+        ) : (
+          <Text style={pp.placeholder}>{placeholder ?? 'Seleccionar...'}</Text>
+        )}
+        <MaterialCommunityIcons
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={18}
+          color={Colors.textSecondary}
+        />
+      </Pressable>
+
+      {open && (
+        <View style={pp.dropdown}>
+          <View style={pp.searchBox}>
+            <MaterialCommunityIcons name="magnify" size={16} color={Colors.textSecondary} />
+            <RNTextInput
+              style={pp.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Buscar..."
+              placeholderTextColor={Colors.textSecondary}
+              autoFocus
+            />
+          </View>
+          <ScrollView style={pp.list} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+            {optional && (
+              <Pressable
+                style={[pp.option, !value && pp.optionActive]}
+                onPress={() => handleSelect('')}
+              >
+                <Text style={[pp.optionText, !value && pp.optionTextActive]}>Ninguno</Text>
+                {!value && <MaterialCommunityIcons name="check" size={15} color={Colors.primary} />}
+              </Pressable>
+            )}
+            {filtered.map((p) => (
+              <Pressable
+                key={p.id}
+                style={[pp.option, value === p.id && pp.optionActive]}
+                onPress={() => handleSelect(p.id)}
+              >
+                <View style={pp.optionAvatar}>
+                  <Text style={pp.optionAvatarText}>{p.name[0]}</Text>
+                </View>
+                <Text style={[pp.optionText, value === p.id && pp.optionTextActive]}>{p.name}</Text>
+                {value === p.id && <MaterialCommunityIcons name="check" size={15} color={Colors.primary} />}
+              </Pressable>
+            ))}
+            {filtered.length === 0 && (
+              <Text style={pp.emptySearch}>Sin resultados</Text>
+            )}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const pp = StyleSheet.create({
+  wrapper: { marginBottom: 20, zIndex: 8 },
+  btn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+  },
+  btnOpen: { borderColor: Colors.primary, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  selectedRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  avatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  avatarText: { fontSize: 12, fontWeight: '700', color: '#FFF' },
+  selectedName: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  placeholder: { fontSize: 14, color: Colors.textSecondary, flex: 1 },
+  clearBtn: { paddingHorizontal: 8, paddingVertical: 2 },
+  clearText: { fontSize: 12, color: Colors.error, fontWeight: '600' },
+  dropdown: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderTopWidth: 0,
+    borderColor: Colors.primary,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: `${Colors.primary}08`,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: Colors.textPrimary, paddingVertical: 2 },
+  list: { maxHeight: 200 },
+  option: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 10 },
+  optionActive: { backgroundColor: `${Colors.primary}10` },
+  optionAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.border, justifyContent: 'center', alignItems: 'center' },
+  optionAvatarText: { fontSize: 11, fontWeight: '700', color: Colors.textPrimary },
+  optionText: { flex: 1, fontSize: 14, color: Colors.textPrimary },
+  optionTextActive: { color: Colors.primary, fontWeight: '600' },
+  emptySearch: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', padding: 16 },
 });
 
 // ─── Inline Subject Form Modal ─────────────────────────────────────────────────
@@ -177,12 +325,13 @@ function ScheduleFormModal({
   initial?: CourseSchedule | null;
   onSave: (
     subjectId: string, teacherId: string, dayOfWeek: number,
-    startTime: string, endTime: string, room: string
+    startTime: string, endTime: string, room: string, assistantId: string
   ) => Promise<void>;
 }) {
   const { subjects, teachers, createSubject } = useAdminStore();
   const [subjectId, setSubjectId] = useState(initial?.subjectId ?? '');
   const [teacherId, setTeacherId] = useState(initial?.teacherId ?? '');
+  const [assistantId, setAssistantId] = useState(initial?.assistantId ?? '');
   const [day, setDay] = useState(initial?.dayOfWeek ?? 1);
   const [startTime, setStartTime] = useState(initial?.startTime ?? TIME_SLOTS[0]);
   const [endTime, setEndTime] = useState(initial?.endTime ?? TIME_SLOTS[1]);
@@ -194,6 +343,7 @@ function ScheduleFormModal({
     if (visible) {
       setSubjectId(initial?.subjectId ?? '');
       setTeacherId(initial?.teacherId ?? '');
+      setAssistantId(initial?.assistantId ?? '');
       setDay(initial?.dayOfWeek ?? 1);
       setStartTime(initial?.startTime ?? TIME_SLOTS[0]);
       setEndTime(initial?.endTime ?? TIME_SLOTS[1]);
@@ -206,21 +356,22 @@ function ScheduleFormModal({
   const handleSave = async () => {
     if (!canSave) return;
     setSaving(true);
-    await onSave(subjectId, teacherId, day, startTime, endTime, room);
+    await onSave(subjectId, teacherId, day, startTime, endTime, room, assistantId);
     setSaving(false);
     onClose();
   };
 
-  // End time options: only after start time
   const startIdx = TIME_SLOTS.indexOf(startTime);
   const endOptions = TIME_SLOTS.slice(startIdx + 1);
 
-  // Auto-advance end time if it's before start
   React.useEffect(() => {
     if (endOptions.length > 0 && !endOptions.includes(endTime)) {
       setEndTime(endOptions[0]);
     }
   }, [startTime]);
+
+  // Teachers available for assistant = all except the selected teacher
+  const assistantOptions = teachers.filter((t) => t.id !== teacherId);
 
   return (
     <>
@@ -228,7 +379,7 @@ function ScheduleFormModal({
         <View style={s.overlay}>
           <ScrollView
             style={s.sheet}
-            contentContainerStyle={[s.sheetContent, { zIndex: 1 }]}
+            contentContainerStyle={s.sheetContent}
             keyboardShouldPersistTaps="handled"
           >
             <View style={s.sheetHandle} />
@@ -270,10 +421,7 @@ function ScheduleFormModal({
             {/* Subject */}
             <View style={s.labelRow}>
               <Text style={s.fieldLabel}>Materia</Text>
-              <Pressable
-                style={s.addInlineBtn}
-                onPress={() => setNewSubjectModal(true)}
-              >
+              <Pressable style={s.addInlineBtn} onPress={() => setNewSubjectModal(true)}>
                 <MaterialCommunityIcons name="plus" size={14} color={Colors.primary} />
                 <Text style={s.addInlineBtnText}>Nueva</Text>
               </Pressable>
@@ -295,26 +443,29 @@ function ScheduleFormModal({
             </View>
 
             {/* Teacher */}
-            <Text style={s.fieldLabel}>Docente</Text>
-            {teachers.length === 0 && (
-              <Text style={s.emptyNote}>No hay docentes disponibles</Text>
-            )}
-            {teachers.map((t) => (
-              <Pressable
-                key={t.id}
-                style={[s.teacherRow, teacherId === t.id && s.teacherRowActive]}
-                onPress={() => setTeacherId(t.id)}
-              >
-                <View style={s.teacherAvatar}>
-                  <Text style={s.teacherAvatarText}>{t.name[0]}</Text>
-                </View>
-                <Text style={[s.teacherName, teacherId === t.id && { color: Colors.primary, fontWeight: '600' }]}>{t.name}</Text>
-                {teacherId === t.id && <MaterialCommunityIcons name="check-circle" size={18} color={Colors.primary} />}
-              </Pressable>
-            ))}
+            <PersonPicker
+              label="Docente"
+              value={teacherId}
+              people={teachers}
+              onChange={(id) => {
+                setTeacherId(id);
+                if (assistantId === id) setAssistantId('');
+              }}
+              placeholder="Seleccionar docente..."
+            />
+
+            {/* Assistant */}
+            <PersonPicker
+              label="Ayudante (opcional)"
+              value={assistantId}
+              people={assistantOptions}
+              onChange={setAssistantId}
+              placeholder="Sin ayudante"
+              optional
+            />
 
             {/* Room */}
-            <Text style={[s.fieldLabel, { marginTop: 16 }]}>Aula (opcional)</Text>
+            <Text style={s.fieldLabel}>Aula (opcional)</Text>
             <RNTextInput
               style={s.input}
               value={room}
@@ -345,9 +496,7 @@ function ScheduleFormModal({
       <InlineSubjectModal
         visible={newSubjectModal}
         onClose={() => setNewSubjectModal(false)}
-        onSave={async (name, color) => {
-          await createSubject(name, color);
-        }}
+        onSave={async (name, color) => { await createSubject(name, color); }}
       />
     </>
   );
@@ -418,41 +567,27 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
   const CELL_W = 100;
   const CELL_H = 54;
   const TIME_W = 52;
-
   const startHour = 7;
   const endHour = 18;
   const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
 
   function getBlock(day: number, hour: number) {
     return schedules.find((sc) => {
-      const sh = parseInt(sc.startTime.split(':')[0]);
-      const sm = parseInt(sc.startTime.split(':')[1]);
-      const eh = parseInt(sc.endTime.split(':')[0]);
-      const em = parseInt(sc.endTime.split(':')[1]);
-      const startMins = sh * 60 + sm;
-      const endMins = eh * 60 + em;
-      const cellMins = hour * 60;
-      return sc.dayOfWeek === day && cellMins >= startMins && cellMins < endMins;
+      const startMins = parseInt(sc.startTime.split(':')[0]) * 60 + parseInt(sc.startTime.split(':')[1]);
+      const endMins = parseInt(sc.endTime.split(':')[0]) * 60 + parseInt(sc.endTime.split(':')[1]);
+      return sc.dayOfWeek === day && hour * 60 >= startMins && hour * 60 < endMins;
     });
   }
 
-  function isFirstCell(sc: CourseSchedule, hour: number) {
-    return parseInt(sc.startTime.split(':')[0]) === hour;
-  }
-
   function blockHeight(sc: CourseSchedule) {
-    const sh = parseInt(sc.startTime.split(':')[0]);
-    const sm = parseInt(sc.startTime.split(':')[1]);
-    const eh = parseInt(sc.endTime.split(':')[0]);
-    const em = parseInt(sc.endTime.split(':')[1]);
-    const mins = (eh * 60 + em) - (sh * 60 + sm);
-    return (mins / 60) * CELL_H;
+    const startMins = parseInt(sc.startTime.split(':')[0]) * 60 + parseInt(sc.startTime.split(':')[1]);
+    const endMins = parseInt(sc.endTime.split(':')[0]) * 60 + parseInt(sc.endTime.split(':')[1]);
+    return ((endMins - startMins) / 60) * CELL_H;
   }
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View>
-        {/* Header row */}
         <View style={{ flexDirection: 'row' }}>
           <View style={{ width: TIME_W }} />
           {DAYS.map((d, i) => (
@@ -461,8 +596,6 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
             </View>
           ))}
         </View>
-
-        {/* Time rows */}
         {hours.map((hour) => (
           <View key={hour} style={{ flexDirection: 'row' }}>
             <View style={[s.gridTimeCell, { width: TIME_W, height: CELL_H }]}>
@@ -471,26 +604,27 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
             {DAYS.map((_, di) => {
               const day = di + 1;
               const block = getBlock(day, hour);
-              if (block && !isFirstCell(block, hour)) {
+              const isFirst = block && parseInt(block.startTime.split(':')[0]) === hour;
+              if (block && !isFirst) {
                 return <View key={day} style={{ width: CELL_W, height: CELL_H, borderBottomWidth: 1, borderBottomColor: Colors.border }} />;
               }
-              if (block && isFirstCell(block, hour)) {
-                const h = blockHeight(block);
+              if (block && isFirst) {
                 return (
                   <Pressable
                     key={day}
-                    style={[s.gridBlock, { width: CELL_W - 4, height: h - 4, backgroundColor: block.subjectColor + 'CC', borderColor: block.subjectColor }]}
+                    style={[s.gridBlock, { width: CELL_W - 4, height: blockHeight(block) - 4, backgroundColor: block.subjectColor + 'CC', borderColor: block.subjectColor }]}
                     onPress={() => onEdit(block)}
                   >
                     <Text style={s.gridBlockSubject} numberOfLines={1}>{block.subjectName}</Text>
                     <Text style={s.gridBlockTeacher} numberOfLines={1}>{block.teacherName.split(' ')[0]}</Text>
+                    {block.assistantName && (
+                      <Text style={s.gridBlockRoom} numberOfLines={1}>+{block.assistantName.split(' ')[0]}</Text>
+                    )}
                     {block.room && <Text style={s.gridBlockRoom} numberOfLines={1}>{block.room}</Text>}
                   </Pressable>
                 );
               }
-              return (
-                <View key={day} style={[s.gridEmptyCell, { width: CELL_W, height: CELL_H }]} />
-              );
+              return <View key={day} style={[s.gridEmptyCell, { width: CELL_W, height: CELL_H }]} />;
             })}
           </View>
         ))}
@@ -503,13 +637,12 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
 
 export default function CourseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { courses, deleteSchedule } = useAdminStore();
+  const { courses, deleteSchedule, createSchedule, updateSchedule } = useAdminStore();
   const course = courses.find((c) => c.id === id);
 
   const [scheduleModal, setScheduleModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<CourseSchedule | null>(null);
   const [studentModal, setStudentModal] = useState(false);
-  const { createSchedule, updateSchedule } = useAdminStore();
 
   if (!course) {
     return (
@@ -541,7 +674,6 @@ export default function CourseDetailScreen() {
 
   return (
     <View style={s.screen}>
-      {/* Top Bar */}
       <View style={s.topBar}>
         <Pressable style={s.backBtn} onPress={() => router.back()}>
           <MaterialCommunityIcons name="arrow-left" size={22} color={Colors.textPrimary} />
@@ -554,15 +686,12 @@ export default function CourseDetailScreen() {
 
       <ScrollView contentContainerStyle={s.scroll}>
 
-        {/* ── Schedule section ── */}
+        {/* Schedule section */}
         <View style={s.sectionHeader2}>
           <MaterialCommunityIcons name="clock-outline" size={18} color={Colors.primary} />
           <Text style={s.sectionTitle2}>Cronograma</Text>
           <View style={{ flex: 1 }} />
-          <Pressable
-            style={s.addBtn}
-            onPress={() => { setEditingSchedule(null); setScheduleModal(true); }}
-          >
+          <Pressable style={s.addBtn} onPress={() => { setEditingSchedule(null); setScheduleModal(true); }}>
             <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
             <Text style={s.addBtnText}>Agregar bloque</Text>
           </Pressable>
@@ -583,11 +712,10 @@ export default function CourseDetailScreen() {
             </View>
 
             {DAYS.map((dayName, di) => {
-              const day = di + 1;
-              const blocks = schedulesByDay[day];
+              const blocks = schedulesByDay[di + 1];
               if (!blocks || blocks.length === 0) return null;
               return (
-                <View key={day} style={s.dayGroup}>
+                <View key={di} style={s.dayGroup}>
                   <View style={[s.dayBadge, { backgroundColor: DAY_COLORS[di] }]}>
                     <Text style={[s.dayBadgeText, { color: DAY_TEXT[di] }]}>{dayName}</Text>
                   </View>
@@ -597,7 +725,10 @@ export default function CourseDetailScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={s.scheduleSubject}>{sch.subjectName}</Text>
                         <Text style={s.scheduleMeta}>
-                          {sch.startTime}–{sch.endTime} · {sch.teacherName}{sch.room ? ` · ${sch.room}` : ''}
+                          {sch.startTime}–{sch.endTime}
+                          {' · '}{sch.teacherName}
+                          {sch.assistantName ? ` + ${sch.assistantName}` : ''}
+                          {sch.room ? ` · ${sch.room}` : ''}
                         </Text>
                       </View>
                       <Pressable style={s.iconBtn} onPress={() => { setEditingSchedule(sch); setScheduleModal(true); }}>
@@ -614,7 +745,7 @@ export default function CourseDetailScreen() {
           </>
         )}
 
-        {/* ── Students section ── */}
+        {/* Students section */}
         <View style={[s.sectionHeader2, { marginTop: 24 }]}>
           <MaterialCommunityIcons name="account-group-outline" size={18} color={Colors.primary} />
           <Text style={s.sectionTitle2}>Alumnos</Text>
@@ -652,11 +783,11 @@ export default function CourseDetailScreen() {
         onClose={() => setScheduleModal(false)}
         courseId={course.id}
         initial={editingSchedule}
-        onSave={async (subjectId, teacherId, dayOfWeek, startTime, endTime, room) => {
+        onSave={async (subjectId, teacherId, dayOfWeek, startTime, endTime, room, assistantId) => {
           if (editingSchedule) {
-            await updateSchedule(editingSchedule.id, subjectId, teacherId, dayOfWeek, startTime, endTime, room);
+            await updateSchedule(editingSchedule.id, subjectId, teacherId, dayOfWeek, startTime, endTime, room, assistantId);
           } else {
-            await createSchedule(course.id, subjectId, teacherId, dayOfWeek, startTime, endTime, room);
+            await createSchedule(course.id, subjectId, teacherId, dayOfWeek, startTime, endTime, room, assistantId);
           }
         }}
       />
@@ -690,7 +821,6 @@ const s = StyleSheet.create({
   emptyCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 28, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: Colors.border, marginBottom: 8 },
   emptyText: { fontSize: 13, color: Colors.textSecondary },
 
-  // Grid
   gridContainer: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', marginBottom: 16 },
   gridDayHeader: { height: 34, justifyContent: 'center', alignItems: 'center', borderRightWidth: 1, borderRightColor: Colors.border },
   gridDayText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
@@ -702,7 +832,6 @@ const s = StyleSheet.create({
   gridBlockTeacher: { fontSize: 9, color: 'rgba(255,255,255,0.85)', marginTop: 1 },
   gridBlockRoom: { fontSize: 9, color: 'rgba(255,255,255,0.7)', marginTop: 1 },
 
-  // Day list
   dayGroup: { marginBottom: 12 },
   dayBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', marginBottom: 6 },
   dayBadgeText: { fontSize: 12, fontWeight: '700' },
@@ -712,14 +841,12 @@ const s = StyleSheet.create({
   scheduleMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   iconBtn: { padding: 6 },
 
-  // Students
   studentGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   studentChip: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFFFFF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: Colors.border, maxWidth: 160 },
   studentAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   studentAvatarText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
   studentName: { fontSize: 13, color: Colors.textPrimary, flex: 1 },
 
-  // Modal / Sheet
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '92%' },
   sheetContent: { padding: 20 },
@@ -733,7 +860,6 @@ const s = StyleSheet.create({
   addInlineBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.primary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14 },
   addInlineBtnText: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
 
-  chipRow: { flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap' },
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border },
   chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
 

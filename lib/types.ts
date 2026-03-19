@@ -65,7 +65,9 @@ export interface CourseSchedule {
   subjectColor: string;
   teacherId: string;
   teacherName: string;
-  dayOfWeek: number; // 1=Lun … 5=Vie
+  assistantId?: string;
+  assistantName?: string;
+  dayOfWeek: number; // 1=Lun … 7=Dom
   startTime: string; // "HH:MM"
   endTime: string;   // "HH:MM"
   room?: string;

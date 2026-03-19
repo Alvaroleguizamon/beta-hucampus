@@ -36,11 +36,11 @@ interface AdminState {
   // Schedules
   createSchedule: (
     courseId: string, subjectId: string, teacherId: string,
-    dayOfWeek: number, startTime: string, endTime: string, room?: string
+    dayOfWeek: number, startTime: string, endTime: string, room?: string, assistantId?: string
   ) => Promise<{ error: string | null }>;
   updateSchedule: (
     id: string, subjectId: string, teacherId: string,
-    dayOfWeek: number, startTime: string, endTime: string, room?: string
+    dayOfWeek: number, startTime: string, endTime: string, room?: string, assistantId?: string
   ) => Promise<{ error: string | null }>;
   deleteSchedule: (id: string, courseId: string) => Promise<{ error: string | null }>;
 
@@ -72,6 +72,8 @@ async function fetchAll() {
     subjectColor: subjectMap[s.subject_id]?.color ?? '#5B77D3',
     teacherId: s.teacher_id,
     teacherName: profileMap[s.teacher_id] ?? s.teacher_id,
+    assistantId: s.assistant_id ?? undefined,
+    assistantName: s.assistant_id ? (profileMap[s.assistant_id] ?? s.assistant_id) : undefined,
     dayOfWeek: s.day_of_week,
     startTime: s.start_time,
     endTime: s.end_time,
@@ -177,10 +179,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   // ── Schedules ────────────────────────────────────────────
 
-  createSchedule: async (courseId, subjectId, teacherId, dayOfWeek, startTime, endTime, room) => {
+  createSchedule: async (courseId, subjectId, teacherId, dayOfWeek, startTime, endTime, room, assistantId) => {
     const { data, error } = await supabase
       .from('course_schedules')
-      .insert({ course_id: courseId, subject_id: subjectId, teacher_id: teacherId, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, room: room ?? null })
+      .insert({ course_id: courseId, subject_id: subjectId, teacher_id: teacherId, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, room: room ?? null, assistant_id: assistantId ?? null })
       .select()
       .single();
     if (error) return { error: error.message };
@@ -188,6 +190,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     const { subjects, teachers } = get();
     const subj = subjects.find((s) => s.id === subjectId);
     const teacher = teachers.find((t) => t.id === teacherId);
+    const assistant = assistantId ? teachers.find((t) => t.id === assistantId) : undefined;
     const newSchedule: CourseSchedule = {
       id: data.id,
       courseId,
@@ -196,6 +199,8 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       subjectColor: subj?.color ?? '#5B77D3',
       teacherId,
       teacherName: teacher?.name ?? teacherId,
+      assistantId: assistantId ?? undefined,
+      assistantName: assistant?.name,
       dayOfWeek,
       startTime,
       endTime,
@@ -209,22 +214,23 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     return { error: null };
   },
 
-  updateSchedule: async (id, subjectId, teacherId, dayOfWeek, startTime, endTime, room) => {
+  updateSchedule: async (id, subjectId, teacherId, dayOfWeek, startTime, endTime, room, assistantId) => {
     const { error } = await supabase
       .from('course_schedules')
-      .update({ subject_id: subjectId, teacher_id: teacherId, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, room: room ?? null })
+      .update({ subject_id: subjectId, teacher_id: teacherId, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, room: room ?? null, assistant_id: assistantId ?? null })
       .eq('id', id);
     if (error) return { error: error.message };
 
     const { subjects, teachers } = get();
     const subj = subjects.find((s) => s.id === subjectId);
     const teacher = teachers.find((t) => t.id === teacherId);
+    const assistant = assistantId ? teachers.find((t) => t.id === assistantId) : undefined;
     set((s) => ({
       courses: s.courses.map((c) => ({
         ...c,
         schedules: c.schedules.map((sch) =>
           sch.id === id
-            ? { ...sch, subjectId, subjectName: subj?.name ?? subjectId, subjectColor: subj?.color ?? '#5B77D3', teacherId, teacherName: teacher?.name ?? teacherId, dayOfWeek, startTime, endTime, room }
+            ? { ...sch, subjectId, subjectName: subj?.name ?? subjectId, subjectColor: subj?.color ?? '#5B77D3', teacherId, teacherName: teacher?.name ?? teacherId, assistantId: assistantId ?? undefined, assistantName: assistant?.name, dayOfWeek, startTime, endTime, room }
             : sch
         ),
       })),
