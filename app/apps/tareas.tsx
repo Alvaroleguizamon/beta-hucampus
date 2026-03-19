@@ -85,6 +85,7 @@ export default function TareasScreen() {
   const loadPersonalTasksAction = useTasksStore((s) => s.loadPersonalTasks);
   const addPersonalTaskAction = useTasksStore((s) => s.addPersonalTask);
   const submitPersonalDeliveryAction = useTasksStore((s) => s.submitPersonalDelivery);
+  const updatePublishedTaskAction = useTasksStore((s) => s.updatePublishedTask);
 
   // ─── Docente state ───
   const docenteTasks = publishedTasks;
@@ -95,6 +96,7 @@ export default function TareasScreen() {
   const [studentSearch, setStudentSearch] = useState('');
   const [docenteMobileTab, setDocenteMobileTab] = useState<'tareas' | 'organizador'>('tareas');
   const [showDocenteAddModal, setShowDocenteAddModal] = useState(false);
+  const [editingPublishedTask, setEditingPublishedTask] = useState<DocenteTask | null>(null);
 
   // Draft state — from store
   const drafts = storeDrafts;
@@ -263,12 +265,32 @@ export default function TareasScreen() {
       const pCfg = priorityConfig[freshDT.priority];
       const daysLeft = getDaysLeft(freshDT.dueDate);
 
+      const openEditPublished = () => {
+        setEditingPublishedTask(freshDT);
+        setEditingDraftId(null);
+        setDraftTitle(freshDT.title);
+        setDraftCourseId(freshDT.courseId);
+        setDraftAssignTo('curso');
+        setDraftStudentIds([]);
+        setDraftDueDate(freshDT.dueDate);
+        setDraftPriority(freshDT.priority);
+        setDraftDescription(freshDT.description ?? '');
+        setDraftAttachments(freshDT.attachments ?? []);
+        setShowDocenteAddModal(true);
+      };
+
       return (
         <View style={styles.container}>
-          <Pressable style={styles.backRow} onPress={() => setSelectedDocenteTask(null)}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={Colors.primary} />
-            <Text style={styles.backText}>Atrás</Text>
-          </Pressable>
+          <View style={styles.backRow}>
+            <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} onPress={() => setSelectedDocenteTask(null)}>
+              <MaterialCommunityIcons name="arrow-left" size={20} color={Colors.primary} />
+              <Text style={styles.backText}>Atrás</Text>
+            </Pressable>
+            <Pressable style={docenteStyles.editTaskBtn} onPress={openEditPublished}>
+              <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.primary} />
+              <Text style={docenteStyles.editTaskBtnText}>Editar</Text>
+            </Pressable>
+          </View>
 
           <ScrollView contentContainerStyle={[styles.detailContent, isWide && { maxWidth: 900, alignSelf: 'center', width: '100%', paddingTop: 32 }]}>
             <View style={styles.detailStatusRow}>
@@ -568,6 +590,7 @@ export default function TareasScreen() {
       setShowDraftCalendar(false);
       setShowDraftStudentList(false);
       setEditingDraftId(null);
+      setEditingPublishedTask(null);
     };
 
     const editDraft = (draft: DraftTask) => {
@@ -585,6 +608,30 @@ export default function TareasScreen() {
 
     const saveDraft = () => {
       if (!draftTitle.trim()) return;
+
+      // Editing a published (already-sent) task
+      if (editingPublishedTask) {
+        updatePublishedTaskAction(editingPublishedTask.id, {
+          title: draftTitle.trim(),
+          dueDate: draftDueDate || editingPublishedTask.dueDate,
+          priority: draftPriority,
+          description: draftDescription.trim() || undefined,
+          attachments: draftAttachments.length > 0 ? draftAttachments : undefined,
+        });
+        setSelectedDocenteTask((prev) => prev ? {
+          ...prev,
+          title: draftTitle.trim(),
+          dueDate: draftDueDate || prev.dueDate,
+          priority: draftPriority,
+          description: draftDescription.trim() || undefined,
+          attachments: draftAttachments.length > 0 ? draftAttachments : undefined,
+        } : prev);
+        setEditingPublishedTask(null);
+        resetDraftForm();
+        setShowDocenteAddModal(false);
+        return;
+      }
+
       const draftData = {
         id: editingDraftId ?? `draft${Date.now()}`,
         title: draftTitle,
@@ -719,7 +766,7 @@ export default function TareasScreen() {
         <Pressable style={styles.addModalOverlay} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
           <Pressable style={[styles.addModalCard, isWide && { maxWidth: 1100 }]} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
             <View style={styles.addHeader}>
-              <Text style={styles.addTitle}>{editingDraftId ? 'Editar tarea' : 'Nueva tarea'}</Text>
+              <Text style={styles.addTitle}>{editingPublishedTask ? 'Editar tarea' : editingDraftId ? 'Editar borrador' : 'Nueva tarea'}</Text>
               <IconButton icon="close" iconColor={Colors.textSecondary} size={20} onPress={() => { resetDraftForm(); setShowDocenteAddModal(false); }} />
             </View>
 
@@ -749,8 +796,8 @@ export default function TareasScreen() {
                 activeOutlineColor={Colors.primary}
               />
 
-              <Text style={styles.formLabel}>Curso</Text>
-              <View style={styles.subjectSelectList}>
+              {!editingPublishedTask && <Text style={styles.formLabel}>Curso</Text>}
+              <View style={[styles.subjectSelectList, editingPublishedTask && { display: 'none' }]}>
                 {courses.map((c) => {
                   const selected = draftCourseId === c.id;
                   return (
@@ -767,8 +814,8 @@ export default function TareasScreen() {
                 })}
               </View>
 
-              <Text style={styles.formLabel}>Asignar a</Text>
-              <View style={docenteStyles.assignToggle}>
+              {!editingPublishedTask && <Text style={styles.formLabel}>Asignar a</Text>}
+              <View style={[docenteStyles.assignToggle, editingPublishedTask && { display: 'none' }]}>
                 <Pressable
                   style={[docenteStyles.assignOption, draftAssignTo === 'curso' && docenteStyles.assignOptionActive]}
                   onPress={() => { setDraftAssignTo('curso'); setDraftStudentIds([]); }}
@@ -1044,12 +1091,12 @@ export default function TareasScreen() {
               )}
 
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-                <Pressable style={[docenteStyles.modalDraftBtn, !draftTitle.trim() && { opacity: 0.5 }]} onPress={saveDraft}>
+                <Pressable style={[docenteStyles.modalDraftBtn, !draftTitle.trim() && { opacity: 0.5 }, editingPublishedTask && { flex: 1 }]} onPress={saveDraft}>
                   <MaterialCommunityIcons name="content-save-outline" size={18} color={Colors.primary} />
-                  <Text style={docenteStyles.modalDraftBtnText}>Guardar borrador</Text>
+                  <Text style={docenteStyles.modalDraftBtnText}>{editingPublishedTask ? 'Guardar cambios' : 'Guardar borrador'}</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.submitFormBtn, { flex: 1, marginTop: 0 }, !draftTitle.trim() && styles.submitFormBtnDisabled]}
+                  style={[styles.submitFormBtn, { flex: 1, marginTop: 0 }, !draftTitle.trim() && styles.submitFormBtnDisabled, editingPublishedTask && { display: 'none' }]}
                   onPress={() => {
                     if (!draftTitle.trim()) return;
                     // Save first, then send
@@ -2016,7 +2063,7 @@ const styles = StyleSheet.create({
   emptyText: { color: Colors.textSecondary, fontSize: 15 },
 
   // ─── Detail view ───
-  backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF' },
+  backRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF' },
   backText: { color: Colors.primary, fontSize: 15, fontWeight: '500' },
   detailContent: { padding: 16 },
   detailStatusRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
@@ -2294,6 +2341,18 @@ const styles = StyleSheet.create({
 
 // ─── Docente-specific styles ───
 const docenteStyles = StyleSheet.create({
+  editTaskBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+  },
+  editTaskBtnText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+
   courseTabs: {
     paddingHorizontal: 16,
     paddingVertical: 12,
