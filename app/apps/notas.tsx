@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   StyleSheet, View, FlatList, Pressable, ScrollView,
-  TextInput as RNTextInput, Modal, Alert, Platform,
+  TextInput as RNTextInput, Modal, Alert, Platform, useWindowDimensions,
 } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { useGradesStore } from '../../lib/stores/grades-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { Colors } from '../../constants/colors';
+import { useBreakpoint, SIDEBAR_WIDTH } from '../../hooks/useBreakpoint';
 import { Grade } from '../../lib/types';
 
 // Padre → child mapping para este demo
@@ -17,9 +18,10 @@ const PADRE_CHILD: Record<string, { id: string; name: string }> = {
   u1: { id: 'st1', name: 'Juan Pérez' },
 };
 
-const COL_NAME = 160;
-const COL_GRADE = 76;
-const COL_AVG = 88;
+const COL_NAME = 170;
+const COL_ADD = 52;
+const COL_AVG = 92;
+const MIN_COL_GRADE = 72;
 const PASSING = 7;
 
 function getGradeColor(value: number) {
@@ -137,8 +139,16 @@ function DocenteView() {
   const updateGrade = useGradesStore((s) => s.updateGrade);
   const deleteGrade = useGradesStore((s) => s.deleteGrade);
   const courses = useCoursesStore((s) => s.courses);
-  const subjects = useSubjectsStore((s) => s.subjects);
+  const allSubjects = useSubjectsStore((s) => s.subjects);
   const user = useAuthStore((s) => s.user);
+  const { width: screenWidth } = useWindowDimensions();
+  const { isDesktop } = useBreakpoint();
+
+  // Filter subjects to only those assigned to this teacher
+  const subjects = useMemo(
+    () => allSubjects.filter((s) => s.teacherId === user?.id),
+    [allSubjects, user?.id]
+  );
 
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
@@ -309,6 +319,15 @@ function DocenteView() {
 
   const subject = subjects.find((s) => s.id === selectedSubjectId);
 
+  // Column widths — distribute available space
+  const availableWidth = (isDesktop ? screenWidth - SIDEBAR_WIDTH : screenWidth) - 2;
+  const colGrade = Math.max(
+    MIN_COL_GRADE,
+    Math.floor((availableWidth - COL_NAME - COL_ADD - COL_AVG) / Math.max(allEvals.length, 1))
+  );
+  const tableWidth = COL_NAME + colGrade * allEvals.length + COL_ADD + COL_AVG;
+  const needsHScroll = tableWidth > availableWidth;
+
   return (
     <View style={styles.root}>
       {/* Selectors row */}
@@ -366,21 +385,21 @@ function DocenteView() {
 
       {/* Spreadsheet */}
       <ScrollView style={styles.container} contentContainerStyle={{ flexGrow: 1 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-          <View>
+        <ScrollView horizontal={needsHScroll} showsHorizontalScrollIndicator={needsHScroll} scrollEnabled={needsHScroll}>
+          <View style={{ width: needsHScroll ? tableWidth : availableWidth }}>
             {/* Header row */}
             <View style={styles.tableHeaderRow}>
               <View style={[styles.tableCell, styles.tableHeaderCell, { width: COL_NAME }]}>
                 <Text style={styles.tableHeaderText}>Alumno</Text>
               </View>
               {allEvals.map((evalName) => (
-                <View key={evalName} style={[styles.tableCell, styles.tableHeaderCell, { width: COL_GRADE }]}>
+                <View key={evalName} style={[styles.tableCell, styles.tableHeaderCell, { width: colGrade }]}>
                   <Text style={styles.tableHeaderText} numberOfLines={2}>{evalName}</Text>
                 </View>
               ))}
-              {/* Add eval column */}
+              {/* Add eval button column */}
               <Pressable
-                style={[styles.tableCell, styles.addEvalBtn, { width: COL_GRADE }]}
+                style={[styles.tableCell, styles.addEvalBtn, { width: COL_ADD }]}
                 onPress={() => { setNewEvalName(''); setAddEvalModal(true); }}
               >
                 <MaterialCommunityIcons name="plus-circle-outline" size={20} color={Colors.primary} />
@@ -414,7 +433,7 @@ function DocenteView() {
                     return (
                       <Pressable
                         key={evalName}
-                        style={[styles.tableCell, styles.gradeCell, { width: COL_GRADE }]}
+                        style={[styles.tableCell, styles.gradeCell, { width: colGrade }]}
                         onPress={() => openGradeModal(student.id, student.name, evalName)}
                       >
                         {g ? (
@@ -431,7 +450,7 @@ function DocenteView() {
                   })}
 
                   {/* Spacer for add button column */}
-                  <View style={[styles.tableCell, { width: COL_GRADE }]} />
+                  <View style={[styles.tableCell, { width: COL_ADD }]} />
 
                   {/* Average cell */}
                   <View style={[styles.tableCell, styles.avgCell, { width: COL_AVG }]}>

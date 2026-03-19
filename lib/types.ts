@@ -24,6 +24,7 @@ export interface Subject {
   id: string;
   name: string;
   teacher: string;
+  teacherId?: string;
   color: string;
 }
 

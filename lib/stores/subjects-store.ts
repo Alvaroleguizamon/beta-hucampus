@@ -20,6 +20,7 @@ export const useSubjectsStore = create<SubjectsState>((set) => ({
         id: s.id,
         name: s.name,
         teacher: s.teacher,
+        teacherId: s.teacher_id ?? undefined,
         color: s.color,
       })),
       loading: false,
