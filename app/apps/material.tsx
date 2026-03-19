@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, FlatList, Pressable, ScrollView, Platform, useWindowDimensions, ActivityIndicator, Alert, Modal, TextInput as RNTextInput } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, ScrollView, Platform, useWindowDimensions, ActivityIndicator, Alert, Modal, TextInput as RNTextInput, Image } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import WebView from 'react-native-webview';
@@ -62,12 +62,36 @@ function YoutubePlayer({ videoId, containerWidth }: { videoId: string; container
   );
 }
 
+function isImageUrl(url: string): boolean {
+  return /\.(png|jpe?g|gif|webp|svg|bmp)(\?.*)?$/i.test(url);
+}
+
+async function downloadFile(url: string, fileName: string) {
+  if (Platform.OS !== 'web') return;
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = fileName;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  } catch {
+    // fallback: open in new tab
+    window.open(url, '_blank');
+  }
+}
+
 function PDFDetail({ item, onBack }: { item: SubjectMaterial; onBack: () => void }) {
   const { width } = useWindowDimensions();
   const { isDesktop } = useBreakpoint();
   const contentWidth = isDesktop ? width - SIDEBAR_WIDTH - 48 : width - 32;
   const viewerHeight = Math.round(contentWidth * 1.35);
-  const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(item.url!)}&embedded=true`;
+  const isImage = isImageUrl(item.url ?? '');
+  const viewerUrl = isImage
+    ? item.url!
+    : `https://docs.google.com/viewer?url=${encodeURIComponent(item.url!)}&embedded=true`;
 
   return (
     <View style={styles.container}>
@@ -76,14 +100,20 @@ function PDFDetail({ item, onBack }: { item: SubjectMaterial; onBack: () => void
           <MaterialCommunityIcons name="arrow-left" size={20} color={Colors.primary} />
           <Text style={styles.backText}>Material</Text>
         </Pressable>
-        <Pressable style={styles.downloadBtn} onPress={() => { if (Platform.OS === 'web') { const a = document.createElement('a'); a.href = item.url!; a.download = item.name; a.target = '_blank'; a.click(); } }}>
+        <Pressable style={styles.downloadBtn} onPress={() => downloadFile(item.url!, item.name)}>
           <MaterialCommunityIcons name="download" size={18} color={Colors.primary} />
           <Text style={styles.downloadBtnText}>Descargar</Text>
         </Pressable>
       </View>
       <Text style={styles.pdfTitle}>{item.name}</Text>
-      <View style={[styles.pdfViewer, { height: viewerHeight, marginHorizontal: isDesktop ? 24 : 16 }]}>
-        {Platform.OS === 'web' ? (
+      <View style={[styles.pdfViewer, { height: isImage ? undefined : viewerHeight, marginHorizontal: isDesktop ? 24 : 16 }]}>
+        {isImage ? (
+          Platform.OS === 'web' ? (
+            <img src={item.url!} alt={item.name} style={{ maxWidth: '100%', borderRadius: 12, display: 'block', margin: '0 auto' }} />
+          ) : (
+            <Image source={{ uri: item.url! }} style={{ width: contentWidth, height: contentWidth * 0.75, borderRadius: 12 }} resizeMode="contain" />
+          )
+        ) : Platform.OS === 'web' ? (
           <iframe src={viewerUrl} width="100%" height="100%" style={{ border: 'none', borderRadius: 12 }} />
         ) : (
           <WebView source={{ uri: viewerUrl }} style={{ flex: 1 }} javaScriptEnabled />
