@@ -638,7 +638,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   pillMobile: {
-    flex: 1,
     alignItems: 'center',
   },
   searchBtn: {
