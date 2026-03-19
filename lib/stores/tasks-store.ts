@@ -176,6 +176,9 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   },
 
   loadPersonalTasks: async (userId) => {
+    // Skip if userId is not a valid UUID (e.g. test/mock users like 'doc1', 'u1')
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!userId || !uuidRegex.test(userId)) return;
     const { data, error } = await supabase
       .from('personal_tasks')
       .select('*')
@@ -206,6 +209,8 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   addPersonalTask: async (taskData, userId) => {
     const newTask: PersonalTask = { id: `pt${Date.now()}`, ownerId: userId, ...taskData };
     set((s) => ({ personalTasks: [newTask, ...s.personalTasks] }));
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) return newTask;
     const { error } = await supabase.from('personal_tasks').insert({
       id: newTask.id,
       owner_id: userId,
