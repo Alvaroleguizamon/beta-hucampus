@@ -10,6 +10,7 @@ interface CalendarState {
   setSelectedDate: (date: string | null) => void;
   getEventsByDate: (date: string) => CalendarEvent[];
   getEventsByType: (type: CalendarEvent['type']) => CalendarEvent[];
+  deleteEvent: (id: string) => void;
 }
 
 export const useCalendarStore = create<CalendarState>((set, get) => ({
@@ -39,4 +40,9 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
   setSelectedDate: (date) => set({ selectedDate: date }),
   getEventsByDate: (date) => get().events.filter((e) => e.date === date),
   getEventsByType: (type) => get().events.filter((e) => e.type === type),
+  deleteEvent: (id) => {
+    set((s) => ({ events: s.events.filter((e) => e.id !== id) }));
+    supabase.from('calendar_events').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[calendar-store] deleteEvent error:', error); });
+  },
 }));

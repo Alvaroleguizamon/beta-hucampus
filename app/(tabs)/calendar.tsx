@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, View, FlatList, Pressable } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, Alert, Platform } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { router } from 'expo-router';
 import { useCalendarStore } from '../../lib/stores/calendar-store';
 import { useTripsStore } from '../../lib/stores/trips-store';
+import { useAuthStore } from '../../lib/stores/auth-store';
 import { Colors } from '../../constants/colors';
 import { CalendarEvent } from '../../lib/types';
 import { tripTypeConfig } from '../apps/viajes';
@@ -45,7 +46,10 @@ type AgendaItem = {
 
 export default function CalendarScreen() {
   const events = useCalendarStore((s) => s.events);
+  const deleteEvent = useCalendarStore((s) => s.deleteEvent);
   const trips = useTripsStore((s) => s.trips);
+  const role = useAuthStore((s) => s.user?.role);
+  const canEdit = role === 'docente' || role === 'admin';
   const today = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState<string>(today);
 
@@ -97,6 +101,18 @@ export default function CalendarScreen() {
     }
     return marks;
   }, [allItems, selectedDate]);
+
+  const handleDeleteEvent = (id: string, title: string) => {
+    const doDelete = () => deleteEvent(id);
+    if (Platform.OS === 'web') {
+      if (window.confirm(`¿Eliminar "${title}"? Esta acción no se puede deshacer.`)) doDelete();
+    } else {
+      Alert.alert('Eliminar evento', `¿Eliminar "${title}"?`, [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: doDelete },
+      ]);
+    }
+  };
 
   const itemsForDate = allItems
     .filter((e) => e.date === selectedDate)
@@ -186,6 +202,11 @@ export default function CalendarScreen() {
                   <Text style={styles.eventDesc}>{item.description}</Text>
                 )}
               </View>
+              {canEdit && (
+                <Pressable onPress={() => handleDeleteEvent(item.id, item.title)} hitSlop={8} style={{ padding: 4 }}>
+                  <MaterialCommunityIcons name="trash-can-outline" size={18} color={Colors.error} />
+                </Pressable>
+              )}
             </View>
           );
         }}
