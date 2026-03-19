@@ -81,6 +81,23 @@ export default function NoticiaDetailScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
+      {/* Acciones admin */}
+      {canEdit && (
+        <View style={styles.actionsRow}>
+          <Pressable
+            style={styles.actionBtn}
+            onPress={() => router.push(`/apps/nueva-noticia?id=${id}` as any)}
+          >
+            <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.primary} />
+            <Text style={styles.actionBtnText}>Editar</Text>
+          </Pressable>
+          <Pressable style={[styles.actionBtn, styles.actionBtnDanger]} onPress={handleDelete}>
+            <MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} />
+            <Text style={[styles.actionBtnText, { color: Colors.error }]}>Eliminar</Text>
+          </Pressable>
+        </View>
+      )}
+
       {/* Categoría + fecha */}
       <View style={styles.metaRow}>
         <View style={[styles.categoryBadge, { backgroundColor: cfg.color + '18' }]}>
@@ -221,6 +238,25 @@ const styles = StyleSheet.create({
   },
   footerItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   footerText: { fontSize: 13, color: Colors.textSecondary },
+
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'flex-end',
+    marginBottom: 16,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+  },
+  actionBtnDanger: { borderColor: Colors.error },
+  actionBtnText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
 
   headerBtn: { padding: 6, borderRadius: 8 },
   notFound: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
