@@ -3,6 +3,7 @@ import {
   StyleSheet, View, ScrollView, Pressable, Modal,
   ActivityIndicator, Alert, TextInput as RNTextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -698,7 +699,7 @@ export default function CourseDetailScreen() {
   };
 
   return (
-    <View style={s.screen}>
+    <SafeAreaView style={s.screen} edges={['top']}>
       <View style={s.topBar}>
         <Pressable style={s.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/admin' as any)}>
           <MaterialCommunityIcons name="arrow-left" size={22} color={Colors.textPrimary} />
@@ -829,7 +830,7 @@ export default function CourseDetailScreen() {
         courseId={course.id}
         enrolled={course.students}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
