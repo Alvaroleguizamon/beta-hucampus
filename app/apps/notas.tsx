@@ -8,6 +8,7 @@ import { useCoursesStore } from '../../lib/stores/courses-store';
 import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { Colors } from '../../constants/colors';
 import CourseFilter from '../../components/ui/CourseFilter';
+import StudentSearch from '../../components/ui/StudentSearch';
 
 // Padre → child mapping para este demo
 const PADRE_CHILD: Record<string, { id: string; name: string }> = {
@@ -121,6 +122,7 @@ function DocenteView() {
   const grades = useGradesStore((s) => s.grades);
   const courses = useCoursesStore((s) => s.courses);
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [studentFilterIds, setStudentFilterIds] = useState<string[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string; course: string } | null>(null);
 
   const allStudents = useMemo(() => {
@@ -137,10 +139,19 @@ function DocenteView() {
     return list;
   }, [courses]);
 
-  const visibleStudents = useMemo(() => {
+  const courseStudents = useMemo(() => {
     if (!selectedCourseId) return allStudents;
     return allStudents.filter((s) => s.courseId === selectedCourseId);
   }, [allStudents, selectedCourseId]);
+
+  const visibleStudents = useMemo(() => {
+    if (studentFilterIds.length === 0) return courseStudents;
+    return courseStudents.filter((s) => studentFilterIds.includes(s.id));
+  }, [courseStudents, studentFilterIds]);
+
+  const toggleStudent = (id: string) => {
+    setStudentFilterIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
 
   if (selectedStudent) {
     return (
@@ -161,7 +172,8 @@ function DocenteView() {
 
   return (
     <View style={styles.root}>
-      <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={setSelectedCourseId} />
+      <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={(id) => { setSelectedCourseId(id); setStudentFilterIds([]); }} />
+      <StudentSearch students={courseStudents} selectedIds={studentFilterIds} onToggle={toggleStudent} onClear={() => setStudentFilterIds([])} />
 
       <ScrollView style={styles.container}>
         <Text style={styles.sectionLabel}>Seleccioná un alumno</Text>

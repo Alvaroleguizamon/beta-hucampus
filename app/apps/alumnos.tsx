@@ -7,6 +7,7 @@ import { useGradesStore } from '../../lib/stores/grades-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import { Colors } from '../../constants/colors';
 import CourseFilter from '../../components/ui/CourseFilter';
+import StudentSearch from '../../components/ui/StudentSearch';
 
 function getGradeColor(value: number) {
   if (value >= 7) return Colors.success;
@@ -93,12 +94,12 @@ export default function AlumnosScreen() {
   const grades = useGradesStore((s) => s.grades);
   const courses = useCoursesStore((s) => s.courses);
   const [selectedCourseId, setSelectedCourseId] = useState('');
-
+  const [studentFilterIds, setStudentFilterIds] = useState<string[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
 
   const course = selectedCourseId ? courses.find((c) => c.id === selectedCourseId) : courses[0];
 
-  const studentsWithStats = useMemo(() => {
+  const allStudentsWithStats = useMemo(() => {
     if (!course) return [];
     return course.students.map((s) => {
       const sg = grades.filter((g) => g.studentId === s.id);
@@ -106,6 +107,15 @@ export default function AlumnosScreen() {
       return { ...s, gradeCount: sg.length, avg };
     });
   }, [course, grades]);
+
+  const studentsWithStats = useMemo(() => {
+    if (studentFilterIds.length === 0) return allStudentsWithStats;
+    return allStudentsWithStats.filter((s) => studentFilterIds.includes(s.id));
+  }, [allStudentsWithStats, studentFilterIds]);
+
+  const toggleStudent = (id: string) => {
+    setStudentFilterIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
 
   if (!course) return null;
 
@@ -127,7 +137,8 @@ export default function AlumnosScreen() {
 
   return (
     <View style={styles.root}>
-      <CourseFilter courses={courses} selectedCourseId={selectedCourseId || courses[0]?.id || ''} onSelect={setSelectedCourseId} />
+      <CourseFilter courses={courses} selectedCourseId={selectedCourseId || courses[0]?.id || ''} onSelect={(id) => { setSelectedCourseId(id); setStudentFilterIds([]); }} />
+      <StudentSearch students={course?.students ?? []} selectedIds={studentFilterIds} onToggle={toggleStudent} onClear={() => setStudentFilterIds([])} />
       <FlatList
         data={studentsWithStats}
         keyExtractor={(item) => item.id}
