@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Image, Pressable } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { StyleSheet, View, Image, Pressable, Modal } from 'react-native';
 import { Text, TextInput, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
@@ -35,11 +35,16 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
   const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
+  // Positions for Modal-based dropdowns
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 16 });
+  const [reactionPos, setReactionPos] = useState({ top: 0, left: 16 });
+  const dotsRef = useRef<View>(null);
+  const reactionBtnRef = useRef<View>(null);
+
   const reactions = post.reactions ?? {};
   const myReaction = reactions[currentUserId] ?? null;
   const isLongText = post.text.length > 180;
 
-  // Agrupa reacciones por tipo y cuenta
   const reactionCounts = REACTIONS.map((r) => ({
     ...r,
     count: Object.values(reactions).filter((v) => v === r.type).length,
@@ -48,17 +53,33 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
   const totalReactions = Object.keys(reactions).length;
   const roleInfo = post.authorRole ? ROLE_LABEL[post.authorRole] : null;
 
+  const handleDotsPress = () => {
+    dotsRef.current?.measure((_fx: number, _fy: number, w: number, h: number, px: number, py: number) => {
+      setMenuPos({ top: py + h, right: 16 });
+      setShowMenu(true);
+    });
+  };
+
   const handleReactionPress = () => {
     if (myReaction) {
-      // Si ya reaccioné, quitar la reacción
       onReaction(post.id, null);
     } else {
-      setShowReactionPicker(true);
+      reactionBtnRef.current?.measure((_fx: number, _fy: number, _w: number, h: number, px: number, py: number) => {
+        setReactionPos({ top: py - 80, left: px });
+        setShowReactionPicker(true);
+      });
     }
   };
 
+  const handleLongReactionPress = () => {
+    reactionBtnRef.current?.measure((_fx: number, _fy: number, _w: number, h: number, px: number, py: number) => {
+      setReactionPos({ top: py - 80, left: px });
+      setShowReactionPicker(true);
+    });
+  };
+
   return (
-    <View style={[styles.container, (showMenu || showReactionPicker) && { zIndex: 100 }]}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -80,32 +101,13 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
           </View>
         </View>
         {canEdit && (
-          <View style={styles.menuWrapper}>
+          <View ref={dotsRef} collapsable={false}>
             <IconButton
               icon="dots-horizontal"
               size={20}
               iconColor={Colors.textSecondary}
-              onPress={() => setShowMenu((v) => !v)}
+              onPress={handleDotsPress}
             />
-            {showMenu && (
-              <View style={styles.menuDropdown}>
-                <Pressable
-                  style={styles.menuItem}
-                  onPress={() => { setShowMenu(false); onEdit?.(post); }}
-                >
-                  <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.textPrimary} />
-                  <Text style={styles.menuItemText}>Editar</Text>
-                </Pressable>
-                <View style={styles.menuDivider} />
-                <Pressable
-                  style={styles.menuItem}
-                  onPress={() => { setShowMenu(false); onDelete?.(post.id); }}
-                >
-                  <MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} />
-                  <Text style={[styles.menuItemText, { color: Colors.error }]}>Eliminar</Text>
-                </Pressable>
-              </View>
-            )}
           </View>
         )}
       </View>
@@ -135,44 +137,23 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
         <Image source={{ uri: post.image }} style={styles.image} resizeMode="cover" />
       )}
 
-      {/* Actions + resumen en una sola línea */}
+      {/* Actions */}
       <View style={styles.actions}>
-        {/* Reaction button con popover */}
-        <View style={styles.reactionWrapper}>
-          {showReactionPicker && (
-            <View style={styles.reactionPopover}>
-              {REACTIONS.map((r) => (
-                <Pressable
-                  key={r.type}
-                  style={[styles.popoverItem, myReaction === r.type && styles.popoverItemActive]}
-                  onPress={() => {
-                    onReaction(post.id, r.type);
-                    setShowReactionPicker(false);
-                  }}
-                >
-                  <Text style={styles.popoverEmoji}>{r.emoji}</Text>
-                  <Text style={styles.popoverLabel}>{r.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
+        <View ref={reactionBtnRef} collapsable={false}>
           <Pressable
             style={styles.actionBtn}
             onPress={handleReactionPress}
-            onLongPress={() => setShowReactionPicker(true)}
+            onLongPress={handleLongReactionPress}
           >
             <Text style={[
               styles.actionText,
               myReaction && { color: REACTIONS.find((r) => r.type === myReaction)?.color },
             ]}>
-              {myReaction
-                ? REACTIONS.find((r) => r.type === myReaction)?.emoji
-                : '👍'}
+              {myReaction ? REACTIONS.find((r) => r.type === myReaction)?.emoji : '👍'}
             </Text>
           </Pressable>
         </View>
 
-        {/* Comment button */}
         {(canComment || post.comments.length > 0) && (
           <Pressable style={styles.actionBtn} onPress={() => setShowComments(!showComments)}>
             <Text style={styles.actionText}>
@@ -181,7 +162,6 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
           </Pressable>
         )}
 
-        {/* Spacer + resumen de reacciones + impresiones */}
         <View style={styles.rightMeta}>
           {reactionCounts.length > 0 && (
             <View style={styles.reactionSummary}>
@@ -240,13 +220,49 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
         </View>
       )}
 
-      {/* Backdrop para cerrar popovers */}
-      {(showReactionPicker || showMenu) && (
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => { setShowReactionPicker(false); setShowMenu(false); }}
-        />
-      )}
+      {/* Menu Modal */}
+      <Modal visible={showMenu} transparent animationType="none" onRequestClose={() => setShowMenu(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowMenu(false)}>
+          <View style={[styles.menuDropdown, { position: 'absolute', top: menuPos.top, right: menuPos.right }]}>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => { setShowMenu(false); onEdit?.(post); }}
+            >
+              <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.textPrimary} />
+              <Text style={styles.menuItemText}>Editar</Text>
+            </Pressable>
+            <View style={styles.menuDivider} />
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => { setShowMenu(false); onDelete?.(post.id); }}
+            >
+              <MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} />
+              <Text style={[styles.menuItemText, { color: Colors.error }]}>Eliminar</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Reaction Picker Modal */}
+      <Modal visible={showReactionPicker} transparent animationType="none" onRequestClose={() => setShowReactionPicker(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowReactionPicker(false)}>
+          <View style={[styles.reactionPopover, { position: 'absolute', top: reactionPos.top, left: reactionPos.left }]}>
+            {REACTIONS.map((r) => (
+              <Pressable
+                key={r.type}
+                style={[styles.popoverItem, myReaction === r.type && styles.popoverItemActive]}
+                onPress={() => {
+                  onReaction(post.id, r.type);
+                  setShowReactionPicker(false);
+                }}
+              >
+                <Text style={styles.popoverEmoji}>{r.emoji}</Text>
+                <Text style={styles.popoverLabel}>{r.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -425,54 +441,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     height: 36,
   },
-  reactionWrapper: {
-    position: 'relative',
-  },
-  reactionPopover: {
-    position: 'absolute',
-    bottom: 44,
-    left: 0,
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    gap: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  popoverItem: {
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 2,
-  },
-  popoverItemActive: {
-    backgroundColor: Colors.primary + '15',
-  },
-  popoverEmoji: {
-    fontSize: 24,
-  },
-  popoverLabel: {
-    fontSize: 9,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 9,
-  },
   impressions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -499,13 +467,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.accent,
   },
-  menuWrapper: {
-    position: 'relative',
+  // Modal backdrop (transparent full-screen)
+  modalBackdrop: {
+    flex: 1,
   },
+  // Menu dropdown (rendered inside Modal)
   menuDropdown: {
-    position: 'absolute',
-    top: 40,
-    right: 0,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
@@ -515,8 +482,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 12,
     elevation: 20,
-    zIndex: 999,
-    minWidth: 140,
+    minWidth: 150,
     overflow: 'hidden',
   },
   menuItem: {
@@ -534,5 +500,39 @@ const styles = StyleSheet.create({
   menuDivider: {
     height: 1,
     backgroundColor: Colors.border,
+  },
+  // Reaction popover (rendered inside Modal)
+  reactionPopover: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  popoverItem: {
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 2,
+  },
+  popoverItemActive: {
+    backgroundColor: Colors.primary + '15',
+  },
+  popoverEmoji: {
+    fontSize: 24,
+  },
+  popoverLabel: {
+    fontSize: 9,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
 });
