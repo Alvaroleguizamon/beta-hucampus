@@ -36,7 +36,7 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
   const [expanded, setExpanded] = useState(false);
 
   // Positions for Modal-based dropdowns
-  const [menuPos, setMenuPos] = useState({ top: 0, right: 16 });
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [reactionPos, setReactionPos] = useState({ top: 0, left: 16 });
   const dotsRef = useRef<View>(null);
   const reactionBtnRef = useRef<View>(null);
@@ -53,9 +53,11 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
   const totalReactions = Object.keys(reactions).length;
   const roleInfo = post.authorRole ? ROLE_LABEL[post.authorRole] : null;
 
+  const MENU_WIDTH = 150;
   const handleDotsPress = () => {
     dotsRef.current?.measure((_fx: number, _fy: number, w: number, h: number, px: number, py: number) => {
-      setMenuPos({ top: py + h, right: 16 });
+      // Right-align the menu with the button
+      setMenuPos({ top: py + h, left: Math.max(8, px + w - MENU_WIDTH) });
       setShowMenu(true);
     });
   };
@@ -223,7 +225,7 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
       {/* Menu Modal */}
       <Modal visible={showMenu} transparent animationType="none" onRequestClose={() => setShowMenu(false)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setShowMenu(false)}>
-          <View style={[styles.menuDropdown, { position: 'absolute', top: menuPos.top, right: menuPos.right }]}>
+          <View style={[styles.menuDropdown, { position: 'absolute', top: menuPos.top, left: menuPos.left }]}>
             <Pressable
               style={styles.menuItem}
               onPress={() => { setShowMenu(false); onEdit?.(post); }}
@@ -257,7 +259,6 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
                 }}
               >
                 <Text style={styles.popoverEmoji}>{r.emoji}</Text>
-                <Text style={styles.popoverLabel}>{r.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -519,10 +520,9 @@ const styles = StyleSheet.create({
   },
   popoverItem: {
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 16,
-    gap: 2,
   },
   popoverItemActive: {
     backgroundColor: Colors.primary + '15',
