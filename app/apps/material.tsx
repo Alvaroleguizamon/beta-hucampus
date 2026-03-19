@@ -6,9 +6,10 @@ import WebView from 'react-native-webview';
 import * as DocumentPicker from 'expo-document-picker';
 import { Colors } from '../../constants/colors';
 import { useSubjectsStore } from '../../lib/stores/subjects-store';
-import { useCoursesStore } from '../../lib/stores/courses-store';
 import { useAuthStore } from '../../lib/stores/auth-store';
+import { useMaterialStore, uploadMaterialFile, SubjectMaterial } from '../../lib/stores/material-store';
 import { useBreakpoint, SIDEBAR_WIDTH } from '../../hooks/useBreakpoint';
+import { useCoursesStore } from '../../lib/stores/courses-store';
 import CourseFilter from '../../components/ui/CourseFilter';
 import StudentSearch from '../../components/ui/StudentSearch';
 
@@ -326,12 +327,16 @@ function UploadModal({ subjectId, onClose }: { subjectId: string; onClose: () =>
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function MaterialScreen() {
   const subjects = useSubjectsStore((s) => s.subjects);
+  const storeMaterials = useMaterialStore((s) => s.materials);
+  const deleteMaterial = useMaterialStore((s) => s.deleteMaterial);
+  const role = useAuthStore((s) => s.user?.role);
+  const canEdit = role === 'docente' || role === 'admin';
   const courses = useCoursesStore((s) => s.courses);
-  const role = useAuthStore((s) => s.user?.role ?? 'alumno');
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [studentFilterIds, setStudentFilterIds] = useState<string[]>([]);
   const courseForFilter = courses.find((c) => c.id === (selectedCourseId || courses[0]?.id));
   const toggleStudent = (id: string) => setStudentFilterIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<SubjectMaterial | null>(null);
   const [selectedPDF, setSelectedPDF] = useState<SubjectMaterial | null>(null);
