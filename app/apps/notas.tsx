@@ -10,8 +10,8 @@ import { useGradesStore } from '../../lib/stores/grades-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { Colors } from '../../constants/colors';
-import CourseFilter from '../../components/ui/CourseFilter';
-import StudentSearch from '../../components/ui/StudentSearch';
+import { useBreakpoint, SIDEBAR_WIDTH } from '../../hooks/useBreakpoint';
+import { Grade } from '../../lib/types';
 
 // Padre → child mapping para este demo
 const PADRE_CHILD: Record<string, { id: string; name: string }> = {
