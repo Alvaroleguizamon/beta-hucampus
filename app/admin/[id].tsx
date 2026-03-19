@@ -7,6 +7,7 @@ import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useAdminStore, DAYS, TIME_SLOTS, SUBJECT_COLORS } from '../../lib/stores/admin-store';
+import { useAuthStore } from '../../lib/stores/auth-store';
 import { CourseSchedule } from '../../lib/types';
 import { Colors } from '../../constants/colors';
 
@@ -659,6 +660,8 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
 export default function CourseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { courses, deleteSchedule, createSchedule, updateSchedule } = useAdminStore();
+  const user = useAuthStore((s) => s.user);
+  const isDocente = user?.role === 'docente';
   const course = courses.find((c) => c.id === id);
 
   const [scheduleModal, setScheduleModal] = useState(false);
@@ -713,10 +716,12 @@ export default function CourseDetailScreen() {
           <MaterialCommunityIcons name="clock-outline" size={18} color={Colors.primary} />
           <Text style={s.sectionTitle2}>Cronograma</Text>
           <View style={{ flex: 1 }} />
-          <Pressable style={s.addBtn} onPress={() => { setEditingSchedule(null); setScheduleModal(true); }}>
-            <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
-            <Text style={s.addBtnText}>Agregar bloque</Text>
-          </Pressable>
+          {!isDocente && (
+            <Pressable style={s.addBtn} onPress={() => { setEditingSchedule(null); setScheduleModal(true); }}>
+              <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
+              <Text style={s.addBtnText}>Agregar bloque</Text>
+            </Pressable>
+          )}
         </View>
 
         {course.schedules.length === 0 ? (
@@ -729,7 +734,7 @@ export default function CourseDetailScreen() {
             <View style={s.gridContainer}>
               <ScheduleGrid
                 schedules={course.schedules}
-                onEdit={(sch) => { setEditingSchedule(sch); setScheduleModal(true); }}
+                onEdit={(sch) => { if (!isDocente) { setEditingSchedule(sch); setScheduleModal(true); } }}
               />
             </View>
 
@@ -753,12 +758,16 @@ export default function CourseDetailScreen() {
                           {sch.room ? ` · ${sch.room}` : ''}
                         </Text>
                       </View>
-                      <Pressable style={s.iconBtn} onPress={() => { setEditingSchedule(sch); setScheduleModal(true); }}>
-                        <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.textSecondary} />
-                      </Pressable>
-                      <Pressable style={s.iconBtn} onPress={() => handleDeleteSchedule(sch)}>
-                        <MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} />
-                      </Pressable>
+                      {!isDocente && (
+                        <>
+                          <Pressable style={s.iconBtn} onPress={() => { setEditingSchedule(sch); setScheduleModal(true); }}>
+                            <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.textSecondary} />
+                          </Pressable>
+                          <Pressable style={s.iconBtn} onPress={() => handleDeleteSchedule(sch)}>
+                            <MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} />
+                          </Pressable>
+                        </>
+                      )}
                     </View>
                   ))}
                 </View>
