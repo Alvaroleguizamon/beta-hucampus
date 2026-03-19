@@ -287,7 +287,7 @@ function DocenteView() {
           </ScrollView>
         </View>
 
-        {selectedCourseId && (
+        {!!selectedCourseId && (
           <View style={styles.selectorSection}>
             <Text style={styles.selectorLabel}>Materia</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
