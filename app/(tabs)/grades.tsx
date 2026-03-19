@@ -29,7 +29,6 @@ const alumnoApps: AppItem[] = [
 
 const docenteApps: AppItem[] = [
   { icon: 'checkbox-marked-outline', label: 'Tareas', color: '#7C6BC4', bgColor: '#F3F0FF', route: '/apps/tareas' },
-  { icon: 'clock-outline', label: 'Horarios', color: '#5B77D3', bgColor: '#EEF1FB', route: '/apps/horarios' },
   { icon: 'school', label: 'Cargar notas', color: '#E67E22', bgColor: '#FDF2E6', route: '/apps/notas' },
   { icon: 'calendar-check', label: 'Presentismo', color: '#4CAF50', bgColor: '#EAF7EB', route: '/apps/presentismo' },
   { icon: 'book-open-variant', label: 'Material', color: '#0693E3', bgColor: '#E6F6FD', route: '/apps/material' },

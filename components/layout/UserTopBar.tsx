@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Modal, ScrollView, Animated, Dimensi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { IconButton, TextInput } from 'react-native-paper';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { useCourseStore } from '../../lib/stores/course-store';
 import { mockCourses, mockBirthdays } from '../../lib/mock-data';
@@ -56,7 +56,12 @@ export default function UserTopBar() {
   const studentCourse = role === 'alumno' && user
     ? courses.find((c) => c.students.some((s) => s.id === user.id))
     : null;
+  const pathname = usePathname();
   const { selectedCourseId, setSelectedCourse } = useCourseStore();
+
+  // Tabs principales donde el filtro de curso no aplica
+  const mainTabs = ['wall', 'courses', 'calendar', 'home'];
+  const showCourseSelector = role === 'docente' && !mainTabs.some((t) => pathname.endsWith(`/${t}`));
   const logout = useAuthStore((s) => s.logout);
   const { isDesktop } = useBreakpoint();
   const [sidePanel, setSidePanel] = useState<'notifs' | 'birthdays' | null>(null);
@@ -145,11 +150,11 @@ export default function UserTopBar() {
         {/* ── Left: logo / course selector (hidden when search open) ── */}
         {!showSearch && (
           <View style={styles.left}>
-            {!isDesktop && role !== 'docente' ? (
+            {!isDesktop && !showCourseSelector ? (
               <Pressable onPress={() => router.replace('/(tabs)/wall' as any)}>
                 <HuCampusLogo width={130} />
               </Pressable>
-            ) : role === 'docente' ? (
+            ) : showCourseSelector ? (
               <View style={styles.docenteLeftRow}>
               {!isDesktop && (
                 <Pressable style={styles.mobileLogoIcon} onPress={() => router.replace('/(tabs)/wall' as any)}>
@@ -243,7 +248,7 @@ export default function UserTopBar() {
       </View>
 
       {/* Course dropdown */}
-      {courseDropdownOpen && role === 'docente' && (
+      {courseDropdownOpen && showCourseSelector && (
         <View style={styles.dropdown}>
           {mockCourses.map((course) => {
             const isActive = course.id === selectedCourseId;
