@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Role, User } from '../types';
-import { supabase } from '../supabase';
+import { supabase, supabaseAdmin } from '../supabase';
 
 interface AuthState {
   user: User | null;
@@ -12,7 +12,7 @@ interface AuthState {
 }
 
 async function fetchProfileByEmail(email: string): Promise<User | null> {
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from('profiles')
     .select('id, name, email, role')
     .eq('email', email)
