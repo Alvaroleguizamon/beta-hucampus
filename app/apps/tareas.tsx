@@ -118,6 +118,7 @@ export default function TareasScreen() {
   const [showSendConfirm, setShowSendConfirm] = useState<string | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [showDraftStudentList, setShowDraftStudentList] = useState(false);
+  const [showCourseDropdown, setShowCourseDropdown] = useState(false);
 
   // Init course selectors once courses load
   React.useEffect(() => {
@@ -626,14 +627,14 @@ export default function TareasScreen() {
     // ─── Docente add draft modal ───
     const renderDocenteAddModal = () => (
       <Modal visible={showDocenteAddModal} transparent animationType="fade">
-        <Pressable style={styles.addModalOverlay} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
-          <Pressable style={[styles.addModalCard, isWide && { maxWidth: 1100 }]} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
+        <Pressable style={styles.addModalOverlay} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); setShowCourseDropdown(false); }}>
+          <Pressable style={[styles.addModalCard, isWide && { maxWidth: 1100 }]} onPress={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); setShowCourseDropdown(false); }}>
             <View style={styles.addHeader}>
               <Text style={styles.addTitle}>{editingPublishedTask ? 'Editar tarea' : editingDraftId ? 'Editar borrador' : 'Nueva tarea'}</Text>
               <IconButton icon="close" iconColor={Colors.textSecondary} size={20} onPress={() => { resetDraftForm(); setShowDocenteAddModal(false); }} />
             </View>
 
-            <ScrollView keyboardShouldPersistTaps="handled" style={styles.addModalScroll} onScrollBeginDrag={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); }}>
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.addModalScroll} onScrollBeginDrag={() => { setShowDraftStudentList(false); setShowDraftCalendar(false); setShowCourseDropdown(false); }}>
               <TextInput
                 label="Título de la tarea"
                 value={draftTitle}
@@ -660,22 +661,43 @@ export default function TareasScreen() {
               />
 
               {!editingPublishedTask && <Text style={styles.formLabel}>Curso</Text>}
-              <View style={[styles.subjectSelectList, editingPublishedTask && { display: 'none' }]}>
-                {courses.map((c) => {
-                  const selected = draftCourseId === c.id;
-                  return (
-                    <Pressable
-                      key={c.id}
-                      style={[styles.subjectSelectRow, selected && { backgroundColor: Colors.primary + '10', borderColor: Colors.primary }]}
-                      onPress={() => { setDraftCourseId(c.id); setDraftStudentIds([]); }}
-                    >
-                      <MaterialCommunityIcons name="google-classroom" size={16} color={selected ? Colors.primary : Colors.textSecondary} style={{ marginRight: 8 }} />
-                      <Text style={[styles.subjectSelectText, selected && { color: Colors.primary, fontWeight: '600' }]}>{c.name} — {c.grade}</Text>
-                      {selected && <MaterialCommunityIcons name="check" size={18} color={Colors.primary} />}
-                    </Pressable>
-                  );
-                })}
-              </View>
+              {!editingPublishedTask && (() => {
+                const selectedCourse = courses.find((c) => c.id === draftCourseId);
+                return (
+                  <Pressable
+                    style={[styles.datePickerBtn, showCourseDropdown && { borderColor: Colors.primary }]}
+                    onPress={(e) => { e.stopPropagation(); setShowCourseDropdown(!showCourseDropdown); }}
+                  >
+                    <MaterialCommunityIcons name="google-classroom" size={20} color={Colors.primary} />
+                    <Text style={[styles.datePickerText, selectedCourse && { color: Colors.textPrimary }]}>
+                      {selectedCourse ? `${selectedCourse.name} — ${selectedCourse.grade}` : 'Seleccionar curso'}
+                    </Text>
+                    <MaterialCommunityIcons name={showCourseDropdown ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
+                  </Pressable>
+                );
+              })()}
+              {!editingPublishedTask && showCourseDropdown && (
+                <Pressable style={{ marginTop: 4 }} onPress={(e) => e.stopPropagation()}>
+                  <View style={docenteStyles.courseDropdownList}>
+                    {courses.map((c) => {
+                      const selected = draftCourseId === c.id;
+                      return (
+                        <Pressable
+                          key={c.id}
+                          style={[docenteStyles.courseDropdownItem, selected && { backgroundColor: Colors.primary + '10' }]}
+                          onPress={() => { setDraftCourseId(c.id); setDraftStudentIds([]); setShowCourseDropdown(false); }}
+                        >
+                          <MaterialCommunityIcons name="google-classroom" size={16} color={selected ? Colors.primary : Colors.textSecondary} />
+                          <Text style={[docenteStyles.courseDropdownText, selected && { color: Colors.primary, fontWeight: '600' }]}>
+                            {c.name} — {c.grade}
+                          </Text>
+                          {selected && <MaterialCommunityIcons name="check" size={16} color={Colors.primary} />}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </Pressable>
+              )}
 
               {!editingPublishedTask && <Text style={styles.formLabel}>Asignar a</Text>}
               <View style={[docenteStyles.assignToggle, editingPublishedTask && { display: 'none' }]}>
@@ -2794,5 +2816,27 @@ const docenteStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: Colors.primary,
+  },
+  courseDropdownList: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  courseDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  courseDropdownText: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.textPrimary,
   },
 });
