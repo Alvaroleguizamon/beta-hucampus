@@ -182,7 +182,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   createSchedule: async (courseId, subjectId, teacherId, dayOfWeek, startTime, endTime, room, assistantId) => {
     const { data, error } = await supabase
       .from('course_schedules')
-      .insert({ course_id: courseId, subject_id: subjectId, teacher_id: teacherId, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, room: room ?? null, assistant_id: assistantId ?? null })
+      .insert({ course_id: courseId, subject_id: subjectId, teacher_id: teacherId, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, room: room || null, assistant_id: assistantId || null })
       .select()
       .single();
     if (error) return { error: error.message };
@@ -199,7 +199,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       subjectColor: subj?.color ?? '#5B77D3',
       teacherId,
       teacherName: teacher?.name ?? teacherId,
-      assistantId: assistantId ?? undefined,
+      assistantId: assistantId || undefined,
       assistantName: assistant?.name,
       dayOfWeek,
       startTime,
@@ -217,7 +217,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   updateSchedule: async (id, subjectId, teacherId, dayOfWeek, startTime, endTime, room, assistantId) => {
     const { error } = await supabase
       .from('course_schedules')
-      .update({ subject_id: subjectId, teacher_id: teacherId, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, room: room ?? null, assistant_id: assistantId ?? null })
+      .update({ subject_id: subjectId, teacher_id: teacherId, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime, room: room || null, assistant_id: assistantId || null })
       .eq('id', id);
     if (error) return { error: error.message };
 
