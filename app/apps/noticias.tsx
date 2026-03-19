@@ -35,14 +35,14 @@ export default function NoticiasScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Comunicados',
-      headerRight: () => (
+      headerRight: () => canEdit ? (
         <Pressable
           onPress={() => router.push('/apps/nueva-noticia')}
           style={{ marginRight: 8, padding: 6 }}
         >
           <MaterialCommunityIcons name="plus" size={26} color={Colors.primary} />
         </Pressable>
-      ),
+      ) : null,
     });
   }, [navigation]);
 
@@ -110,9 +110,11 @@ export default function NoticiasScreen() {
       />
 
       {/* FAB nueva noticia */}
-      <Pressable style={styles.fab} onPress={() => router.push('/apps/nueva-noticia')}>
-        <MaterialCommunityIcons name="plus" size={26} color="#FFFFFF" />
-      </Pressable>
+      {canEdit && (
+        <Pressable style={styles.fab} onPress={() => router.push('/apps/nueva-noticia')}>
+          <MaterialCommunityIcons name="plus" size={26} color="#FFFFFF" />
+        </Pressable>
+      )}
     </View>
   );
 }
