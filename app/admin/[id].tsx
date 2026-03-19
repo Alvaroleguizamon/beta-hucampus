@@ -568,9 +568,13 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
   const CELL_H = 54;
   const TIME_W = 52;
   const MIN_CELL_W = 80;
-  // Fill container: distribute remaining width evenly across all 7 days
+
+  // Always show Mon-Fri (indices 0-4). Show Sat/Sun only if there's a block on that day.
+  const usedDayIndices = new Set(schedules.map((sc) => sc.dayOfWeek - 1));
+  const visibleDayIndices = [0, 1, 2, 3, 4, ...[5, 6].filter((i) => usedDayIndices.has(i))];
+
   const CELL_W = containerWidth > 0
-    ? Math.max(MIN_CELL_W, Math.floor((containerWidth - TIME_W) / DAYS.length))
+    ? Math.max(MIN_CELL_W, Math.floor((containerWidth - TIME_W) / visibleDayIndices.length))
     : MIN_CELL_W;
 
   const startHour = 7;
@@ -598,9 +602,9 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
           {/* Header */}
           <View style={{ flexDirection: 'row' }}>
             <View style={{ width: TIME_W }} />
-            {DAYS.map((d, i) => (
-              <View key={d} style={[s.gridDayHeader, { flex: 1, minWidth: CELL_W, backgroundColor: DAY_COLORS[i] }]}>
-                <Text style={[s.gridDayText, { color: DAY_TEXT[i] }]}>{d.slice(0, 3).toUpperCase()}</Text>
+            {visibleDayIndices.map((di) => (
+              <View key={di} style={[s.gridDayHeader, { flex: 1, minWidth: CELL_W, backgroundColor: DAY_COLORS[di] }]}>
+                <Text style={[s.gridDayText, { color: DAY_TEXT[di] }]}>{DAYS[di].slice(0, 3).toUpperCase()}</Text>
               </View>
             ))}
           </View>
@@ -610,7 +614,7 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
               <View style={[s.gridTimeCell, { width: TIME_W, height: CELL_H }]}>
                 <Text style={s.gridTimeText}>{`${hour}:00`}</Text>
               </View>
-              {DAYS.map((_, di) => {
+              {visibleDayIndices.map((di) => {
                 const day = di + 1;
                 const block = getBlock(day, hour);
                 const isFirst = block && parseInt(block.startTime.split(':')[0]) === hour;
@@ -625,9 +629,9 @@ function ScheduleGrid({ schedules, onEdit }: { schedules: CourseSchedule[]; onEd
                         onPress={() => onEdit(block)}
                       >
                         <Text style={s.gridBlockSubject} numberOfLines={1}>{block.subjectName}</Text>
-                        <Text style={s.gridBlockTeacher} numberOfLines={1}>{block.teacherName.split(' ')[0]}</Text>
+                        <Text style={s.gridBlockTeacher} numberOfLines={1}>{block.teacherName}</Text>
                         {!!block.assistantName && (
-                          <Text style={s.gridBlockRoom} numberOfLines={1}>+{block.assistantName.split(' ')[0]}</Text>
+                          <Text style={s.gridBlockRoom} numberOfLines={1}>+{block.assistantName}</Text>
                         )}
                         {!!block.room && <Text style={s.gridBlockRoom} numberOfLines={1}>{block.room}</Text>}
                       </Pressable>
