@@ -40,7 +40,7 @@ export default function WallScreen() {
   const mergedFeed = useMemo(() => {
     return [...posts, ...groupFeedPosts].sort((a, b) => b.date.localeCompare(a.date));
   }, [posts, groupFeedPosts]);
-  const [activeTab, setActiveTab] = useState<SubTab>('muro');
+  const [activeTab, setActiveTab] = useState<SubTab>(role === 'padre' ? 'noticias' : 'muro');
   const [newPostText, setNewPostText] = useState('');
   const [showComposer, setShowComposer] = useState(false);
   const [composerImage, setComposerImage] = useState<string | null>(null);
@@ -518,21 +518,23 @@ export default function WallScreen() {
       ) : (
         /* ── Mobile layout: tabs + content ── */
         <>
-          <View style={styles.pillsContainer}>
-            <View style={styles.pillsMobile}>
-              {tabs.map((tab) => (
-                <Pressable
-                  key={tab.key}
-                  style={[styles.pill, styles.pillMobile, activeTab === tab.key && styles.pillActive]}
-                  onPress={() => setActiveTab(tab.key)}
-                >
-                  <Text style={[styles.pillText, activeTab === tab.key && styles.pillTextActive]}>
-                    {tab.label}
-                  </Text>
-                </Pressable>
-              ))}
+          {role !== 'padre' && (
+            <View style={styles.pillsContainer}>
+              <View style={styles.pillsMobile}>
+                {tabs.map((tab) => (
+                  <Pressable
+                    key={tab.key}
+                    style={[styles.pill, styles.pillMobile, activeTab === tab.key && styles.pillActive]}
+                    onPress={() => setActiveTab(tab.key)}
+                  >
+                    <Text style={[styles.pillText, activeTab === tab.key && styles.pillTextActive]}>
+                      {tab.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
             </View>
-          </View>
+          )}
 
           {activeTab === 'muro' && feedContent}
           {activeTab === 'grupos' && gruposContent}

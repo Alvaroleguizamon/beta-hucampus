@@ -38,7 +38,7 @@ const tabsByRole: Record<Role, TabConfig[]> = {
     { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
     { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar' },
     { name: 'grades', title: 'Apps', icon: 'view-grid-outline', iconFocused: 'view-grid' },
-    { name: 'community', title: 'Comunidad', icon: 'account-group-outline', iconFocused: 'account-group' },
+    { name: 'grupos', title: 'Grupos', icon: 'account-group-outline', iconFocused: 'account-group' },
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account' },
   ],
   admin: [
@@ -52,7 +52,7 @@ const tabsByRole: Record<Role, TabConfig[]> = {
 const allTabsByRole: Record<Role, string[]> = {
   alumno: ['wall', 'calendar', 'grades', 'communications', 'courses', 'attendance', 'community', 'grupos', 'admin', 'home'],
   docente: ['wall', 'courses', 'grades', 'calendar', 'communications', 'attendance', 'community', 'grupos', 'admin', 'home'],
-  padre: ['wall', 'calendar', 'grades', 'communications', 'courses', 'attendance', 'community', 'grupos', 'admin', 'home'],
+  padre: ['wall', 'calendar', 'grades', 'grupos', 'communications', 'courses', 'attendance', 'community', 'admin', 'home'],
   admin: ['admin', 'wall', 'calendar', 'grades', 'communications', 'courses', 'attendance', 'community', 'grupos', 'home'],
 };
 

@@ -47,6 +47,7 @@ const padreApps: AppItem[] = [
   { icon: 'star-outline', label: 'Eventos', color: '#9C27B0', bgColor: '#F3E5F5', route: '/apps/eventos' },
   { icon: 'bus', label: 'Viajes y Salidas', color: '#00897B', bgColor: '#E0F2F1', route: '/apps/viajes' },
   { icon: 'file-sign', label: 'Autorizaciones', color: '#8D6E63', bgColor: '#EFEBE9', route: '/apps/autorizaciones' },
+  { icon: 'account-box-outline', label: 'Contactos', color: '#0693E3', bgColor: '#E6F6FD', route: '/apps/contactos' },
 ];
 
 const adminApps: AppItem[] = [

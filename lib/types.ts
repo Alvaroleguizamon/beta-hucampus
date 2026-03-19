@@ -170,6 +170,8 @@ export interface ParentContact {
   avatar?: string;
   grade: string;
   isContact: boolean;
+  relationship?: string;
+  phone?: string;
 }
 
 export interface ChatMessage {

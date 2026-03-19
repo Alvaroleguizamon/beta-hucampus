@@ -44,7 +44,7 @@ const tabsByRole: Record<Role, TabConfig[]> = {
     { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home', route: '/(tabs)/wall' },
     { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar', route: '/(tabs)/calendar' },
     { name: 'grades', title: 'Apps', icon: 'view-grid-outline', iconFocused: 'view-grid', route: '/(tabs)/grades' },
-    { name: 'community', title: 'Comunidad', icon: 'account-group-outline', iconFocused: 'account-group', route: '/(tabs)/community' },
+    { name: 'grupos', title: 'Grupos', icon: 'account-group-outline', iconFocused: 'account-group', route: '/(tabs)/grupos' },
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account', route: '/(tabs)/home' },
   ],
   admin: [
@@ -85,6 +85,7 @@ const appsByRole: Record<Role, AppItem[]> = {
     { icon: 'star-outline', label: 'Eventos', color: '#9C27B0', bgColor: '#F3E5F5', route: '/apps/eventos' },
     { icon: 'bus', label: 'Viajes y Salidas', color: '#00897B', bgColor: '#E0F2F1', route: '/apps/viajes' },
     { icon: 'file-sign', label: 'Autorizaciones', color: '#8D6E63', bgColor: '#EFEBE9', route: '/apps/autorizaciones' },
+    { icon: 'account-box-outline', label: 'Contactos', color: '#0693E3', bgColor: '#E6F6FD', route: '/apps/contactos' },
   ],
   admin: [
     { icon: 'google-classroom', label: 'Cursos', color: Colors.primary, bgColor: `${Colors.primary}15`, route: '/(tabs)/admin' },

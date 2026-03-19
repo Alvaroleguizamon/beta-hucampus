@@ -281,11 +281,11 @@ export const mockClassmates: Classmate[] = [
 ];
 
 export const mockParentContacts: ParentContact[] = [
-  { id: 'p1', name: 'Laura González', childName: 'María González', grade: '3ro A', isContact: true },
-  { id: 'p2', name: 'Roberto Rodríguez', childName: 'Lucas Rodríguez', grade: '3ro A', isContact: true },
-  { id: 'p3', name: 'Ana Martínez', childName: 'Sofía Martínez', grade: '3ro A', isContact: false },
-  { id: 'p4', name: 'Carlos López', childName: 'Mateo López', grade: '3ro A', isContact: false },
-  { id: 'p5', name: 'Silvia Díaz', childName: 'Valentina Díaz', grade: '4to B', isContact: false },
+  { id: 'p1', name: 'Laura González', childName: 'María González', grade: '3ro A', isContact: true, relationship: 'Madre', phone: '11-5555-1001' },
+  { id: 'p2', name: 'Roberto Rodríguez', childName: 'Lucas Rodríguez', grade: '3ro A', isContact: true, relationship: 'Padre', phone: '11-5555-1002' },
+  { id: 'p3', name: 'Ana Martínez', childName: 'Sofía Martínez', grade: '3ro A', isContact: false, relationship: 'Madre', phone: '11-5555-1003' },
+  { id: 'p4', name: 'Carlos López', childName: 'Mateo López', grade: '3ro A', isContact: false, relationship: 'Padre', phone: '11-5555-1004' },
+  { id: 'p5', name: 'Silvia Díaz', childName: 'Valentina Díaz', grade: '4to B', isContact: false, relationship: 'Madre', phone: '11-5555-1005' },
 ];
 
 export const mockChatConversations: ChatConversation[] = [
