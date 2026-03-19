@@ -46,10 +46,11 @@ export default function HorariosScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Horarios</Text>
-        {user?.name ? <Text style={styles.headerSub}>{user.name}</Text> : null}
-      </View>
+      {user?.name ? (
+        <View style={styles.header}>
+          <Text style={styles.headerSub}>{user.name}</Text>
+        </View>
+      ) : null}
     <ScrollView style={styles.container}>
       {days.map((day, index) => {
         const isToday = index === todayIndex;
@@ -87,7 +88,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
   headerSub: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
   container: { flex: 1, backgroundColor: Colors.background },
   daySection: { paddingHorizontal: 16, paddingTop: 16 },

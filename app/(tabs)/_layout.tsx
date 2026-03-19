@@ -1,5 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../lib/stores/auth-store';
@@ -65,7 +66,7 @@ export default function TabsLayout() {
   }
 
   return (
-    <View style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column' }}>
+    <SafeAreaView style={{ flex: 1, flexDirection: isDesktop ? 'row' : 'column', backgroundColor: '#FFFFFF' }} edges={['top']}>
       {isDesktop && <DesktopSidebar />}
       <View style={{ flex: 1 }}>
         <UserTopBar />
@@ -79,8 +80,8 @@ export default function TabsLayout() {
                   backgroundColor: '#FFFFFF',
                   borderTopWidth: 1,
                   borderTopColor: Colors.border,
-                  height: 64,
-                  paddingBottom: 8,
+                  height: 80,
+                  paddingBottom: 20,
                   paddingTop: 6,
                 },
             tabBarLabelStyle: {
@@ -118,6 +119,6 @@ export default function TabsLayout() {
           })}
         </Tabs>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

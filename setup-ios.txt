@@ -1,0 +1,57 @@
+SETUP iOS SIMULATOR - Humand School
+====================================
+
+Para correr la app en el simulador de iPhone desde tu Mac, necesitas:
+
+REQUISITOS PREVIOS
+------------------
+1. Xcode instalado (desde el App Store)
+2. Aceptar la licencia de Xcode:
+   sudo xcodebuild -license accept
+
+3. Homebrew (gestor de paquetes para Mac):
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+4. CocoaPods (gestor de dependencias nativas de iOS):
+   brew install cocoapods
+
+IMPORTANTE: Asegurarse de que Homebrew este en el PATH.
+Si usas Apple Silicon (M1/M2/M3), agregar esto a tu ~/.zshrc:
+   export PATH="/opt/homebrew/bin:$PATH"
+
+Luego recargar la terminal:
+   source ~/.zshrc
+
+
+PASOS PARA CORRER LA APP
+-------------------------
+1. Ir al directorio del proyecto:
+   cd humand-school
+
+2. Instalar dependencias (si no lo hiciste):
+   npm install
+
+3. Compilar y abrir en el simulador de iOS:
+   npx expo run:ios
+
+   La primera vez tarda varios minutos porque compila todo el proyecto nativo.
+   Despues de la primera vez es mucho mas rapido.
+
+
+ALTERNATIVAS (si no podes usar el simulador)
+---------------------------------------------
+- Web en el celular: abrir http://<tu-ip-local>:8081 desde el navegador
+  (ambos dispositivos en la misma red WiFi)
+
+- PWA en iPhone: abrir la URL en Safari > Compartir > "Agregar a pantalla de inicio"
+  Se instala como una app con icono propio.
+
+- Web en la PC: npx expo start --web (abre en http://localhost:8081)
+
+
+PROBLEMAS COMUNES
+-----------------
+- "Xcode license not accepted": correr sudo xcodebuild -license accept
+- "CocoaPods not found": instalar con brew install cocoapods
+- "brew not found": agregar /opt/homebrew/bin al PATH (ver arriba)
+- "Port 8081 in use": cerrar la otra instancia o usar npx expo start --port 8082

@@ -197,9 +197,10 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: Colors.textPrimary,
+    textAlign: 'left',
   },
 
   // Chat list

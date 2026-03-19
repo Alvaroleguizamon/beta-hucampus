@@ -188,11 +188,6 @@ export default function NotasScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {role === 'docente' ? 'Notas por alumno' : 'Mis notas'}
-        </Text>
-      </View>
       {role === 'alumno' && <AlumnoView userId={userId} />}
       {role === 'padre' && <PadreView userId={userId} />}
       {role === 'docente' && <DocenteView />}
@@ -212,7 +207,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
 
   avgCard: {
     backgroundColor: Colors.primary,

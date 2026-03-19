@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, ScrollView, Animated, Dimensions, Easing } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { IconButton, TextInput } from 'react-native-paper';
 import { router } from 'expo-router';
@@ -292,6 +293,7 @@ export default function UserTopBar() {
       {/* Side Panel - full height from right */}
       {sidePanelVisible && (
         <Modal visible transparent animationType="none">
+          <SafeAreaView style={{ flex: 1 }} edges={['top']}>
           <View style={styles.sidePanelOverlay}>
             {isDesktop && (
               <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.3)', opacity: backdropAnim }]}>
@@ -397,6 +399,7 @@ export default function UserTopBar() {
               )}
             </Animated.View>
           </View>
+          </SafeAreaView>
         </Modal>
       )}
 
