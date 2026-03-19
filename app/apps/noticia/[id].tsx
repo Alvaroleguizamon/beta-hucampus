@@ -34,9 +34,9 @@ export default function NoticiaDetailScreen() {
   const handleDelete = () => {
     const doDelete = () => { deletePost(id); router.back(); };
     if (Platform.OS === 'web') {
-      if (window.confirm('¿Eliminar esta noticia? Esta acción no se puede deshacer.')) doDelete();
+      if (window.confirm('¿Eliminar este comunicado? Esta acción no se puede deshacer.')) doDelete();
     } else {
-      Alert.alert('Eliminar noticia', '¿Eliminar esta noticia? Esta acción no se puede deshacer.', [
+      Alert.alert('Eliminar comunicado', '¿Eliminar este comunicado? Esta acción no se puede deshacer.', [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', style: 'destructive', onPress: doDelete },
       ]);
@@ -45,8 +45,8 @@ export default function NoticiaDetailScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: 'Noticia',
-      headerBackTitle: 'Noticias',
+      title: 'Comunicado',
+      headerBackTitle: 'Comunicados',
       headerRight: () => canEdit ? (
         <View style={{ flexDirection: 'row', gap: 4, marginRight: 8 }}>
           <Pressable

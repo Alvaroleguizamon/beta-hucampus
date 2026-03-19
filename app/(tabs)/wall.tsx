@@ -54,7 +54,7 @@ export default function WallScreen() {
 
   const tabs: { key: SubTab; label: string }[] = [
     { key: 'muro', label: 'Muro' },
-    { key: 'noticias', label: 'Noticias' },
+    { key: 'noticias', label: 'Comunicados' },
   ];
 
   const pinnedNoticias = noticias.filter((n) => n.pinned);
@@ -419,7 +419,7 @@ export default function WallScreen() {
       }}
       ListFooterComponent={
         <Pressable style={styles.seeAllBtn} onPress={() => router.push('/apps/noticias')}>
-          <Text style={styles.seeAllText}>Ver todas las noticias</Text>
+          <Text style={styles.seeAllText}>Ver todos los comunicados</Text>
           <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
         </Pressable>
       }
@@ -492,7 +492,7 @@ export default function WallScreen() {
             {/* Noticias */}
             <View style={styles.asideSection}>
               <Pressable style={styles.asideSectionHeader} onPress={() => router.push('/apps/noticias')}>
-                <Text style={styles.asideSectionTitle}>Noticias</Text>
+                <Text style={styles.asideSectionTitle}>Comunicados</Text>
                 <View style={styles.asideSeeAll}>
                   <Text style={styles.asideSeeAllText}>Ver todas</Text>
                   <MaterialCommunityIcons name="arrow-right" size={13} color={Colors.primary} />

@@ -25,7 +25,7 @@ export default function NoticiasScreen() {
     if (Platform.OS === 'web') {
       if (window.confirm(`¿Eliminar "${title}"?`)) deletePost(id);
     } else {
-      Alert.alert('Eliminar noticia', `¿Eliminar "${title}"?`, [
+      Alert.alert('Eliminar comunicado', `¿Eliminar "${title}"?`, [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', style: 'destructive', onPress: () => deletePost(id) },
       ]);
@@ -34,7 +34,7 @@ export default function NoticiasScreen() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title: 'Noticias',
+      title: 'Comunicados',
       headerRight: () => (
         <Pressable
           onPress={() => router.push('/apps/nueva-noticia')}
@@ -104,7 +104,7 @@ export default function NoticiasScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <MaterialCommunityIcons name="newspaper-variant-outline" size={56} color={Colors.border} />
-            <Text style={styles.emptyText}>No hay noticias por el momento</Text>
+            <Text style={styles.emptyText}>No hay comunicados por el momento</Text>
           </View>
         }
       />

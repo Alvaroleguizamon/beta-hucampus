@@ -47,7 +47,7 @@ export default function NuevaNoticiaScreen() {
   const [saving, setSaving] = useState(false);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: editing ? 'Editar noticia' : 'Nueva noticia' });
+    navigation.setOptions({ title: editing ? 'Editar comunicado' : 'Nuevo comunicado' });
   }, [navigation, editing]);
 
   const handleImageUpload = async () => {
@@ -145,7 +145,7 @@ export default function NuevaNoticiaScreen() {
       <TextInput
         value={body}
         onChangeText={setBody}
-        placeholder="Escribí el contenido completo de la noticia..."
+        placeholder="Escribí el contenido completo del comunicado..."
         mode="outlined"
         outlineColor={Colors.border}
         activeOutlineColor={Colors.primary}
@@ -240,11 +240,11 @@ export default function NuevaNoticiaScreen() {
               <Text style={styles.pinnedText}>Fijada</Text>
             </View>
           )}
-          <Text style={styles.previewTitle}>{title || 'Título de la noticia'}</Text>
+          <Text style={styles.previewTitle}>{title || 'Título del comunicado'}</Text>
           {imageUrl.trim().length > 0 && (
             <Image source={{ uri: imageUrl }} style={styles.previewImage} resizeMode="cover" />
           )}
-          <Text style={styles.previewBody} numberOfLines={4}>{body || 'El contenido de la noticia aparecerá aquí...'}</Text>
+          <Text style={styles.previewBody} numberOfLines={4}>{body || 'El contenido del comunicado aparecerá aquí...'}</Text>
           <View style={styles.previewFooter}>
             <Text style={styles.previewAuthor}>Dirección</Text>
             <Text style={styles.previewAudience}>Para: {audienceOptions.find((a) => a.value === audience)?.label}</Text>
