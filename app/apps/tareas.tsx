@@ -1581,7 +1581,7 @@ export default function TareasScreen() {
   const renderAddModal = () => (
     <Modal visible={showAddModal} transparent animationType="fade">
       <View style={styles.addModalOverlay}>
-        <View style={[styles.addModalCard, isWide && { maxWidth: 520 }]}>
+        <View style={[styles.addModalCard, isWide && { maxWidth: 900 }]}>
           <View style={styles.addHeader}>
             <Text style={styles.addTitle}>Nueva tarea</Text>
             <IconButton icon="close" iconColor={Colors.textSecondary} size={20} onPress={() => { resetForm(); setShowAddModal(false); }} />
