@@ -100,7 +100,7 @@ export default function DesktopSidebar() {
         <View style={styles.logoIcon}>
           <MaterialCommunityIcons name="school" size={22} color="#FFFFFF" />
         </View>
-        <Text style={styles.logoText}>Hu School</Text>
+        <Text style={styles.logoText}>Hu Campus</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>

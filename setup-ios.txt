@@ -1,4 +1,4 @@
-SETUP iOS SIMULATOR - Hu School
+SETUP iOS SIMULATOR - Hu Campus
 ====================================
 
 Para correr la app en el simulador de iPhone desde tu Mac, necesitas:
