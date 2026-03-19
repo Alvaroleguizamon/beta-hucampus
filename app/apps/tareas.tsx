@@ -1629,12 +1629,15 @@ export default function TareasScreen() {
               <MaterialCommunityIcons name={showSubjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
             </Pressable>
             {showSubjectDropdown && (
-              <ScrollView style={styles.subjectDropdown} nestedScrollEnabled>
-                {subjects.map((s) => {
+              <FlatList
+                data={subjects}
+                keyExtractor={(s) => s.id}
+                style={styles.subjectDropdown}
+                nestedScrollEnabled
+                renderItem={({ item: s }) => {
                   const selected = newSubject === s.name;
                   return (
                     <Pressable
-                      key={s.id}
                       style={[styles.subjectSelectRow, selected && { backgroundColor: s.color + '10', borderColor: s.color }]}
                       onPress={() => { setNewSubject(selected ? '' : s.name); setShowSubjectDropdown(false); }}
                     >
@@ -1643,8 +1646,8 @@ export default function TareasScreen() {
                       {selected && <MaterialCommunityIcons name="check" size={18} color={s.color} />}
                     </Pressable>
                   );
-                })}
-              </ScrollView>
+                }}
+              />
             )}
 
             <Text style={styles.formLabel}>Fecha de entrega</Text>
