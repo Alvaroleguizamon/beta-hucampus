@@ -355,21 +355,23 @@ export default function WallScreen() {
         /* ── Desktop layout: feed + aside ── */
         <View style={styles.desktopLayout}>
           <View style={styles.desktopMain}>
-            <View style={styles.pillsContainer}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>
-                {tabs.map((tab) => (
-                  <Pressable
-                    key={tab.key}
-                    style={[styles.pill, activeTab === tab.key && styles.pillActive]}
-                    onPress={() => setActiveTab(tab.key)}
-                  >
-                    <Text style={[styles.pillText, activeTab === tab.key && styles.pillTextActive]}>
-                      {tab.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
+            {role === 'docente' && (
+              <View style={styles.pillsContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>
+                  {tabs.map((tab) => (
+                    <Pressable
+                      key={tab.key}
+                      style={[styles.pill, activeTab === tab.key && styles.pillActive]}
+                      onPress={() => setActiveTab(tab.key)}
+                    >
+                      <Text style={[styles.pillText, activeTab === tab.key && styles.pillTextActive]}>
+                        {tab.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
             {activeTab === 'muro' && feedContent}
             {activeTab === 'grupos' && gruposContent}

@@ -147,7 +147,7 @@ export default function UserTopBar() {
           <View style={styles.left}>
             {!isDesktop && role !== 'docente' ? (
               <Pressable onPress={() => router.replace('/(tabs)/wall' as any)}>
-                <HuCampusLogo width={100} />
+                <HuCampusLogo width={130} />
               </Pressable>
             ) : role === 'docente' ? (
               <View style={styles.docenteLeftRow}>

@@ -119,12 +119,6 @@ export default function DesktopSidebar() {
     <View style={styles.sidebar}>
       <View style={styles.logoContainer}>
         <HuCampusLogo width={140} />
-        {studentCourse && (
-          <View style={styles.courseBadge}>
-            <MaterialCommunityIcons name="google-classroom" size={14} color={Colors.primary} />
-            <Text style={styles.courseBadgeText}>{studentCourse.grade}</Text>
-          </View>
-        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -175,8 +169,12 @@ export default function DesktopSidebar() {
         </View>
       </ScrollView>
 
-
-
+      {studentCourse && (
+        <View style={styles.courseFooter}>
+          <MaterialCommunityIcons name="google-classroom" size={16} color={Colors.primary} />
+          <Text style={styles.courseFooterText}>{studentCourse.grade}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -196,17 +194,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 8,
   },
-  courseBadge: {
+  courseFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: `${Colors.primary}12`,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 8,
+    paddingLeft: 24,
+    paddingRight: 12,
+    paddingTop: 14,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
-  courseBadgeText: {
-    fontSize: 12,
+  courseFooterText: {
+    fontSize: 13,
     fontWeight: '600',
     color: Colors.primary,
   },
