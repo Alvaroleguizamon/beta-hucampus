@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { StyleSheet, View, FlatList, Pressable, ScrollView, Image, ActivityIndicator, Animated, LayoutAnimation, Platform, UIManager, Alert, Modal, TextInput as RNTextInput } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, ScrollView, Image, ActivityIndicator, Animated, LayoutAnimation, Platform, UIManager, Alert, Modal, TextInput as RNTextInput, Platform as RNPlatform } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Text, TextInput, IconButton, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useSocialStore } from '../../lib/stores/social-store';
+import { useSocialStore, uploadPostImage } from '../../lib/stores/social-store';
 import { useGroupsStore } from '../../lib/stores/groups-store';
 import { WallPostCard } from '../../components/social/WallPostCard';
 import { Colors } from '../../constants/colors';
@@ -85,14 +86,28 @@ export default function WallScreen() {
     setNewPostText(newText);
   };
 
-  const handleSimulatedImageUpload = () => {
+  const handleImageUpload = async () => {
     if (isUploadingImage || composerImage) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para subir imágenes.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+      allowsEditing: false,
+    });
+    if (result.canceled || !result.assets[0]) return;
     setIsUploadingImage(true);
-    const seed = Math.floor(Math.random() * 900) + 100;
-    setTimeout(() => {
-      setComposerImage(`https://picsum.photos/seed/${seed}/800/400`);
+    try {
+      const url = await uploadPostImage(result.assets[0].uri);
+      setComposerImage(url);
+    } catch (e: any) {
+      Alert.alert('Error al subir imagen', e.message ?? 'Intentá de nuevo.');
+    } finally {
       setIsUploadingImage(false);
-    }, 1400);
+    }
   };
 
   const cancelComposer = () => {
@@ -111,6 +126,31 @@ export default function WallScreen() {
   const [editingPost, setEditingPost] = useState<{ id: string; text: string; image?: string } | null>(null);
   const [editText, setEditText] = useState('');
   const [editImage, setEditImage] = useState<string | null>(null);
+  const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
+
+  const handleEditImageUpload = async () => {
+    if (isUploadingEditImage) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para subir imágenes.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+      allowsEditing: false,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    setIsUploadingEditImage(true);
+    try {
+      const url = await uploadPostImage(result.assets[0].uri);
+      setEditImage(url);
+    } catch (e: any) {
+      Alert.alert('Error al subir imagen', e.message ?? 'Intentá de nuevo.');
+    } finally {
+      setIsUploadingEditImage(false);
+    }
+  };
 
   const handleOpenEdit = (post: any) => {
     setEditingPost({ id: post.id, text: post.text, image: post.image });
@@ -241,7 +281,7 @@ export default function WallScreen() {
                   <View style={styles.toolbarDivider} />
                   <Pressable
                     style={[styles.toolbarBtn, (isUploadingImage || !!composerImage) && styles.toolbarBtnDisabled]}
-                    onPress={handleSimulatedImageUpload}
+                    onPress={handleImageUpload}
                     disabled={isUploadingImage || !!composerImage}
                   >
                     {isUploadingImage ? (
@@ -521,13 +561,26 @@ export default function WallScreen() {
               autoFocus
             />
 
-            {editImage && (
+            {editImage ? (
               <View style={styles.editImageWrapper}>
                 <Image source={{ uri: editImage }} style={styles.editImagePreview} resizeMode="cover" />
                 <Pressable style={styles.editImageRemove} onPress={() => setEditImage(null)}>
                   <MaterialCommunityIcons name="close-circle" size={22} color="#FFFFFF" />
                 </Pressable>
               </View>
+            ) : (
+              <Pressable
+                style={styles.editAddImageBtn}
+                onPress={handleEditImageUpload}
+                disabled={isUploadingEditImage}
+              >
+                {isUploadingEditImage
+                  ? <ActivityIndicator size={16} color={Colors.primary} />
+                  : <MaterialCommunityIcons name="image-plus" size={18} color={Colors.primary} />}
+                <Text style={styles.editAddImageText}>
+                  {isUploadingEditImage ? 'Subiendo...' : 'Agregar imagen'}
+                </Text>
+              </Pressable>
             )}
 
             <View style={styles.editActions}>
@@ -1177,6 +1230,24 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 10,
     backgroundColor: Colors.primary,
+  },
+  editAddImageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderStyle: 'dashed',
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  editAddImageText: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: '600',
   },
   editSaveBtnDisabled: { opacity: 0.4 },
   editSaveText: {

@@ -2,6 +2,36 @@ import { create } from 'zustand';
 import { WallPost, Classmate, ReactionType, Role } from '../types';
 import { supabase } from '../supabase';
 
+// ─── Image Upload ──────────────────────────────────────────────────────────────
+// Uploads a local image URI to Supabase Storage and returns the public URL.
+export async function uploadPostImage(uri: string): Promise<string> {
+  const ext = uri.split('.').pop()?.split('?')[0] ?? 'jpg';
+  const mimeType = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+  const fileName = `post_${Date.now()}.${ext}`;
+
+  // On web, fetch the URI as a blob; on native, use the uri directly
+  let body: Blob | string;
+  if (uri.startsWith('data:') || uri.startsWith('http')) {
+    const res = await fetch(uri);
+    body = await res.blob();
+  } else {
+    // Native local file path — use FormData
+    const formData = new FormData();
+    formData.append('file', { uri, name: fileName, type: mimeType } as any);
+    const res = await fetch(uri);
+    body = await res.blob();
+  }
+
+  const { error } = await supabase.storage
+    .from('post-images')
+    .upload(fileName, body, { contentType: mimeType, upsert: false });
+
+  if (error) throw new Error(`Upload failed: ${error.message}`);
+
+  const { data } = supabase.storage.from('post-images').getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
 interface SocialState {
   posts: WallPost[];
   classmates: Classmate[];
