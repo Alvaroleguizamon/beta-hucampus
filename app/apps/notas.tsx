@@ -170,7 +170,7 @@ function DocenteView() {
               onPress={() => setSelectedCourseId(selectedCourseId === c.id ? '' : c.id)}
             >
               <Text style={[styles.courseChipText, selectedCourseId === c.id && styles.courseChipTextActive]}>
-                {c.grade} — {c.name}
+                {c.grade}
               </Text>
             </Pressable>
           ))}

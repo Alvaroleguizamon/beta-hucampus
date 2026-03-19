@@ -271,7 +271,7 @@ export default function TareasScreen() {
               onPress={() => { setSelectedCourseId(c.id); setStudentFilters([]); setShowStudentDropdown(false); setStudentSearch(''); }}
             >
               <Text style={[docenteStyles.courseTabText, active && docenteStyles.courseTabTextActive]}>
-                {c.name} — {c.grade}
+                {c.grade}
               </Text>
             </Pressable>
           );
@@ -687,7 +687,7 @@ export default function TareasScreen() {
                             >
                               <MaterialCommunityIcons name="google-classroom" size={16} color={selected ? Colors.primary : Colors.textSecondary} />
                               <Text style={[docenteStyles.courseDropdownText, selected && { color: Colors.primary, fontWeight: '600' }]}>
-                                {c.name} — {c.grade}
+                                {c.grade}
                               </Text>
                               {selected && <MaterialCommunityIcons name="check" size={16} color={Colors.primary} />}
                             </Pressable>
@@ -2473,29 +2473,27 @@ const docenteStyles = StyleSheet.create({
   editTaskBtnText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
 
   courseTabs: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     gap: 8,
   },
   courseTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: '#FFFFFF',
+    borderColor: Colors.primary,
   },
   courseTabActive: {
-    backgroundColor: Colors.primary + '15',
-    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
   },
   courseTabText: {
     fontSize: 13,
     fontWeight: '500',
-    color: Colors.textSecondary,
+    color: Colors.primary,
   },
   courseTabTextActive: {
-    color: Colors.primary,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   docenteStatsBar: {
