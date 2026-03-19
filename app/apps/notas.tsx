@@ -119,21 +119,27 @@ function PadreView({ userId }: { userId: string }) {
 function DocenteView() {
   const grades = useGradesStore((s) => s.grades);
   const courses = useCoursesStore((s) => s.courses);
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string; course: string } | null>(null);
+
   const allStudents = useMemo(() => {
     const seen = new Set<string>();
-    const list: { id: string; name: string; course: string }[] = [];
+    const list: { id: string; name: string; course: string; courseId: string }[] = [];
     courses.forEach((c) => {
       c.students.forEach((s) => {
         if (!seen.has(s.id)) {
           seen.add(s.id);
-          list.push({ id: s.id, name: s.name, course: c.grade });
+          list.push({ id: s.id, name: s.name, course: c.grade, courseId: c.id });
         }
       });
     });
     return list;
-  }, []);
+  }, [courses]);
 
-  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string; course: string } | null>(null);
+  const visibleStudents = useMemo(() => {
+    if (!selectedCourseId) return allStudents;
+    return allStudents.filter((s) => s.courseId === selectedCourseId);
+  }, [allStudents, selectedCourseId]);
 
   if (selectedStudent) {
     return (
@@ -153,33 +159,52 @@ function DocenteView() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.sectionLabel}>Seleccioná un alumno</Text>
-      {allStudents.map((student) => {
-        const count = grades.filter((g) => g.studentId === student.id).length;
-        const avg = count
-          ? (grades.filter((g) => g.studentId === student.id).reduce((s, g) => s + g.value, 0) / count).toFixed(1)
-          : null;
-        return (
-          <Pressable key={student.id} style={styles.studentRow} onPress={() => setSelectedStudent(student)}>
-            <View style={styles.studentAvatar}>
-              <Text style={styles.studentAvatarText}>{student.name[0]}</Text>
-            </View>
-            <View style={styles.studentInfo}>
-              <Text style={styles.studentName}>{student.name}</Text>
-              <Text style={styles.studentCourse}>{student.course} · {count} nota{count !== 1 ? 's' : ''}</Text>
-            </View>
-            {avg && (
-              <View style={[styles.avgBadge, { backgroundColor: getGradeColor(parseFloat(avg)) }]}>
-                <Text style={styles.avgBadgeText}>{avg}</Text>
+    <View style={styles.root}>
+      {/* Filtro de cursos */}
+      <View style={styles.courseFilterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {courses.map((c) => (
+            <Pressable
+              key={c.id}
+              style={[styles.courseChip, selectedCourseId === c.id && styles.courseChipActive]}
+              onPress={() => setSelectedCourseId(selectedCourseId === c.id ? '' : c.id)}
+            >
+              <Text style={[styles.courseChipText, selectedCourseId === c.id && styles.courseChipTextActive]}>
+                {c.grade} — {c.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
+      <ScrollView style={styles.container}>
+        <Text style={styles.sectionLabel}>Seleccioná un alumno</Text>
+        {visibleStudents.map((student) => {
+          const count = grades.filter((g) => g.studentId === student.id).length;
+          const avg = count
+            ? (grades.filter((g) => g.studentId === student.id).reduce((s, g) => s + g.value, 0) / count).toFixed(1)
+            : null;
+          return (
+            <Pressable key={student.id} style={styles.studentRow} onPress={() => setSelectedStudent(student)}>
+              <View style={styles.studentAvatar}>
+                <Text style={styles.studentAvatarText}>{student.name[0]}</Text>
               </View>
-            )}
-            <MaterialCommunityIcons name="chevron-right" size={20} color={Colors.textSecondary} style={{ marginLeft: 8 }} />
-          </Pressable>
-        );
-      })}
-      <View style={{ height: 32 }} />
-    </ScrollView>
+              <View style={styles.studentInfo}>
+                <Text style={styles.studentName}>{student.name}</Text>
+                <Text style={styles.studentCourse}>{student.course} · {count} nota{count !== 1 ? 's' : ''}</Text>
+              </View>
+              {avg && (
+                <View style={[styles.avgBadge, { backgroundColor: getGradeColor(parseFloat(avg)) }]}>
+                  <Text style={styles.avgBadgeText}>{avg}</Text>
+                </View>
+              )}
+              <MaterialCommunityIcons name="chevron-right" size={20} color={Colors.textSecondary} style={{ marginLeft: 8 }} />
+            </Pressable>
+          );
+        })}
+        <View style={{ height: 32 }} />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -317,4 +342,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
   emptyBody: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
+
+  // Filtro de cursos
+  courseFilterContainer: { backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  courseChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary, marginRight: 8 },
+  courseChipActive: { backgroundColor: Colors.primary },
+  courseChipText: { fontSize: 13, color: Colors.primary, fontWeight: '500' },
+  courseChipTextActive: { color: '#FFFFFF' },
 });
