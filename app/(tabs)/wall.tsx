@@ -634,6 +634,7 @@ const styles = StyleSheet.create({
   },
   pillsMobile: {
     flexDirection: 'row',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     gap: 10,
   },
