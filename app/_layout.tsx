@@ -70,8 +70,9 @@ export default function RootLayout() {
     <PaperProvider theme={theme}>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="index" options={{ animation: 'fade' }} />
+        <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         <Stack.Screen name="post-detail/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="apps" />
         <Stack.Screen name="admin" />
