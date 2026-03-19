@@ -176,21 +176,7 @@ function DocenteView() {
     return list;
   }, [grades, selectedSubjectId, category]);
 
-  const courseStudents = useMemo(() => {
-    if (!selectedCourseId) return allStudents;
-    return allStudents.filter((s) => s.courseId === selectedCourseId);
-  }, [allStudents, selectedCourseId]);
-
-  const visibleStudents = useMemo(() => {
-    if (studentFilterIds.length === 0) return courseStudents;
-    return courseStudents.filter((s) => studentFilterIds.includes(s.id));
-  }, [courseStudents, studentFilterIds]);
-
-  const toggleStudent = (id: string) => {
-    setStudentFilterIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-  };
-
-  if (selectedStudent) {
+  if (!selectedCourseId || !selectedSubjectId) {
     return (
       <View style={styles.root}>
         {/* Course selector */}
@@ -254,8 +240,36 @@ function DocenteView() {
 
   return (
     <View style={styles.root}>
-      <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={(id) => { setSelectedCourseId(id); setStudentFilterIds([]); }} />
-      <StudentSearch students={courseStudents} selectedIds={studentFilterIds} onToggle={toggleStudent} onClear={() => setStudentFilterIds([])} />
+      {/* Selectors row */}
+      <View style={styles.selectorBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+          {courses.map((c) => (
+            <Pressable
+              key={c.id}
+              style={[styles.chip, selectedCourseId === c.id && styles.chipActive]}
+              onPress={() => { setSelectedCourseId(c.id); setSelectedSubjectId(''); }}
+            >
+              <Text style={[styles.chipText, selectedCourseId === c.id && styles.chipTextActive]}>
+                {c.grade}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        <View style={styles.selectorDivider} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 2 }}>
+          {subjects.map((s) => (
+            <Pressable
+              key={s.id}
+              style={[styles.chip, selectedSubjectId === s.id && styles.chipActive]}
+              onPress={() => setSelectedSubjectId(s.id)}
+            >
+              <Text style={[styles.chipText, selectedSubjectId === s.id && styles.chipTextActive]}>
+                {s.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Category tabs */}
       <View style={styles.categoryTabs}>
