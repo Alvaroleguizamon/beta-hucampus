@@ -17,10 +17,11 @@ export const useNoticiasStore = create<NoticiasStore>((set, get) => ({
   loading: true,
 
   initialize: async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('feed_posts')
       .select('*')
       .order('post_date', { ascending: false });
+    if (error) console.error('[noticias-store] initialize error:', error);
     if (!data) { set({ loading: false }); return; }
     set({
       posts: data.map((r) => ({
@@ -41,7 +42,7 @@ export const useNoticiasStore = create<NoticiasStore>((set, get) => ({
   addPost: async (post) => {
     const newPost: FeedPost = { ...post, id: `f${Date.now()}` };
     set((state) => ({ posts: [newPost, ...state.posts] }));
-    supabase.from('feed_posts').insert({
+    const { error } = await supabase.from('feed_posts').insert({
       id: newPost.id,
       title: newPost.title,
       body: newPost.body,
@@ -52,6 +53,7 @@ export const useNoticiasStore = create<NoticiasStore>((set, get) => ({
       target_audience: newPost.targetAudience ?? null,
       pinned: newPost.pinned ?? false,
     });
+    if (error) console.error('[noticias-store] addPost error:', error);
   },
 
   updatePost: (id, updates) => {
@@ -73,7 +75,8 @@ export const useNoticiasStore = create<NoticiasStore>((set, get) => ({
 
   deletePost: (id) => {
     set((state) => ({ posts: state.posts.filter((p) => p.id !== id) }));
-    supabase.from('feed_posts').delete().eq('id', id);
+    supabase.from('feed_posts').delete().eq('id', id)
+      .then(({ error }) => { if (error) console.error('[noticias-store] deletePost error:', error); });
   },
 
   getPost: (id) => get().posts.find((p) => p.id === id),
