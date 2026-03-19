@@ -1,9 +1,30 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, Image, Pressable, Modal } from 'react-native';
 import { Text, TextInput, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { WallPost, ReactionType } from '../../lib/types';
+
+// ─── Auto-height Image ────────────────────────────────────────────────────────
+function AutoHeightImage({ uri }: { uri: string }) {
+  const [ratio, setRatio] = useState<number | null>(null);
+
+  useEffect(() => {
+    Image.getSize(uri, (w, h) => {
+      if (w > 0 && h > 0) setRatio(h / w);
+    }, () => setRatio(9 / 16));
+  }, [uri]);
+
+  return (
+    <View style={{ width: '100%', aspectRatio: ratio ? 1 / ratio : 16 / 9 }}>
+      <Image
+        source={{ uri }}
+        style={{ width: '100%', height: '100%' }}
+        resizeMode="contain"
+      />
+    </View>
+  );
+}
 
 // ─── Inline Markdown Renderer ────────────────────────────────────────────────
 // Handles **bold**, __underline__, _italic_ (in that order to avoid conflicts)
@@ -175,9 +196,7 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
       </View>
 
       {/* Image */}
-      {post.image && (
-        <Image source={{ uri: post.image }} style={styles.image} resizeMode="cover" />
-      )}
+      {post.image && <AutoHeightImage uri={post.image} />}
 
       {/* Actions */}
       <View style={styles.actions}>
@@ -384,11 +403,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
     marginTop: 4,
-  },
-  image: {
-    width: '100%',
-    height: 280,
-    borderRadius: 0,
   },
   reactionSummary: {
     flexDirection: 'row',
