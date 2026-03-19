@@ -62,7 +62,7 @@ export default function GruposIndexScreen() {
     return { myGroups: my, otherGroups: other };
   }, [groups, userId]);
 
-  const canCreate = role === 'docente' || role === 'alumno';
+  const canCreate = role === 'docente' || role === 'alumno' || role === 'padre';
 
   return (
     <View style={styles.container}>

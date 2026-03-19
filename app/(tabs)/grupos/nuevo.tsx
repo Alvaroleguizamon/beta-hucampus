@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { StyleSheet, View, ScrollView, Pressable, TextInput as RNTextInput } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useGroupsStore } from '../../../lib/stores/groups-store';
 import { useAuthStore } from '../../../lib/stores/auth-store';
-import { Group } from '../../../lib/types';
+import { useCommunityStore } from '../../../lib/stores/community-store';
+import { Group, GroupMember } from '../../../lib/types';
 import { Colors } from '../../../constants/colors';
 
 const GROUP_TYPES: { key: Group['type']; label: string; icon: string; description: string }[] = [
@@ -20,19 +21,35 @@ const COVER_COLORS = [
 ];
 
 export default function NuevoGrupoScreen() {
-  const { createGroup } = useGroupsStore();
+  const { createGroup, inviteMember } = useGroupsStore();
   const user = useAuthStore((s) => s.user);
+  const role = user?.role ?? 'alumno';
+  const contacts = useCommunityStore((s) => s.contacts);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<Group['type']>('materia');
+  const [type, setType] = useState<Group['type']>('privado');
   const [coverColor, setCoverColor] = useState(COVER_COLORS[0]);
+  const [search, setSearch] = useState('');
+  const [selectedMembers, setSelectedMembers] = useState<{ id: string; name: string }[]>([]);
+
+  const filteredContacts = useMemo(() => {
+    const ids = new Set(selectedMembers.map((m) => m.id));
+    const list = contacts.filter((c) => !ids.has(c.id));
+    if (!search.trim()) return list;
+    const q = search.toLowerCase();
+    return list.filter((c) => c.name.toLowerCase().includes(q) || c.childName.toLowerCase().includes(q));
+  }, [contacts, selectedMembers, search]);
 
   const canSubmit = name.trim().length >= 3;
 
   const handleCreate = () => {
     if (!canSubmit) return;
     const id = createGroup(name.trim(), type, description.trim(), user?.id ?? 'u1', user?.name ?? '', coverColor);
+    const today = new Date().toISOString().split('T')[0];
+    selectedMembers.forEach((m) => {
+      inviteMember(id, { userId: m.id, userName: m.name, role: 'miembro', joinedAt: today });
+    });
     router.replace(`/grupos/${id}` as any);
   };
 
@@ -141,6 +158,55 @@ export default function NuevoGrupoScreen() {
             ))}
           </View>
         </View>
+
+        {/* Members */}
+        {role === 'padre' && (
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Agregar miembros</Text>
+            <RNTextInput
+              style={styles.searchInput}
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Buscar por nombre..."
+              placeholderTextColor={Colors.textSecondary}
+            />
+
+            {selectedMembers.length > 0 && (
+              <View style={styles.selectedRow}>
+                {selectedMembers.map((m) => (
+                  <Pressable
+                    key={m.id}
+                    style={styles.selectedChip}
+                    onPress={() => setSelectedMembers((prev) => prev.filter((p) => p.id !== m.id))}
+                  >
+                    <Text style={styles.selectedChipText}>{m.name}</Text>
+                    <MaterialCommunityIcons name="close-circle" size={16} color={Colors.primary} />
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {filteredContacts.slice(0, 5).map((c) => (
+              <Pressable
+                key={c.id}
+                style={styles.contactRow}
+                onPress={() => {
+                  setSelectedMembers((prev) => [...prev, { id: c.id, name: c.name }]);
+                  setSearch('');
+                }}
+              >
+                <View style={styles.contactAvatar}>
+                  <Text style={styles.contactAvatarText}>{c.name[0]}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.contactName}>{c.name}</Text>
+                  <Text style={styles.contactChild}>{c.relationship ?? 'Padre/Madre'} de {c.childName}</Text>
+                </View>
+                <MaterialCommunityIcons name="plus-circle-outline" size={22} color={Colors.primary} />
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         <View style={styles.infoBox}>
           <MaterialCommunityIcons name="information-outline" size={16} color={Colors.textSecondary} />
@@ -290,6 +356,55 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 4,
   },
+
+  searchInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+  selectedRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  selectedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.primary + '15',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  selectedChipText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 6,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  contactAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contactAvatarText: { color: Colors.primary, fontWeight: '700', fontSize: 15 },
+  contactName: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
+  contactChild: { fontSize: 12, color: Colors.textSecondary },
 
   infoBox: {
     flexDirection: 'row',
