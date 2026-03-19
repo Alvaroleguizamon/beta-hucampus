@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../supabase';
+import { supabase, supabaseAdmin } from '../supabase';
 import { useNotificationsStore } from './notifications-store';
 
 export interface StudentDelivery {
@@ -40,20 +40,72 @@ export interface DraftTask {
   attachments: TaskAttachment[];
 }
 
+export interface PersonalTask {
+  id: string;
+  ownerId: string;
+  title: string;
+  subject: string;
+  subjectColor: string;
+  teacher: string;
+  dueDate: string;
+  status: 'pendiente' | 'entregado';
+  priority: 'alta' | 'media' | 'baja';
+  grupal: boolean;
+  integrantes: string[];
+  description?: string;
+  submissionType?: 'texto' | 'archivo';
+  submissionContent?: string;
+  submissionDate?: string;
+}
+
+// Upload a file to the task-attachments Storage bucket.
+export async function uploadTaskFile(uri: string, fileName: string): Promise<string> {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const safeName = `${Date.now()}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  const path = `files/${safeName}`;
+
+  let { error } = await supabaseAdmin.storage
+    .from('task-attachments')
+    .upload(path, blob, { contentType: blob.type || 'application/octet-stream', upsert: false });
+
+  if (error) {
+    // Bucket might not exist yet — try to create it, then retry
+    if (error.message?.toLowerCase().includes('bucket') || (error as any).statusCode === 404) {
+      await supabaseAdmin.storage.createBucket('task-attachments', { public: true });
+      const retry = await supabaseAdmin.storage
+        .from('task-attachments')
+        .upload(path, blob, { contentType: blob.type || 'application/octet-stream', upsert: false });
+      if (retry.error) throw retry.error;
+    } else {
+      throw error;
+    }
+  }
+
+  const { data } = supabaseAdmin.storage.from('task-attachments').getPublicUrl(path);
+  return data.publicUrl;
+}
+
 interface TasksState {
   publishedTasks: DocenteTask[];
   drafts: DraftTask[];
+  personalTasks: PersonalTask[];
   loading: boolean;
   initialize: () => Promise<void>;
+  loadPersonalTasks: (userId: string) => Promise<void>;
+  addPersonalTask: (task: Omit<PersonalTask, 'id' | 'ownerId'>, userId: string) => Promise<PersonalTask>;
+  submitPersonalDelivery: (taskId: string, content: string, type: 'texto' | 'archivo') => void;
+  deletePersonalTask: (taskId: string) => void;
   publishTask: (task: DocenteTask) => void;
   saveDraft: (draft: Omit<DraftTask, 'id'>, editingId?: string) => void;
   removeDraft: (id: string) => void;
   submitDelivery: (taskId: string, studentId: string, content: string) => void;
 }
 
-export const useTasksStore = create<TasksState>((set) => ({
+export const useTasksStore = create<TasksState>((set, get) => ({
   publishedTasks: [],
   drafts: [],
+  personalTasks: [],
   loading: true,
 
   initialize: async () => {
@@ -63,6 +115,7 @@ export const useTasksStore = create<TasksState>((set) => ({
       supabase.from('task_attachments').select('*'),
       supabase.from('profiles').select('id, name'),
     ]);
+    if (tasksRes.error) console.error('[tasks-store] initialize error:', tasksRes.error);
     const profileMap: Record<string, string> = Object.fromEntries(
       (profilesRes.data ?? []).map((p) => [p.id, p.name])
     );
@@ -120,6 +173,80 @@ export const useTasksStore = create<TasksState>((set) => ({
       }));
 
     set({ publishedTasks: published, drafts, loading: false });
+  },
+
+  loadPersonalTasks: async (userId) => {
+    const { data, error } = await supabase
+      .from('personal_tasks')
+      .select('*')
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) { console.error('[tasks-store] loadPersonalTasks error:', error); return; }
+    set({
+      personalTasks: (data ?? []).map((r) => ({
+        id: r.id,
+        ownerId: r.owner_id,
+        title: r.title,
+        subject: r.subject,
+        subjectColor: r.subject_color,
+        teacher: r.teacher ?? '',
+        dueDate: r.due_date,
+        status: r.status as PersonalTask['status'],
+        priority: r.priority as PersonalTask['priority'],
+        grupal: r.grupal ?? false,
+        integrantes: r.integrantes ?? [],
+        description: r.description ?? undefined,
+        submissionType: r.submission_type ?? undefined,
+        submissionContent: r.submission_content ?? undefined,
+        submissionDate: r.submission_date ?? undefined,
+      })),
+    });
+  },
+
+  addPersonalTask: async (taskData, userId) => {
+    const newTask: PersonalTask = { id: `pt${Date.now()}`, ownerId: userId, ...taskData };
+    set((s) => ({ personalTasks: [newTask, ...s.personalTasks] }));
+    const { error } = await supabase.from('personal_tasks').insert({
+      id: newTask.id,
+      owner_id: userId,
+      title: newTask.title,
+      subject: newTask.subject,
+      subject_color: newTask.subjectColor,
+      teacher: newTask.teacher,
+      due_date: newTask.dueDate,
+      status: newTask.status,
+      priority: newTask.priority,
+      grupal: newTask.grupal,
+      integrantes: newTask.integrantes,
+      description: newTask.description ?? null,
+    });
+    if (error) console.error('[tasks-store] addPersonalTask error:', error);
+    return newTask;
+  },
+
+  submitPersonalDelivery: (taskId, content, type) => {
+    const today = new Date().toISOString().split('T')[0];
+    set((s) => ({
+      personalTasks: s.personalTasks.map((t) =>
+        t.id !== taskId ? t : {
+          ...t,
+          status: 'entregado' as const,
+          submissionType: type,
+          submissionContent: content,
+          submissionDate: today,
+        }
+      ),
+    }));
+    supabase.from('personal_tasks')
+      .update({ status: 'entregado', submission_type: type, submission_content: content, submission_date: today })
+      .eq('id', taskId)
+      .then(({ error }) => { if (error) console.error('[tasks-store] submitPersonalDelivery error:', error); });
+  },
+
+  deletePersonalTask: (taskId) => {
+    set((s) => ({ personalTasks: s.personalTasks.filter((t) => t.id !== taskId) }));
+    supabase.from('personal_tasks').delete().eq('id', taskId)
+      .then(({ error }) => { if (error) console.error('[tasks-store] deletePersonalTask error:', error); });
   },
 
   publishTask: (task) => {
