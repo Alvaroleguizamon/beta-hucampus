@@ -50,10 +50,10 @@ const tabsByRole: Record<Role, TabConfig[]> = {
 };
 
 const allTabsByRole: Record<Role, string[]> = {
-  alumno: ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos', 'admin'],
-  docente: ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos', 'admin'],
-  padre: ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos', 'admin'],
-  admin: ['admin', 'wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos'],
+  alumno: ['wall', 'calendar', 'grades', 'communications', 'courses', 'attendance', 'community', 'grupos', 'admin', 'home'],
+  docente: ['wall', 'courses', 'grades', 'calendar', 'communications', 'attendance', 'community', 'grupos', 'admin', 'home'],
+  padre: ['wall', 'calendar', 'grades', 'communications', 'courses', 'attendance', 'community', 'grupos', 'admin', 'home'],
+  admin: ['admin', 'wall', 'calendar', 'grades', 'communications', 'courses', 'attendance', 'community', 'grupos', 'home'],
 };
 
 export default function TabsLayout() {
