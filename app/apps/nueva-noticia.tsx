@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import {
-  StyleSheet, View, ScrollView, Pressable, Switch, Image, ActivityIndicator,
+  StyleSheet, View, ScrollView, Pressable, Switch, Image, ActivityIndicator, Alert,
 } from 'react-native';
 import { Text, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router, useNavigation } from 'expo-router';
+import { router, useNavigation, useLocalSearchParams } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '../../constants/colors';
 import { useNoticiasStore } from '../../lib/stores/noticias-store';
+import { uploadPostImage } from '../../lib/stores/social-store';
 import { FeedPost } from '../../lib/types';
-import { useLayoutEffect } from 'react';
 
 type Category = FeedPost['category'];
 type Audience = NonNullable<FeedPost['targetAudience']>;
@@ -29,46 +30,76 @@ const audienceOptions: { value: Audience; label: string; icon: string }[] = [
 
 export default function NuevaNoticiaScreen() {
   const navigation = useNavigation();
-  const { addPost } = useNoticiasStore();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { addPost, updatePost, getPost } = useNoticiasStore();
 
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [category, setCategory] = useState<Category>('comunicado');
-  const [audience, setAudience] = useState<Audience>('todos');
-  const [imageUrl, setImageUrl] = useState('');
+  const editing = !!id;
+  const existing = editing ? getPost(id!) : undefined;
+
+  const [title, setTitle] = useState(existing?.title ?? '');
+  const [body, setBody] = useState(existing?.body ?? '');
+  const [category, setCategory] = useState<Category>(existing?.category ?? 'comunicado');
+  const [audience, setAudience] = useState<Audience>(existing?.targetAudience ?? 'todos');
+  const [imageUrl, setImageUrl] = useState(existing?.image ?? '');
   const [imageUploading, setImageUploading] = useState(false);
-  const [pinned, setPinned] = useState(false);
+  const [pinned, setPinned] = useState(existing?.pinned ?? false);
   const [showPreview, setShowPreview] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: 'Nueva noticia' });
-  }, [navigation]);
+    navigation.setOptions({ title: editing ? 'Editar noticia' : 'Nueva noticia' });
+  }, [navigation, editing]);
 
-  // Simula la selección y subida de una imagen
-  const handleImageUpload = () => {
+  const handleImageUpload = async () => {
+    if (imageUploading) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para subir imágenes.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets[0]) return;
     setImageUploading(true);
-    // Simulamos un delay de red y devolvemos una imagen placeholder
-    const seed = Math.floor(Math.random() * 1000);
-    setTimeout(() => {
-      setImageUrl(`https://picsum.photos/seed/${seed}/800/400`);
+    try {
+      const url = await uploadPostImage(result.assets[0].uri);
+      setImageUrl(url);
+    } catch (e: any) {
+      Alert.alert('Error al subir imagen', e.message ?? 'Intentá de nuevo.');
+    } finally {
       setImageUploading(false);
-    }, 1200);
+    }
   };
 
   const isValid = title.trim().length > 0 && body.trim().length > 0;
 
-  const handlePublish = () => {
+  const handleSave = async () => {
     if (!isValid) return;
-    addPost({
-      title: title.trim(),
-      body: body.trim(),
-      category,
-      author: 'Dirección',
-      date: new Date().toISOString().split('T')[0],
-      image: imageUrl.trim() || undefined,
-      targetAudience: audience,
-      pinned,
-    });
+    setSaving(true);
+    if (editing && id) {
+      updatePost(id, {
+        title: title.trim(),
+        body: body.trim(),
+        category,
+        image: imageUrl.trim() || undefined,
+        targetAudience: audience,
+        pinned,
+      });
+    } else {
+      addPost({
+        title: title.trim(),
+        body: body.trim(),
+        category,
+        author: 'Dirección',
+        date: new Date().toISOString().split('T')[0],
+        image: imageUrl.trim() || undefined,
+        targetAudience: audience,
+        pinned,
+      });
+    }
+    setSaving(false);
     router.back();
   };
 
@@ -88,14 +119,8 @@ export default function NuevaNoticiaScreen() {
               style={[styles.optionChip, active && { backgroundColor: opt.color, borderColor: opt.color }]}
               onPress={() => setCategory(opt.value)}
             >
-              <MaterialCommunityIcons
-                name={opt.icon as any}
-                size={14}
-                color={active ? '#FFFFFF' : Colors.textSecondary}
-              />
-              <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>
-                {opt.label}
-              </Text>
+              <MaterialCommunityIcons name={opt.icon as any} size={14} color={active ? '#FFFFFF' : Colors.textSecondary} />
+              <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{opt.label}</Text>
             </Pressable>
           );
         })}
@@ -171,14 +196,8 @@ export default function NuevaNoticiaScreen() {
               style={[styles.optionChip, active && styles.optionChipActiveBlue]}
               onPress={() => setAudience(opt.value)}
             >
-              <MaterialCommunityIcons
-                name={opt.icon as any}
-                size={14}
-                color={active ? '#FFFFFF' : Colors.textSecondary}
-              />
-              <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>
-                {opt.label}
-              </Text>
+              <MaterialCommunityIcons name={opt.icon as any} size={14} color={active ? '#FFFFFF' : Colors.textSecondary} />
+              <Text style={[styles.optionChipText, active && styles.optionChipTextActive]}>{opt.label}</Text>
             </Pressable>
           );
         })}
@@ -203,14 +222,8 @@ export default function NuevaNoticiaScreen() {
 
       {/* Vista previa */}
       <Pressable style={styles.previewToggle} onPress={() => setShowPreview(!showPreview)}>
-        <MaterialCommunityIcons
-          name={showPreview ? 'eye-off-outline' : 'eye-outline'}
-          size={18}
-          color={Colors.primary}
-        />
-        <Text style={styles.previewToggleText}>
-          {showPreview ? 'Ocultar vista previa' : 'Ver vista previa'}
-        </Text>
+        <MaterialCommunityIcons name={showPreview ? 'eye-off-outline' : 'eye-outline'} size={18} color={Colors.primary} />
+        <Text style={styles.previewToggleText}>{showPreview ? 'Ocultar vista previa' : 'Ver vista previa'}</Text>
       </Pressable>
 
       {showPreview && (
@@ -231,14 +244,10 @@ export default function NuevaNoticiaScreen() {
           {imageUrl.trim().length > 0 && (
             <Image source={{ uri: imageUrl }} style={styles.previewImage} resizeMode="cover" />
           )}
-          <Text style={styles.previewBody} numberOfLines={4}>
-            {body || 'El contenido de la noticia aparecerá aquí...'}
-          </Text>
+          <Text style={styles.previewBody} numberOfLines={4}>{body || 'El contenido de la noticia aparecerá aquí...'}</Text>
           <View style={styles.previewFooter}>
             <Text style={styles.previewAuthor}>Dirección</Text>
-            <Text style={styles.previewAudience}>
-              Para: {audienceOptions.find((a) => a.value === audience)?.label}
-            </Text>
+            <Text style={styles.previewAudience}>Para: {audienceOptions.find((a) => a.value === audience)?.label}</Text>
           </View>
         </View>
       )}
@@ -249,12 +258,14 @@ export default function NuevaNoticiaScreen() {
           <Text style={styles.cancelText}>Cancelar</Text>
         </Pressable>
         <Pressable
-          style={[styles.publishBtn, !isValid && styles.publishBtnDisabled]}
-          onPress={handlePublish}
-          disabled={!isValid}
+          style={[styles.publishBtn, (!isValid || saving) && styles.publishBtnDisabled]}
+          onPress={handleSave}
+          disabled={!isValid || saving}
         >
-          <MaterialCommunityIcons name="send" size={16} color="#FFFFFF" />
-          <Text style={styles.publishText}>Publicar</Text>
+          {saving
+            ? <ActivityIndicator size={16} color="#FFF" />
+            : <MaterialCommunityIcons name={editing ? 'content-save' : 'send'} size={16} color="#FFFFFF" />}
+          <Text style={styles.publishText}>{editing ? 'Guardar cambios' : 'Publicar'}</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -291,38 +302,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     gap: 6,
   },
-  uploadBtnLoading: {
-    opacity: 0.7,
-  },
-  uploadBtnText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
-  uploadBtnHint: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  uploadedContainer: {
-    gap: 8,
-  },
-  imagePreview: {
-    width: '100%',
-    height: 180,
-    borderRadius: 10,
-    backgroundColor: Colors.border,
-  },
-  removeImageBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-end',
-  },
-  removeImageText: {
-    fontSize: 13,
-    color: Colors.error,
-    fontWeight: '500',
-  },
+  uploadBtnLoading: { opacity: 0.7 },
+  uploadBtnText: { fontSize: 15, fontWeight: '600', color: Colors.primary },
+  uploadBtnHint: { fontSize: 12, color: Colors.textSecondary },
+  uploadedContainer: { gap: 8 },
+  imagePreview: { width: '100%', height: 180, borderRadius: 10, backgroundColor: Colors.border },
+  removeImageBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end' },
+  removeImageText: { fontSize: 13, color: Colors.error, fontWeight: '500' },
 
   optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   optionChip: {
@@ -336,10 +322,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: '#FFFFFF',
   },
-  optionChipActiveBlue: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
+  optionChipActiveBlue: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   optionChipText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
   optionChipTextActive: { color: '#FFFFFF', fontWeight: '600' },
 

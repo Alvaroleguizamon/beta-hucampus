@@ -1,11 +1,11 @@
-import React from 'react';
-import { StyleSheet, View, ScrollView, Image, Pressable } from 'react-native';
+import React, { useLayoutEffect } from 'react';
+import { StyleSheet, View, ScrollView, Image, Pressable, Alert } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, router, useNavigation } from 'expo-router';
-import { useLayoutEffect } from 'react';
 import { Colors } from '../../../constants/colors';
 import { useNoticiasStore } from '../../../lib/stores/noticias-store';
+import { useAuthStore } from '../../../lib/stores/auth-store';
 
 const categoryConfig = {
   comunicado: { color: Colors.primary, label: 'Comunicado', icon: 'bullhorn' },
@@ -25,11 +25,42 @@ export default function NoticiaDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
   const getPost = useNoticiasStore((s) => s.getPost);
+  const deletePost = useNoticiasStore((s) => s.deletePost);
+  const role = useAuthStore((s) => s.user?.role);
+  const canEdit = role === 'admin' || role === 'docente';
   const post = getPost(id);
 
+  const handleDelete = () => {
+    Alert.alert('Eliminar noticia', '¿Eliminar esta noticia? Esta acción no se puede deshacer.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar', style: 'destructive', onPress: () => {
+          deletePost(id);
+          router.back();
+        }
+      },
+    ]);
+  };
+
   useLayoutEffect(() => {
-    navigation.setOptions({ title: 'Noticia', headerBackTitle: 'Noticias' });
-  }, [navigation]);
+    navigation.setOptions({
+      title: 'Noticia',
+      headerBackTitle: 'Noticias',
+      headerRight: canEdit ? () => (
+        <View style={{ flexDirection: 'row', gap: 4, marginRight: 8 }}>
+          <Pressable
+            style={styles.headerBtn}
+            onPress={() => router.push(`/apps/nueva-noticia?id=${id}` as any)}
+          >
+            <MaterialCommunityIcons name="pencil-outline" size={20} color={Colors.primary} />
+          </Pressable>
+          <Pressable style={styles.headerBtn} onPress={handleDelete}>
+            <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.error} />
+          </Pressable>
+        </View>
+      ) : undefined,
+    });
+  }, [navigation, canEdit, id]);
 
   if (!post) {
     return (
@@ -190,6 +221,7 @@ const styles = StyleSheet.create({
   footerItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   footerText: { fontSize: 13, color: Colors.textSecondary },
 
+  headerBtn: { padding: 6, borderRadius: 8 },
   notFound: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   notFoundText: { fontSize: 16, color: Colors.textSecondary },
   backBtn: {

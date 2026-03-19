@@ -1,10 +1,11 @@
 import React, { useLayoutEffect } from 'react';
-import { StyleSheet, View, FlatList, Pressable } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, Alert } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { useNoticiasStore } from '../../lib/stores/noticias-store';
+import { useAuthStore } from '../../lib/stores/auth-store';
 
 const categoryConfig = {
   comunicado: { color: Colors.primary, label: 'Comunicado' },
@@ -16,6 +17,16 @@ const categoryConfig = {
 export default function NoticiasScreen() {
   const navigation = useNavigation();
   const posts = useNoticiasStore((s) => s.posts);
+  const deletePost = useNoticiasStore((s) => s.deletePost);
+  const role = useAuthStore((s) => s.user?.role);
+  const canEdit = role === 'admin' || role === 'docente';
+
+  const handleDelete = (id: string, title: string) => {
+    Alert.alert('Eliminar noticia', `¿Eliminar "${title}"?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', style: 'destructive', onPress: () => deletePost(id) },
+    ]);
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -60,9 +71,27 @@ export default function NoticiasScreen() {
               <Text style={styles.body} numberOfLines={2}>{item.body}</Text>
               <View style={styles.footer}>
                 <Text style={styles.author}>{item.author}</Text>
-                <View style={styles.readMoreRow}>
-                  <Text style={styles.readMore}>Ver noticia</Text>
-                  <MaterialCommunityIcons name="arrow-right" size={14} color={Colors.primary} />
+                <View style={styles.footerRight}>
+                  {canEdit && (
+                    <>
+                      <Pressable
+                        style={styles.actionBtn}
+                        onPress={(e) => { e.stopPropagation?.(); router.push(`/apps/nueva-noticia?id=${item.id}` as any); }}
+                      >
+                        <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.primary} />
+                      </Pressable>
+                      <Pressable
+                        style={styles.actionBtn}
+                        onPress={(e) => { e.stopPropagation?.(); handleDelete(item.id, item.title); }}
+                      >
+                        <MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} />
+                      </Pressable>
+                    </>
+                  )}
+                  <View style={styles.readMoreRow}>
+                    <Text style={styles.readMore}>Ver noticia</Text>
+                    <MaterialCommunityIcons name="arrow-right" size={14} color={Colors.primary} />
+                  </View>
                 </View>
               </View>
             </Pressable>
@@ -119,6 +148,8 @@ const styles = StyleSheet.create({
   body: { fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
   author: { fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
+  footerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  actionBtn: { padding: 4, borderRadius: 6 },
   readMoreRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   readMore: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
 

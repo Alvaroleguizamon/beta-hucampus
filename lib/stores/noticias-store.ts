@@ -58,6 +58,17 @@ export const useNoticiasStore = create<NoticiasStore>((set, get) => ({
     set((state) => ({
       posts: state.posts.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     }));
+    const dbUpdates: Record<string, any> = {};
+    if (updates.title !== undefined) dbUpdates.title = updates.title;
+    if (updates.body !== undefined) dbUpdates.body = updates.body;
+    if (updates.category !== undefined) dbUpdates.category = updates.category;
+    if (updates.image !== undefined) dbUpdates.image_url = updates.image ?? null;
+    if (updates.targetAudience !== undefined) dbUpdates.target_audience = updates.targetAudience;
+    if (updates.pinned !== undefined) dbUpdates.pinned = updates.pinned;
+    if (Object.keys(dbUpdates).length > 0) {
+      supabase.from('feed_posts').update(dbUpdates).eq('id', id)
+        .then(({ error }) => { if (error) console.error('[noticias-store] updatePost error:', error); });
+    }
   },
 
   deletePost: (id) => {
