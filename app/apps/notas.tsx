@@ -143,13 +143,14 @@ function DocenteView() {
   const user = useAuthStore((s) => s.user);
   const { width: screenWidth } = useWindowDimensions();
   const { isDesktop } = useBreakpoint();
-  const [selectedCourseId, setSelectedCourseId] = useState('');
 
   // Filter subjects to only those assigned to this teacher
   const subjects = useMemo(
     () => allSubjects.filter((s) => s.teacherId === user?.id),
     [allSubjects, user?.id]
   );
+
+  const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [category, setCategory] = useState<'examen' | 'tp'>('examen');
   const [gradeModal, setGradeModal] = useState<GradeModalState | null>(null);
@@ -175,6 +176,95 @@ function DocenteView() {
       });
     return list;
   }, [grades, selectedSubjectId, category]);
+
+  const getGrade = (studentId: string, evalName: string): Grade | null =>
+    grades.find(
+      (g) => g.studentId === studentId && g.subjectId === selectedSubjectId &&
+             g.description === evalName && g.category === category
+    ) ?? null;
+
+  const getAverage = (studentId: string): number | null => {
+    const relevant = grades.filter(
+      (g) => g.studentId === studentId && g.subjectId === selectedSubjectId
+    );
+    if (!relevant.length) return null;
+    return relevant.reduce((s, g) => s + g.value, 0) / relevant.length;
+  };
+
+  const openGradeModal = (studentId: string, studentName: string, evalName: string) => {
+    const existing = getGrade(studentId, evalName);
+    setGradeModal({ studentId, studentName, evalName, existingGrade: existing });
+    setGradeInput(existing ? String(existing.value) : '');
+  };
+
+  const handleSaveGrade = () => {
+    if (!gradeModal || !selectedSubjectId) return;
+    const val = parseFloat(gradeInput);
+    if (isNaN(val) || val < 0 || val > 10) {
+      if (Platform.OS === 'web') window.alert('Ingresá una nota entre 0 y 10');
+      else Alert.alert('Error', 'Ingresá una nota entre 0 y 10');
+      return;
+    }
+    if (gradeModal.existingGrade) {
+      updateGrade(gradeModal.existingGrade.id, val);
+    } else {
+      const subject = subjects.find((s) => s.id === selectedSubjectId);
+      addGrade({
+        subjectId: selectedSubjectId,
+        subjectName: subject?.name ?? '',
+        studentId: gradeModal.studentId,
+        studentName: gradeModal.studentName,
+        value: val,
+        date: new Date().toISOString().split('T')[0],
+        description: gradeModal.evalName,
+        period: '1er Trimestre',
+        category,
+      });
+    }
+    setGradeModal(null);
+  };
+
+  const handleDeleteGrade = () => {
+    if (!gradeModal?.existingGrade) return;
+    const id = gradeModal.existingGrade.id;
+    const doDelete = () => { deleteGrade(id); setGradeModal(null); };
+    if (Platform.OS === 'web') {
+      if (window.confirm('¿Eliminar esta nota?')) doDelete();
+    } else {
+      Alert.alert('Eliminar nota', '¿Eliminar esta nota?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: doDelete },
+      ]);
+    }
+  };
+
+  const handleAddEval = () => {
+    if (!newEvalName.trim()) return;
+    // Add a placeholder grade (value=-1 means no grade, but we use a different approach:
+    // just add the eval name to a local list so the column appears)
+    setAddEvalModal(false);
+    setNewEvalName('');
+    // We need a way to show the column without a grade yet.
+    // Use local state for pending eval names.
+    setPendingEvals((prev) => [...prev, newEvalName.trim()]);
+  };
+
+  const [pendingEvals, setPendingEvals] = useState<string[]>([]);
+
+  // Combined evaluations: from grades + pending (not yet graded)
+  const allEvals = useMemo(() => {
+    const combined = [...evaluations];
+    pendingEvals.forEach((e) => {
+      if (!combined.includes(e)) combined.push(e);
+    });
+    return combined;
+  }, [evaluations, pendingEvals]);
+
+  // When subject changes, clear pending evals
+  const handleSelectSubject = (id: string) => {
+    setSelectedSubjectId(id);
+    setPendingEvals([]);
+  };
 
   if (!selectedCourseId || !selectedSubjectId) {
     return (
@@ -205,7 +295,7 @@ function DocenteView() {
                 <Pressable
                   key={s.id}
                   style={[styles.chip, selectedSubjectId === s.id && styles.chipActive]}
-                  onPress={() => setSelectedSubjectId(s.id)}
+                  onPress={() => handleSelectSubject(s.id)}
                 >
                   <Text style={[styles.chipText, selectedSubjectId === s.id && styles.chipTextActive]}>
                     {s.name}
@@ -261,7 +351,7 @@ function DocenteView() {
             <Pressable
               key={s.id}
               style={[styles.chip, selectedSubjectId === s.id && styles.chipActive]}
-              onPress={() => setSelectedSubjectId(s.id)}
+              onPress={() => handleSelectSubject(s.id)}
             >
               <Text style={[styles.chipText, selectedSubjectId === s.id && styles.chipTextActive]}>
                 {s.name}
@@ -553,6 +643,4 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 64, paddingHorizontal: 32, gap: 10, flex: 1, justifyContent: 'center' },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
   emptyBody: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
-
-  // Filtro de cursos
 });
