@@ -9,6 +9,7 @@ import { useCoursesStore } from '../../lib/stores/courses-store';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { useBreakpoint, SIDEBAR_WIDTH } from '../../hooks/useBreakpoint';
 import CourseFilter from '../../components/ui/CourseFilter';
+import StudentSearch from '../../components/ui/StudentSearch';
 
 interface MaterialBase {
   id: string;
@@ -287,6 +288,9 @@ export default function MaterialScreen() {
   const courses = useCoursesStore((s) => s.courses);
   const role = useAuthStore((s) => s.user?.role ?? 'alumno');
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [studentFilterIds, setStudentFilterIds] = useState<string[]>([]);
+  const courseForFilter = courses.find((c) => c.id === (selectedCourseId || courses[0]?.id));
+  const toggleStudent = (id: string) => setStudentFilterIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<MaterialVideo | null>(null);
   const [selectedPDF, setSelectedPDF] = useState<MaterialFile | null>(null);
@@ -368,7 +372,10 @@ export default function MaterialScreen() {
   return (
     <View style={styles.container}>
       {role === 'docente' && (
-        <CourseFilter courses={courses} selectedCourseId={selectedCourseId || courses[0]?.id || ''} onSelect={setSelectedCourseId} />
+        <>
+          <CourseFilter courses={courses} selectedCourseId={selectedCourseId || courses[0]?.id || ''} onSelect={(id) => { setSelectedCourseId(id); setStudentFilterIds([]); }} />
+          <StudentSearch students={courseForFilter?.students ?? []} selectedIds={studentFilterIds} onToggle={toggleStudent} onClear={() => setStudentFilterIds([])} />
+        </>
       )}
       <FlatList
         data={subjects}

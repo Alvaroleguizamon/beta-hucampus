@@ -8,6 +8,7 @@ import { useNoticiasStore } from '../../lib/stores/noticias-store';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import CourseFilter from '../../components/ui/CourseFilter';
+import StudentSearch from '../../components/ui/StudentSearch';
 
 const categoryConfig = {
   comunicado: { color: Colors.primary, label: 'Comunicado' },
@@ -24,6 +25,9 @@ export default function NoticiasScreen() {
   const canEdit = role === 'admin' || role === 'docente';
   const courses = useCoursesStore((s) => s.courses);
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [studentFilterIds, setStudentFilterIds] = useState<string[]>([]);
+  const courseForFilter = courses.find((c) => c.id === selectedCourseId);
+  const toggleStudent = (id: string) => setStudentFilterIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
   const handleDelete = (id: string, title: string) => {
     if (Platform.OS === 'web') {
@@ -53,7 +57,10 @@ export default function NoticiasScreen() {
   return (
     <View style={styles.container}>
       {role === 'docente' && (
-        <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={setSelectedCourseId} />
+        <>
+          <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={(id) => { setSelectedCourseId(id); setStudentFilterIds([]); }} />
+          {selectedCourseId && <StudentSearch students={courseForFilter?.students ?? []} selectedIds={studentFilterIds} onToggle={toggleStudent} onClear={() => setStudentFilterIds([])} />}
+        </>
       )}
       <FlatList
         data={posts}

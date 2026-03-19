@@ -9,6 +9,7 @@ import { useTripsStore } from '../../lib/stores/trips-store';
 import { useNotificationsStore } from '../../lib/stores/notifications-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import CourseFilter from '../../components/ui/CourseFilter';
+import StudentSearch from '../../components/ui/StudentSearch';
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -47,6 +48,9 @@ export default function ViajesScreen() {
   const attendees = useTripsStore((s) => s.attendees);
   const courses = useCoursesStore((s) => s.courses);
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [studentFilterIds, setStudentFilterIds] = useState<string[]>([]);
+  const courseForFilter = courses.find((c) => c.id === selectedCourseId);
+  const toggleStudent = (id: string) => setStudentFilterIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const selectedTrip = selectedTripId ? trips.find((t) => t.id === selectedTripId) ?? null : null;
@@ -265,7 +269,10 @@ export default function ViajesScreen() {
   return (
     <View style={styles.container}>
       {role === 'docente' && (
-        <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={setSelectedCourseId} />
+        <>
+          <CourseFilter courses={courses} selectedCourseId={selectedCourseId} onSelect={(id) => { setSelectedCourseId(id); setStudentFilterIds([]); }} />
+          {selectedCourseId && <StudentSearch students={courseForFilter?.students ?? []} selectedIds={studentFilterIds} onToggle={toggleStudent} onClear={() => setStudentFilterIds([])} />}
+        </>
       )}
       <FlatList
         data={allTrips}
