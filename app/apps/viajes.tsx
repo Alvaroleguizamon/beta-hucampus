@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, View, FlatList, Pressable, ScrollView } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, ScrollView, Alert } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { Trip } from '../../lib/types';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { useTripsStore } from '../../lib/stores/trips-store';
+import { useNotificationsStore } from '../../lib/stores/notifications-store';
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -44,6 +45,21 @@ export default function ViajesScreen() {
   const attendees = useTripsStore((s) => s.attendees);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [reminded, setReminded] = useState<Record<string, boolean>>({});
+  const userName = useAuthStore((s) => s.user?.name ?? 'Alumno');
+
+  const sendAuthReminder = (tripId: string, tripTitle: string) => {
+    useNotificationsStore.getState().addNotification({
+      type: 'autorizacion',
+      title: 'Autorización pendiente',
+      body: `${userName} necesita tu autorización para "${tripTitle}"`,
+      date: new Date().toISOString().split('T')[0],
+      targetRole: 'padre',
+      deepLink: '/apps/autorizaciones',
+    });
+    setReminded((prev) => ({ ...prev, [tripId]: true }));
+    Alert.alert('Recordatorio enviado', 'Se notificó a tu padre/madre/tutor para que autorice este viaje.');
+  };
 
   const weekDays = useMemo(() => getWeekDays(weekOffset), [weekOffset]);
   const todayStr = formatDate(new Date());
@@ -163,6 +179,19 @@ export default function ViajesScreen() {
                   {d.autorizacionEstado === 'autorizado' ? 'Autorizado por padre/madre' : 'Pendiente de autorización'}
                 </Text>
               </View>
+              {d.autorizacionEstado !== 'autorizado' && role === 'alumno' && (
+                reminded[selectedTrip.id] ? (
+                  <View style={styles.reminderSent}>
+                    <MaterialCommunityIcons name="check-circle-outline" size={18} color={Colors.success} />
+                    <Text style={styles.reminderSentText}>Recordatorio enviado</Text>
+                  </View>
+                ) : (
+                  <Pressable style={styles.reminderBtn} onPress={() => sendAuthReminder(selectedTrip.id, selectedTrip.title)}>
+                    <MaterialCommunityIcons name="bell-ring-outline" size={18} color="#FFFFFF" />
+                    <Text style={styles.reminderBtnText}>Notificar a padre/madre</Text>
+                  </Pressable>
+                )
+              )}
             </View>
           )}
 
@@ -399,6 +428,28 @@ const styles = StyleSheet.create({
   checkText: { fontSize: 14, color: Colors.textPrimary },
   authRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   authText: { fontSize: 15, fontWeight: '600' },
+  reminderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  reminderBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  reminderSent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.success + '10',
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  reminderSentText: { color: Colors.success, fontSize: 14, fontWeight: '600' },
 
   // Attendees (docente)
   attendeesHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
