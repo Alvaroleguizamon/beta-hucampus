@@ -671,8 +671,8 @@ const styles = StyleSheet.create({
     height: 34,
   },
   pill: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: Colors.primary,
