@@ -41,6 +41,15 @@ const mockProfileData = {
       { label: 'Teléfono', value: '+54 11 5555-1234' },
     ],
   },
+  admin: {
+    name: 'Administrador',
+    subtitle: 'Gestión institucional',
+    birthday: '',
+    info: [
+      { label: 'Rol', value: 'Administrador' },
+      { label: 'Email', value: 'admin@school.edu' },
+    ],
+  },
 };
 
 export default function HomeScreen() {

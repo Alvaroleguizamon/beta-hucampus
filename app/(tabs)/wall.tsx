@@ -27,8 +27,8 @@ export default function WallScreen() {
   const noticias = useNoticiasStore((s) => s.posts);
   const user = useAuthStore((s) => s.user);
   const role = user?.role ?? 'alumno';
-  const canPublish = role === 'docente';
-  const canComment = role === 'docente';
+  const canPublish = role === 'docente' || role === 'admin';
+  const canComment = role === 'docente' || role === 'admin';
   const userId = user?.id ?? 'u1';
 
   const allGroups = useGroupsStore((s) => s.groups);

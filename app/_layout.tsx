@@ -17,6 +17,7 @@ import { useAuthStore } from '../lib/stores/auth-store';
 import { useCoursesStore } from '../lib/stores/courses-store';
 import { useSubjectsStore } from '../lib/stores/subjects-store';
 import { useAttendanceStore } from '../lib/stores/attendance-store';
+import { useAdminStore } from '../lib/stores/admin-store';
 
 const theme = {
   ...MD3LightTheme,
@@ -53,6 +54,7 @@ export default function RootLayout() {
     useCoursesStore.getState().initialize();
     useSubjectsStore.getState().initialize();
     useAttendanceStore.getState().initialize();
+    useAdminStore.getState().initialize();
   }, []);
 
   // Initialize user-scoped stores when logged in
@@ -72,6 +74,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="post-detail/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="apps" />
+        <Stack.Screen name="admin" />
       </Stack>
     </PaperProvider>
   );

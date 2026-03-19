@@ -2,12 +2,11 @@ import React from 'react';
 import { StyleSheet, View, Pressable, Image, ImageSourcePropType, Platform } from 'react-native';
 import { Text } from 'react-native-paper';
 import { router } from 'expo-router';
-import { useAuthStore } from '../../lib/stores/auth-store';
 import { Colors } from '../../constants/colors';
 import { Layout } from '../../constants/layout';
 import { Role } from '../../lib/types';
 
-const roleImages: Record<Role, ImageSourcePropType> = {
+const roleImages: Partial<Record<Role, ImageSourcePropType>> = {
   alumno: require('../../assets/images/huguito-alumno.webp'),
   docente: require('../../assets/images/huguito-docente.webp'),
   padre: require('../../assets/images/huguito-padre.webp'),
@@ -20,12 +19,8 @@ const roles: { key: Role; label: string; description: string }[] = [
 ];
 
 export default function SelectRoleScreen() {
-  const selectRole = useAuthStore((s) => s.selectRole);
-
-  const handleSelect = (role: Role) => {
-    selectRole(role);
-    const destination = '/(tabs)/wall';
-    router.replace(destination as any);
+  const handleSelect = (_role: Role) => {
+    router.replace('/(tabs)/wall' as any);
   };
 
   return (

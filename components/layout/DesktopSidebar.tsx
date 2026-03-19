@@ -45,6 +45,12 @@ const tabsByRole: Record<Role, TabConfig[]> = {
     { name: 'community', title: 'Comunidad', icon: 'account-group-outline', iconFocused: 'account-group', route: '/(tabs)/community' },
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account', route: '/(tabs)/home' },
   ],
+  admin: [
+    { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home', route: '/(tabs)/wall' },
+    { name: 'admin', title: 'Administración', icon: 'shield-crown-outline', iconFocused: 'shield-crown', route: '/(tabs)/admin' },
+    { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar', route: '/(tabs)/calendar' },
+    { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account', route: '/(tabs)/home' },
+  ],
 };
 
 const appsByRole: Record<Role, AppItem[]> = {
@@ -78,12 +84,21 @@ const appsByRole: Record<Role, AppItem[]> = {
     { icon: 'bus', label: 'Viajes y Salidas', color: '#00897B', bgColor: '#E0F2F1', route: '/apps/viajes' },
     { icon: 'file-sign', label: 'Autorizaciones', color: '#8D6E63', bgColor: '#EFEBE9', route: '/apps/autorizaciones' },
   ],
+  admin: [
+    { icon: 'google-classroom', label: 'Cursos', color: Colors.primary, bgColor: `${Colors.primary}15`, route: '/(tabs)/admin' },
+    { icon: 'book-open-variant', label: 'Materias', color: '#27AE60', bgColor: '#E8F8EF', route: '/(tabs)/admin' },
+    { icon: 'calendar-check', label: 'Presentismo', color: '#4CAF50', bgColor: '#EAF7EB', route: '/apps/presentismo' },
+    { icon: 'account-group', label: 'Alumnos', color: '#9C27B0', bgColor: '#F3E5F5', route: '/apps/alumnos' },
+    { icon: 'message-text-outline', label: 'Comunicados', color: '#E67E22', bgColor: '#FDF2E6', route: '/apps/noticias' },
+    { icon: 'star-outline', label: 'Eventos', color: '#0693E3', bgColor: '#E6F6FD', route: '/apps/eventos' },
+  ],
 };
 
 const rolLabel: Record<Role, string> = {
   alumno: 'Alumno',
   docente: 'Docente',
   padre: 'Padre / Tutor',
+  admin: 'Administrador',
 };
 
 export default function DesktopSidebar() {
@@ -301,33 +316,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
   },
   dropdownOptionTextActive: {
-    color: Colors.primary,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  coursePicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: `${Colors.primary}10`,
-    borderWidth: 1,
-    borderColor: `${Colors.primary}30`,
-    borderRadius: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-  },
-  coursePickerIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: `${Colors.primary}20`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  coursePickerText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
     color: Colors.primary,
     fontFamily: 'Inter_600SemiBold',
   },

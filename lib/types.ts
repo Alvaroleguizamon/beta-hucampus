@@ -1,4 +1,4 @@
-export type Role = 'alumno' | 'docente' | 'padre';
+export type Role = 'alumno' | 'docente' | 'padre' | 'admin';
 
 export interface User {
   id: string;
@@ -55,6 +55,34 @@ export interface Course {
   grade: string;
   students: { id: string; name: string }[];
   subjectId: string;
+}
+
+export interface CourseSchedule {
+  id: string;
+  courseId: string;
+  subjectId: string;
+  subjectName: string;
+  subjectColor: string;
+  teacherId: string;
+  teacherName: string;
+  dayOfWeek: number; // 1=Lun … 5=Vie
+  startTime: string; // "HH:MM"
+  endTime: string;   // "HH:MM"
+  room?: string;
+}
+
+export interface AdminCourse {
+  id: string;
+  name: string;
+  grade: string;
+  students: { id: string; name: string }[];
+  schedules: CourseSchedule[];
+}
+
+export interface AdminSubject {
+  id: string;
+  name: string;
+  color: string;
 }
 
 export interface CalendarEvent {

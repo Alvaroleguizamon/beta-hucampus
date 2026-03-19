@@ -11,6 +11,7 @@ const TEST_USERS = [
   { email: 'garcia@school.edu',   label: 'Docente',  role: 'Prof. García' },
   { email: 'martinez@school.edu', label: 'Docente',  role: 'Prof. Martínez' },
   { email: 'laura@mail.com',      label: 'Padre',    role: 'Laura González' },
+  { email: 'admin@school.edu',    label: 'Admin',    role: 'Administrador' },
 ];
 const TEST_PASSWORD = 'Humand2026!';
 

@@ -41,9 +41,15 @@ const tabsByRole: Record<Role, TabConfig[]> = {
     { name: 'community', title: 'Comunidad', icon: 'account-group-outline', iconFocused: 'account-group' },
     { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account' },
   ],
+  admin: [
+    { name: 'wall', title: 'Inicio', icon: 'home-outline', iconFocused: 'home' },
+    { name: 'admin', title: 'Admin', icon: 'shield-crown-outline', iconFocused: 'shield-crown' },
+    { name: 'calendar', title: 'Agenda', icon: 'calendar-outline', iconFocused: 'calendar' },
+    { name: 'home', title: 'Perfil', icon: 'account-outline', iconFocused: 'account' },
+  ],
 };
 
-const allTabs = ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos'];
+const allTabs = ['wall', 'calendar', 'grades', 'communications', 'home', 'courses', 'attendance', 'community', 'grupos', 'admin'];
 
 export default function TabsLayout() {
   const user = useAuthStore((s) => s.user);

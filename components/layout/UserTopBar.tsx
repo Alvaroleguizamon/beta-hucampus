@@ -44,6 +44,7 @@ const rolLabel: Record<Role, string> = {
   alumno: 'Alumno',
   docente: 'Docente',
   padre: 'Padre / Tutor',
+  admin: 'Administrador',
 };
 
 export default function UserTopBar() {
