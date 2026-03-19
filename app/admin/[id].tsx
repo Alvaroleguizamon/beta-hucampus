@@ -687,7 +687,7 @@ export default function CourseDetailScreen() {
   return (
     <View style={s.screen}>
       <View style={s.topBar}>
-        <Pressable style={s.backBtn} onPress={() => router.back()}>
+        <Pressable style={s.backBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/admin' as any)}>
           <MaterialCommunityIcons name="arrow-left" size={22} color={Colors.textPrimary} />
         </Pressable>
         <View style={{ flex: 1 }}>
