@@ -142,7 +142,7 @@ export default function GruposIndexScreen() {
   const user = useAuthStore((s) => s.user);
   const userId = user?.id ?? 'u1';
   const role = user?.role ?? 'alumno';
-  const [tab, setTab] = useState('grupos');
+  const [tab, setTab] = useState('contactos');
 
   if (role === 'padre') {
     return (
@@ -151,8 +151,8 @@ export default function GruposIndexScreen() {
           value={tab}
           onValueChange={setTab}
           buttons={[
-            { value: 'grupos', label: 'Grupos' },
             { value: 'contactos', label: 'Contactos' },
+            { value: 'grupos', label: 'Grupos' },
           ]}
           style={styles.segmented}
         />
