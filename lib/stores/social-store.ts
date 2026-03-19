@@ -8,6 +8,8 @@ interface SocialState {
   loading: boolean;
   initialize: () => Promise<void>;
   addPost: (text: string, authorId: string, authorName: string, authorRole: Role, image?: string) => void;
+  editPost: (postId: string, text: string, image?: string | null) => Promise<void>;
+  deletePost: (postId: string) => Promise<void>;
   setReaction: (postId: string, userId: string, reaction: ReactionType | null) => void;
   markViewed: (postId: string, userId: string) => void;
   addComment: (postId: string, userId: string, userName: string, text: string) => void;
@@ -112,6 +114,26 @@ export const useSocialStore = create<SocialState>((set) => ({
       console.error('[social-store] addPost error:', error);
       set((state) => ({ posts: state.posts.filter((p) => p.id !== newPost.id) }));
     }
+  },
+
+  editPost: async (postId, text, image) => {
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p.id === postId
+          ? { ...p, text, image: image === null ? undefined : image ?? p.image }
+          : p
+      ),
+    }));
+    const update: Record<string, any> = { text };
+    if (image !== undefined) update.image_url = image ?? null;
+    const { error } = await supabase.from('wall_posts').update(update).eq('id', postId);
+    if (error) console.error('[social-store] editPost error:', error);
+  },
+
+  deletePost: async (postId) => {
+    set((state) => ({ posts: state.posts.filter((p) => p.id !== postId) }));
+    const { error } = await supabase.from('wall_posts').delete().eq('id', postId);
+    if (error) console.error('[social-store] deletePost error:', error);
   },
 
   markViewed: (postId, userId) => {

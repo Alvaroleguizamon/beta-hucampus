@@ -21,14 +21,18 @@ interface Props {
   post: WallPost;
   currentUserId: string;
   canComment: boolean;
+  canEdit?: boolean;
   onReaction: (postId: string, reaction: ReactionType | null) => void;
   onComment: (postId: string, text: string) => void;
+  onEdit?: (post: WallPost) => void;
+  onDelete?: (postId: string) => void;
 }
 
-export function WallPostCard({ post, currentUserId, canComment, onReaction, onComment }: Props) {
+export function WallPostCard({ post, currentUserId, canComment, canEdit, onReaction, onComment, onEdit, onDelete }: Props) {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   const reactions = post.reactions ?? {};
@@ -75,7 +79,35 @@ export function WallPostCard({ post, currentUserId, canComment, onReaction, onCo
             <Text style={styles.date}>{post.date}</Text>
           </View>
         </View>
-        <IconButton icon="dots-horizontal" size={20} iconColor={Colors.textSecondary} />
+        {canEdit && (
+          <View style={styles.menuWrapper}>
+            <IconButton
+              icon="dots-horizontal"
+              size={20}
+              iconColor={Colors.textSecondary}
+              onPress={() => setShowMenu((v) => !v)}
+            />
+            {showMenu && (
+              <View style={styles.menuDropdown}>
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => { setShowMenu(false); onEdit?.(post); }}
+                >
+                  <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.textPrimary} />
+                  <Text style={styles.menuItemText}>Editar</Text>
+                </Pressable>
+                <View style={styles.menuDivider} />
+                <Pressable
+                  style={styles.menuItem}
+                  onPress={() => { setShowMenu(false); onDelete?.(post.id); }}
+                >
+                  <MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} />
+                  <Text style={[styles.menuItemText, { color: Colors.error }]}>Eliminar</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Group badge */}
@@ -208,9 +240,12 @@ export function WallPostCard({ post, currentUserId, canComment, onReaction, onCo
         </View>
       )}
 
-      {/* Backdrop para cerrar el popover */}
-      {showReactionPicker && (
-        <Pressable style={styles.backdrop} onPress={() => setShowReactionPicker(false)} />
+      {/* Backdrop para cerrar popovers */}
+      {(showReactionPicker || showMenu) && (
+        <Pressable
+          style={styles.backdrop}
+          onPress={() => { setShowReactionPicker(false); setShowMenu(false); }}
+        />
       )}
     </View>
   );
@@ -463,5 +498,41 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: Colors.accent,
+  },
+  menuWrapper: {
+    position: 'relative',
+  },
+  menuDropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 20,
+    minWidth: 140,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  menuItemText: {
+    fontSize: 14,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { StyleSheet, View, FlatList, Pressable, ScrollView, Image, ActivityIndicator, Animated, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, ScrollView, Image, ActivityIndicator, Animated, LayoutAnimation, Platform, UIManager, Alert, Modal, TextInput as RNTextInput } from 'react-native';
 import { Text, TextInput, IconButton, Chip } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -21,7 +21,7 @@ const categoryConfig: Record<string, { color: string; label: string }> = {
 type SubTab = 'muro' | 'grupos' | 'noticias';
 
 export default function WallScreen() {
-  const { posts, addPost, setReaction, markViewed, addComment } = useSocialStore();
+  const { posts, addPost, editPost, deletePost, setReaction, markViewed, addComment } = useSocialStore();
   const { getUserGroups, getGroupFeedForUser, setGroupPostReaction, markGroupPostViewed, addGroupPostComment } = useGroupsStore();
   const { isDesktop } = useBreakpoint();
   const noticias = useNoticiasStore((s) => s.posts);
@@ -107,6 +107,36 @@ export default function WallScreen() {
     cancelComposer();
   };
 
+  // Edit state
+  const [editingPost, setEditingPost] = useState<{ id: string; text: string; image?: string } | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editImage, setEditImage] = useState<string | null>(null);
+
+  const handleOpenEdit = (post: any) => {
+    setEditingPost({ id: post.id, text: post.text, image: post.image });
+    setEditText(post.text);
+    setEditImage(post.image ?? null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPost(null);
+    setEditText('');
+    setEditImage(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPost || !editText.trim()) return;
+    await editPost(editingPost.id, editText, editImage);
+    handleCancelEdit();
+  };
+
+  const handleDelete = (postId: string) => {
+    Alert.alert('Eliminar publicación', '¿Estás seguro de que querés eliminar esta publicación?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Eliminar', style: 'destructive', onPress: () => deletePost(postId) },
+    ]);
+  };
+
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
   // Keep a ref to the latest handler so FlatList receives a stable function reference
   const viewHandlerRef = useRef<(info: { viewableItems: any[] }) => void>(() => {});
@@ -134,6 +164,7 @@ export default function WallScreen() {
               ? allGroups.find((g) => g.id === item.groupId)?.members.some((m) => m.userId === userId) ?? false
               : canComment
           }
+          canEdit={role === 'admin' || item.authorId === userId}
           onReaction={(id, reaction) => {
             if (item.groupId) setGroupPostReaction(item.groupId, id, userId, reaction);
             else setReaction(id, userId, reaction);
@@ -142,6 +173,8 @@ export default function WallScreen() {
             if (item.groupId) addGroupPostComment(item.groupId, id, userId, user?.name ?? '', text);
             else addComment(id, userId, user?.name ?? '', text);
           }}
+          onEdit={handleOpenEdit}
+          onDelete={handleDelete}
         />
       )}
       ListHeaderComponent={
@@ -466,6 +499,52 @@ export default function WallScreen() {
           {activeTab === 'noticias' && noticiasContent}
         </>
       )}
+
+      {/* Modal de edición */}
+      <Modal visible={!!editingPost} transparent animationType="fade" onRequestClose={handleCancelEdit}>
+        <View style={styles.editOverlay}>
+          <View style={styles.editModal}>
+            <View style={styles.editHeader}>
+              <Text style={styles.editTitle}>Editar publicación</Text>
+              <Pressable onPress={handleCancelEdit}>
+                <MaterialCommunityIcons name="close" size={22} color={Colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <RNTextInput
+              style={styles.editInput}
+              value={editText}
+              onChangeText={setEditText}
+              multiline
+              placeholder="¿Qué querés compartir?"
+              placeholderTextColor={Colors.textSecondary}
+              autoFocus
+            />
+
+            {editImage && (
+              <View style={styles.editImageWrapper}>
+                <Image source={{ uri: editImage }} style={styles.editImagePreview} resizeMode="cover" />
+                <Pressable style={styles.editImageRemove} onPress={() => setEditImage(null)}>
+                  <MaterialCommunityIcons name="close-circle" size={22} color="#FFFFFF" />
+                </Pressable>
+              </View>
+            )}
+
+            <View style={styles.editActions}>
+              <Pressable style={styles.editCancelBtn} onPress={handleCancelEdit}>
+                <Text style={styles.editCancelText}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.editSaveBtn, !editText.trim() && styles.editSaveBtnDisabled]}
+                onPress={handleSaveEdit}
+                disabled={!editText.trim()}
+              >
+                <Text style={styles.editSaveText}>Guardar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
     </View>
   );
@@ -1016,6 +1095,93 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontSize: 14,
     color: Colors.primary,
+    fontWeight: '600',
+  },
+
+  // Edit modal
+  editOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  editModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 520,
+  },
+  editHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  editTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  editInput: {
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 12,
+  },
+  editImageWrapper: {
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 12,
+    position: 'relative',
+  },
+  editImagePreview: {
+    width: '100%',
+    height: 160,
+    borderRadius: 10,
+  },
+  editImageRemove: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderRadius: 12,
+  },
+  editActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 4,
+  },
+  editCancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  editCancelText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  editSaveBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 9,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+  },
+  editSaveBtnDisabled: { opacity: 0.4 },
+  editSaveText: {
+    fontSize: 14,
+    color: '#FFFFFF',
     fontWeight: '600',
   },
 
