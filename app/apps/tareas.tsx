@@ -1579,7 +1579,7 @@ export default function TareasScreen() {
 
   // ─── Add task modal ───
   const renderAddModal = () => (
-    <Modal visible={showAddModal} transparent animationType="fade">
+    <Modal visible={showAddModal} transparent animationType="none">
       <View style={styles.addModalOverlay}>
         <View style={[styles.addModalCard, isWide && { maxWidth: 900 }]}>
           <View style={styles.addHeader}>
@@ -1629,7 +1629,7 @@ export default function TareasScreen() {
               <MaterialCommunityIcons name={showSubjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.textSecondary} />
             </Pressable>
             {showSubjectDropdown && (
-              <View style={styles.subjectSelectList}>
+              <ScrollView style={styles.subjectDropdown} nestedScrollEnabled>
                 {subjects.map((s) => {
                   const selected = newSubject === s.name;
                   return (
@@ -1644,7 +1644,7 @@ export default function TareasScreen() {
                     </Pressable>
                   );
                 })}
-              </View>
+              </ScrollView>
             )}
 
             <Text style={styles.formLabel}>Fecha de entrega</Text>
@@ -2367,6 +2367,7 @@ const styles = StyleSheet.create({
   formInput: { backgroundColor: '#FFFFFF', marginBottom: 12 },
   formLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 8 },
   subjectSelectList: { marginBottom: 12, gap: 4 },
+  subjectDropdown: { maxHeight: 200, marginBottom: 12, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, backgroundColor: '#FFFFFF' },
   subjectSelectRow: {
     flexDirection: 'row',
     alignItems: 'center',
