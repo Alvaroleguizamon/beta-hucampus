@@ -150,30 +150,11 @@ export default function UserTopBar() {
         {/* ── Left: logo / course selector (hidden when search open) ── */}
         {!showSearch && (
           <View style={styles.left}>
-            {!isDesktop && !showCourseSelector ? (
+            {!isDesktop && (
               <Pressable onPress={() => router.replace('/(tabs)/wall' as any)}>
                 <HuCampusLogo width={130} />
               </Pressable>
-            ) : showCourseSelector ? (
-              <View style={styles.docenteLeftRow}>
-              {!isDesktop && (
-                <Pressable style={styles.mobileLogoIcon} onPress={() => router.replace('/(tabs)/wall' as any)}>
-                  <MaterialCommunityIcons name="school" size={18} color="#FFFFFF" />
-                </Pressable>
-              )}
-              <Pressable style={styles.courseSelector} onPress={() => { setCourseDropdownOpen(!courseDropdownOpen); setUserDropdownOpen(false); }}>
-                <View style={styles.courseIcon}>
-                  <MaterialCommunityIcons name="google-classroom" size={15} color={Colors.primary} />
-                </View>
-                <Text style={styles.courseName}>{selectedCourse?.name ?? '—'}</Text>
-                <MaterialCommunityIcons
-                  name={courseDropdownOpen ? 'chevron-up' : 'chevron-down'}
-                  size={15}
-                  color={Colors.primary}
-                />
-              </Pressable>
-              </View>
-            ) : null}
+            )}
           </View>
         )}
 
@@ -246,26 +227,6 @@ export default function UserTopBar() {
         </View>
         )}
       </View>
-
-      {/* Course dropdown */}
-      {courseDropdownOpen && showCourseSelector && (
-        <View style={styles.dropdown}>
-          {mockCourses.map((course) => {
-            const isActive = course.id === selectedCourseId;
-            return (
-              <Pressable
-                key={course.id}
-                style={[styles.option, isActive && styles.optionActive]}
-                onPress={() => { setSelectedCourse(course.id); setCourseDropdownOpen(false); }}
-              >
-                <MaterialCommunityIcons name="google-classroom" size={15} color={isActive ? Colors.primary : Colors.textSecondary} />
-                <Text style={[styles.optionText, isActive && styles.optionTextActive]}>{course.name}</Text>
-                {isActive && <MaterialCommunityIcons name="check" size={13} color={Colors.primary} />}
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
 
       {/* User dropdown */}
       {userDropdownOpen && (
