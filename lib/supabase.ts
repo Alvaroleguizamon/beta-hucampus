@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL      = 'https://hxjbdejnpucwuxctrafp.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4amJkZWpucHVjd3V4Y3RyYWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MDYwMDIsImV4cCI6MjA4OTQ4MjAwMn0.Met5YgtG48V6MQy28g0mZ4_uJx_GDQVpPkiABbaLNU0';
-const SUPABASE_SVC_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4amJkZWpucHVjd3V4Y3RyYWZwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkwNjAwMiwiZXhwIjoyMDg5NDgyMDAyfQ.XxyJB1JJ0-2VfvcPsp3A148kz3NSZszbclbCOdxm-cY';
+const SUPABASE_URL      = 'https://bvlskpkmtgxlhgvutczk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bHNrcGttdGd4bGhndnV0Y3prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5NTk2MDAsImV4cCI6MjA4OTUzNTYwMH0.492kJH_Aiw1HivpljjHLOFYWR9B8aLUbrQUoFBReETM';
+const SUPABASE_SVC_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2bHNrcGttdGd4bGhndnV0Y3prIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mzk1OTYwMCwiZXhwIjoyMDg5NTM1NjAwfQ.rBBPWiRDawG4W7Q2jNFkmcAZLuhi1B5-pfH9veRoDbs';
 
 // Client used by all stores (respects RLS via anon/user JWT)
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
