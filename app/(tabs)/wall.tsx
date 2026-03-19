@@ -532,7 +532,7 @@ export default function WallScreen() {
                     style={[styles.pill, styles.pillMobile, activeTab === tab.key && styles.pillActive]}
                     onPress={() => setActiveTab(tab.key)}
                   >
-                    <Text style={[styles.pillText, activeTab === tab.key && styles.pillTextActive]}>
+                    <Text style={[styles.pillText, activeTab === tab.key && styles.pillTextActive]} numberOfLines={1}>
                       {tab.label}
                     </Text>
                   </Pressable>
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     color: Colors.primary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
   pillTextActive: {
