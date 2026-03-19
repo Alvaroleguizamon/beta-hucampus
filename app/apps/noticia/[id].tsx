@@ -1,5 +1,5 @@
 import React, { useLayoutEffect } from 'react';
-import { StyleSheet, View, ScrollView, Image, Pressable, Alert } from 'react-native';
+import { StyleSheet, View, ScrollView, Image, Pressable, Alert, Platform } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, router, useNavigation } from 'expo-router';
@@ -32,15 +32,15 @@ export default function NoticiaDetailScreen() {
   const post = getPost(id);
 
   const handleDelete = () => {
-    Alert.alert('Eliminar noticia', '¿Eliminar esta noticia? Esta acción no se puede deshacer.', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar', style: 'destructive', onPress: () => {
-          deletePost(id);
-          router.back();
-        }
-      },
-    ]);
+    const doDelete = () => { deletePost(id); router.back(); };
+    if (Platform.OS === 'web') {
+      if (window.confirm('¿Eliminar esta noticia? Esta acción no se puede deshacer.')) doDelete();
+    } else {
+      Alert.alert('Eliminar noticia', '¿Eliminar esta noticia? Esta acción no se puede deshacer.', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: doDelete },
+      ]);
+    }
   };
 
   useLayoutEffect(() => {

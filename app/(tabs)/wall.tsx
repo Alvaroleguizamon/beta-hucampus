@@ -171,10 +171,14 @@ export default function WallScreen() {
   };
 
   const handleDelete = (postId: string) => {
-    Alert.alert('Eliminar publicación', '¿Estás seguro de que querés eliminar esta publicación?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => deletePost(postId) },
-    ]);
+    if (Platform.OS === 'web') {
+      if (window.confirm('¿Estás seguro de que querés eliminar esta publicación?')) deletePost(postId);
+    } else {
+      Alert.alert('Eliminar publicación', '¿Estás seguro de que querés eliminar esta publicación?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => deletePost(postId) },
+      ]);
+    }
   };
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
