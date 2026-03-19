@@ -1587,7 +1587,7 @@ export default function TareasScreen() {
             <IconButton icon="close" iconColor={Colors.textSecondary} size={20} onPress={() => { resetForm(); setShowAddModal(false); }} />
           </View>
 
-          <ScrollView keyboardShouldPersistTaps="handled" style={styles.addModalScroll}>
+          <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled style={styles.addModalScroll}>
             <TextInput
               label="¿Qué tarea tenés?"
               value={newTitle}
