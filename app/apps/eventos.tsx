@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, FlatList, Pressable, Alert, Platform } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useCalendarStore } from '../../lib/stores/calendar-store';
 import { useAuthStore } from '../../lib/stores/auth-store';
 import { Colors } from '../../constants/colors';
@@ -18,7 +19,11 @@ export default function EventosScreen() {
   const events = useCalendarStore((s) => s.events);
   const deleteEvent = useCalendarStore((s) => s.deleteEvent);
   const role = useAuthStore((s) => s.user?.role);
-  const canEdit = role === 'docente' || role === 'admin';
+  const canEdit = role === 'admin';
+
+  React.useEffect(() => {
+    if (role === 'docente') router.replace('/(tabs)/grades' as any);
+  }, [role]);
 
   const today = new Date().toISOString().split('T')[0];
   const upcoming = events
