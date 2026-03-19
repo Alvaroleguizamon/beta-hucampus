@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, View, FlatList, Pressable, ScrollView, Alert, Modal, Platform, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, ScrollView, Alert, Modal, Platform, useWindowDimensions, ActivityIndicator, Linking } from 'react-native';
 import { Text, TextInput, IconButton, Chip } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -37,6 +37,7 @@ interface Task {
     content: string;
     date: string;
   };
+  attachments?: { id: string; type: 'archivo' | 'link'; name: string; url?: string }[];
   _fromDocente?: boolean;
 }
 
@@ -86,6 +87,7 @@ export default function TareasScreen() {
   const addPersonalTaskAction = useTasksStore((s) => s.addPersonalTask);
   const submitPersonalDeliveryAction = useTasksStore((s) => s.submitPersonalDelivery);
   const updatePublishedTaskAction = useTasksStore((s) => s.updatePublishedTask);
+  const deletePublishedTaskAction = useTasksStore((s) => s.deletePublishedTask);
 
   // ─── Docente state ───
   const docenteTasks = publishedTasks;
@@ -154,6 +156,7 @@ export default function TareasScreen() {
           priority: t.priority,
           grupal: false,
           description: t.description,
+          attachments: t.attachments,
           submission: delivery?.submissionDate
             ? { type: 'texto' as const, content: delivery.submissionContent ?? '', date: delivery.submissionDate }
             : undefined,
@@ -254,146 +257,6 @@ export default function TareasScreen() {
           deliveries: t.deliveries.filter((d) => studentFilters.includes(d.studentId)),
         }))
       : courseTasks;
-
-    // Detail view for a docente task
-    if (selectedDocenteTask) {
-      const freshDT = docenteTasks.find((t) => t.id === selectedDocenteTask.id) ?? selectedDocenteTask;
-      const taskCourse = courses.find((c) => c.id === freshDT.courseId);
-      const totalStudents = freshDT.deliveries.length;
-      const deliveredCount = freshDT.deliveries.filter((d) => d.status === 'entregado').length;
-      const pendingCount = totalStudents - deliveredCount;
-      const pCfg = priorityConfig[freshDT.priority];
-      const daysLeft = getDaysLeft(freshDT.dueDate);
-
-      const openEditPublished = () => {
-        setEditingPublishedTask(freshDT);
-        setEditingDraftId(null);
-        setDraftTitle(freshDT.title);
-        setDraftCourseId(freshDT.courseId);
-        setDraftAssignTo('curso');
-        setDraftStudentIds([]);
-        setDraftDueDate(freshDT.dueDate);
-        setDraftPriority(freshDT.priority);
-        setDraftDescription(freshDT.description ?? '');
-        setDraftAttachments(freshDT.attachments ?? []);
-        setShowDocenteAddModal(true);
-      };
-
-      return (
-        <View style={styles.container}>
-          <View style={styles.backRow}>
-            <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} onPress={() => setSelectedDocenteTask(null)}>
-              <MaterialCommunityIcons name="arrow-left" size={20} color={Colors.primary} />
-              <Text style={styles.backText}>Atrás</Text>
-            </Pressable>
-            <Pressable style={docenteStyles.editTaskBtn} onPress={openEditPublished}>
-              <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.primary} />
-              <Text style={docenteStyles.editTaskBtnText}>Editar</Text>
-            </Pressable>
-          </View>
-
-          <ScrollView contentContainerStyle={[styles.detailContent, isWide && { maxWidth: 900, alignSelf: 'center', width: '100%', paddingTop: 32 }]}>
-            <View style={styles.detailStatusRow}>
-              <View style={[styles.priorityBadge, { backgroundColor: pCfg.color + '15', borderColor: pCfg.color }]}>
-                <View style={[styles.priorityDotSmall, { backgroundColor: pCfg.color }]} />
-                <Text style={[styles.priorityBadgeText, { color: pCfg.color }]}>Prioridad {pCfg.label}</Text>
-              </View>
-            </View>
-
-            <Text style={styles.detailTitle}>{freshDT.title}</Text>
-            <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 16 }}>
-              {taskCourse?.name} — {taskCourse?.grade}
-            </Text>
-
-            <View style={styles.detailInfoCard}>
-              <View style={styles.detailInfoRow}>
-                <MaterialCommunityIcons name="calendar" size={18} color={Colors.textSecondary} />
-                <Text style={styles.detailInfoLabel}>Fecha de entrega</Text>
-                <Text style={styles.detailInfoValue}>{formatDate(freshDT.dueDate)}</Text>
-              </View>
-              <View style={styles.detailInfoRow}>
-                <MaterialCommunityIcons name="clock-outline" size={18} color={daysLeft.color} />
-                <Text style={styles.detailInfoLabel}>Tiempo restante</Text>
-                <Text style={[styles.detailInfoValue, { color: daysLeft.color, fontWeight: '600' }]}>{daysLeft.text}</Text>
-              </View>
-              <View style={styles.detailInfoRow}>
-                <MaterialCommunityIcons name="account-group" size={18} color={Colors.primary} />
-                <Text style={styles.detailInfoLabel}>Entregas</Text>
-                <Text style={[styles.detailInfoValue, { color: Colors.primary, fontWeight: '600' }]}>{deliveredCount}/{totalStudents}</Text>
-              </View>
-            </View>
-
-            {freshDT.description && (
-              <View style={styles.descriptionCard}>
-                <Text style={styles.descriptionTitle}>Consigna</Text>
-                <Text style={styles.descriptionText}>{freshDT.description}</Text>
-              </View>
-            )}
-
-            {freshDT.attachments && freshDT.attachments.length > 0 && (
-              <View style={styles.descriptionCard}>
-                <Text style={styles.descriptionTitle}>Material adjunto</Text>
-                {freshDT.attachments.map((att) => (
-                  <View key={att.id} style={docenteStyles.attachmentRow}>
-                    <MaterialCommunityIcons
-                      name={att.type === 'link' ? 'link-variant' : 'file-document-outline'}
-                      size={20}
-                      color={att.type === 'link' ? Colors.primary : '#E74C3C'}
-                    />
-                    <Text style={docenteStyles.attachmentName} numberOfLines={1}>{att.name}</Text>
-                    {att.type === 'link' && att.url && (
-                      <Text style={docenteStyles.attachmentUrl} numberOfLines={1}>{att.url}</Text>
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Summary bar */}
-            <View style={docenteStyles.summaryBar}>
-              <View style={docenteStyles.summaryItem}>
-                <Text style={[docenteStyles.summaryNumber, { color: Colors.success }]}>{deliveredCount}</Text>
-                <Text style={docenteStyles.summaryLabel}>Entregaron</Text>
-              </View>
-              <View style={docenteStyles.summaryDivider} />
-              <View style={docenteStyles.summaryItem}>
-                <Text style={[docenteStyles.summaryNumber, { color: Colors.warning }]}>{pendingCount}</Text>
-                <Text style={docenteStyles.summaryLabel}>Pendientes</Text>
-              </View>
-            </View>
-
-            {/* Deliveries list */}
-            <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12 }}>Estado por alumno</Text>
-            {freshDT.deliveries.map((d) => (
-              <View key={d.studentId} style={docenteStyles.deliveryRow}>
-                <View style={docenteStyles.deliveryAvatar}>
-                  <Text style={docenteStyles.deliveryAvatarText}>{d.studentName[0]}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={docenteStyles.deliveryName}>{d.studentName}</Text>
-                  {d.status === 'entregado' && d.submissionDate && (
-                    <Text style={docenteStyles.deliveryDate}>Entregado el {formatDate(d.submissionDate)}</Text>
-                  )}
-                  {d.status === 'entregado' && d.submissionContent && (
-                    <Text style={docenteStyles.deliveryContent} numberOfLines={2}>{d.submissionContent}</Text>
-                  )}
-                </View>
-                <View style={[docenteStyles.deliveryBadge, d.status === 'entregado' ? docenteStyles.deliveryBadgeDone : docenteStyles.deliveryBadgePending]}>
-                  <MaterialCommunityIcons
-                    name={d.status === 'entregado' ? 'check-circle' : 'clock-outline'}
-                    size={14}
-                    color={d.status === 'entregado' ? Colors.success : Colors.warning}
-                  />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: d.status === 'entregado' ? Colors.success : Colors.warning }}>
-                    {d.status === 'entregado' ? 'Entregado' : 'Pendiente'}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      );
-    }
 
     // ─── Docente main list ───
     const renderCourseTabs = () => (
@@ -1090,6 +953,31 @@ export default function TareasScreen() {
                 </View>
               )}
 
+              {editingPublishedTask && (
+                <Pressable
+                  style={[docenteStyles.modalDraftBtn, { borderColor: Colors.error, marginTop: 8 }]}
+                  onPress={() => {
+                    const doDelete = () => {
+                      deletePublishedTaskAction(editingPublishedTask.id);
+                      resetDraftForm();
+                      setShowDocenteAddModal(false);
+                      setSelectedDocenteTask(null);
+                    };
+                    if (Platform.OS === 'web') {
+                      if (window.confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) doDelete();
+                    } else {
+                      Alert.alert('Eliminar tarea', '¿Eliminar esta tarea? Esta acción no se puede deshacer.', [
+                        { text: 'Cancelar', style: 'cancel' },
+                        { text: 'Eliminar', style: 'destructive', onPress: doDelete },
+                      ]);
+                    }
+                  }}
+                >
+                  <MaterialCommunityIcons name="trash-can-outline" size={18} color={Colors.error} />
+                  <Text style={[docenteStyles.modalDraftBtnText, { color: Colors.error }]}>Eliminar tarea</Text>
+                </Pressable>
+              )}
+
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
                 <Pressable style={[docenteStyles.modalDraftBtn, !draftTitle.trim() && { opacity: 0.5 }, editingPublishedTask && { flex: 1 }]} onPress={saveDraft}>
                   <MaterialCommunityIcons name="content-save-outline" size={18} color={Colors.primary} />
@@ -1129,6 +1017,161 @@ export default function TareasScreen() {
         </Pressable>
       </Modal>
     );
+
+    // ─── Detail view for a docente task (placed after all helpers to avoid TDZ) ───
+    if (selectedDocenteTask) {
+      const freshDT = docenteTasks.find((t) => t.id === selectedDocenteTask.id) ?? selectedDocenteTask;
+      const taskCourse = courses.find((c) => c.id === freshDT.courseId);
+      const totalStudents = freshDT.deliveries.length;
+      const deliveredCount = freshDT.deliveries.filter((d) => d.status === 'entregado').length;
+      const pendingCount = totalStudents - deliveredCount;
+      const pCfg = priorityConfig[freshDT.priority];
+      const daysLeft = getDaysLeft(freshDT.dueDate);
+
+      const openEditPublished = () => {
+        setEditingPublishedTask(freshDT);
+        setEditingDraftId(null);
+        setDraftTitle(freshDT.title);
+        setDraftCourseId(freshDT.courseId);
+        setDraftAssignTo('curso');
+        setDraftStudentIds([]);
+        setDraftDueDate(freshDT.dueDate);
+        setDraftPriority(freshDT.priority);
+        setDraftDescription(freshDT.description ?? '');
+        setDraftAttachments(freshDT.attachments ?? []);
+        setShowDocenteAddModal(true);
+      };
+
+      return (
+        <View style={styles.container}>
+          <View style={styles.backRow}>
+            <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} onPress={() => setSelectedDocenteTask(null)}>
+              <MaterialCommunityIcons name="arrow-left" size={20} color={Colors.primary} />
+              <Text style={styles.backText}>Atrás</Text>
+            </Pressable>
+            <Pressable style={docenteStyles.editTaskBtn} onPress={openEditPublished}>
+              <MaterialCommunityIcons name="pencil-outline" size={16} color={Colors.primary} />
+              <Text style={docenteStyles.editTaskBtnText}>Editar</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView contentContainerStyle={[styles.detailContent, isWide && { maxWidth: 900, alignSelf: 'center', width: '100%', paddingTop: 32 }]}>
+            <View style={styles.detailStatusRow}>
+              <View style={[styles.priorityBadge, { backgroundColor: pCfg.color + '15', borderColor: pCfg.color }]}>
+                <View style={[styles.priorityDotSmall, { backgroundColor: pCfg.color }]} />
+                <Text style={[styles.priorityBadgeText, { color: pCfg.color }]}>Prioridad {pCfg.label}</Text>
+              </View>
+            </View>
+
+            <Text style={styles.detailTitle}>{freshDT.title}</Text>
+            <Text style={{ fontSize: 13, color: Colors.textSecondary, marginBottom: 16 }}>
+              {taskCourse?.name} — {taskCourse?.grade}
+            </Text>
+
+            <View style={styles.detailInfoCard}>
+              <View style={styles.detailInfoRow}>
+                <MaterialCommunityIcons name="calendar" size={18} color={Colors.textSecondary} />
+                <Text style={styles.detailInfoLabel}>Fecha de entrega</Text>
+                <Text style={styles.detailInfoValue}>{formatDate(freshDT.dueDate)}</Text>
+              </View>
+              <View style={styles.detailInfoRow}>
+                <MaterialCommunityIcons name="clock-outline" size={18} color={daysLeft.color} />
+                <Text style={styles.detailInfoLabel}>Tiempo restante</Text>
+                <Text style={[styles.detailInfoValue, { color: daysLeft.color, fontWeight: '600' }]}>{daysLeft.text}</Text>
+              </View>
+              <View style={styles.detailInfoRow}>
+                <MaterialCommunityIcons name="account-group" size={18} color={Colors.primary} />
+                <Text style={styles.detailInfoLabel}>Entregas</Text>
+                <Text style={[styles.detailInfoValue, { color: Colors.primary, fontWeight: '600' }]}>{deliveredCount}/{totalStudents}</Text>
+              </View>
+            </View>
+
+            {freshDT.description && (
+              <View style={styles.descriptionCard}>
+                <Text style={styles.descriptionTitle}>Consigna</Text>
+                <Text style={styles.descriptionText}>{freshDT.description}</Text>
+              </View>
+            )}
+
+            {freshDT.attachments && freshDT.attachments.length > 0 && (
+              <View style={styles.descriptionCard}>
+                <Text style={styles.descriptionTitle}>Material adjunto</Text>
+                {freshDT.attachments.map((att) => {
+                  const downloadUrl = att.url;
+                  return (
+                    <Pressable
+                      key={att.id}
+                      style={docenteStyles.attachmentRow}
+                      onPress={() => downloadUrl && Linking.openURL(downloadUrl)}
+                      disabled={!downloadUrl}
+                    >
+                      <MaterialCommunityIcons
+                        name={att.type === 'link' ? 'link-variant' : 'file-document-outline'}
+                        size={20}
+                        color={att.type === 'link' ? Colors.primary : '#E74C3C'}
+                      />
+                      <Text style={[docenteStyles.attachmentName, downloadUrl && { color: Colors.primary }]} numberOfLines={1}>{att.name}</Text>
+                      {downloadUrl && <MaterialCommunityIcons name="download" size={18} color={Colors.primary} />}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* Summary bar */}
+            <View style={docenteStyles.summaryBar}>
+              <View style={docenteStyles.summaryItem}>
+                <Text style={[docenteStyles.summaryNumber, { color: Colors.success }]}>{deliveredCount}</Text>
+                <Text style={docenteStyles.summaryLabel}>Entregaron</Text>
+              </View>
+              <View style={docenteStyles.summaryDivider} />
+              <View style={docenteStyles.summaryItem}>
+                <Text style={[docenteStyles.summaryNumber, { color: Colors.warning }]}>{pendingCount}</Text>
+                <Text style={docenteStyles.summaryLabel}>Pendientes</Text>
+              </View>
+            </View>
+
+            {/* Deliveries list */}
+            <Text style={{ fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12 }}>Estado por alumno</Text>
+            {freshDT.deliveries.map((d) => (
+              <View key={d.studentId} style={docenteStyles.deliveryRow}>
+                <View style={docenteStyles.deliveryAvatar}>
+                  <Text style={docenteStyles.deliveryAvatarText}>{d.studentName[0]}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={docenteStyles.deliveryName}>{d.studentName}</Text>
+                  {d.status === 'entregado' && d.submissionDate && (
+                    <Text style={docenteStyles.deliveryDate}>Entregado el {formatDate(d.submissionDate)}</Text>
+                  )}
+                  {d.status === 'entregado' && d.submissionContent && (
+                    d.submissionContent.startsWith('http') ? (
+                      <Pressable style={styles.fileRow} onPress={() => Linking.openURL(d.submissionContent!)}>
+                        <MaterialCommunityIcons name="file-document-outline" size={16} color={Colors.primary} />
+                        <Text style={[docenteStyles.deliveryContent, { color: Colors.primary, flex: 1 }]} numberOfLines={1}>{d.submissionContent}</Text>
+                        <MaterialCommunityIcons name="download" size={16} color={Colors.primary} />
+                      </Pressable>
+                    ) : (
+                      <Text style={docenteStyles.deliveryContent} numberOfLines={2}>{d.submissionContent}</Text>
+                    )
+                  )}
+                </View>
+                <View style={[docenteStyles.deliveryBadge, d.status === 'entregado' ? docenteStyles.deliveryBadgeDone : docenteStyles.deliveryBadgePending]}>
+                  <MaterialCommunityIcons
+                    name={d.status === 'entregado' ? 'check-circle' : 'clock-outline'}
+                    size={14}
+                    color={d.status === 'entregado' ? Colors.success : Colors.warning}
+                  />
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: d.status === 'entregado' ? Colors.success : Colors.warning }}>
+                    {d.status === 'entregado' ? 'Entregado' : 'Pendiente'}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+          {renderDocenteAddModal()}
+        </View>
+      );
+    }
 
     // ─── Docente main view with tasks list ───
     const renderDocenteMain = () => (
@@ -1363,6 +1406,31 @@ export default function TareasScreen() {
             </View>
           )}
 
+          {freshTask.attachments && freshTask.attachments.length > 0 && (
+            <View style={styles.descriptionCard}>
+              <Text style={styles.descriptionTitle}>Material adjunto</Text>
+              {freshTask.attachments.map((att) => {
+                const downloadUrl = att.url;
+                return (
+                  <Pressable
+                    key={att.id}
+                    style={docenteStyles.attachmentRow}
+                    onPress={() => downloadUrl && Linking.openURL(downloadUrl)}
+                    disabled={!downloadUrl}
+                  >
+                    <MaterialCommunityIcons
+                      name={att.type === 'link' ? 'link-variant' : 'file-document-outline'}
+                      size={20}
+                      color={att.type === 'link' ? Colors.primary : '#E74C3C'}
+                    />
+                    <Text style={[docenteStyles.attachmentName, downloadUrl && { color: Colors.primary }]} numberOfLines={1}>{att.name}</Text>
+                    {downloadUrl && <MaterialCommunityIcons name="download" size={18} color={Colors.primary} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
           {freshTask.status === 'entregado' && freshTask.submission && (
             <View style={styles.submissionCard}>
               <View style={styles.submissionHeader}>
@@ -1373,10 +1441,19 @@ export default function TareasScreen() {
               {freshTask.submission.type === 'texto' ? (
                 <Text style={styles.submissionContent}>{freshTask.submission.content}</Text>
               ) : (
-                <View style={styles.fileRow}>
+                <Pressable
+                  style={styles.fileRow}
+                  onPress={() => {
+                    const url = freshTask.submission!.content;
+                    if (url.startsWith('http')) Linking.openURL(url);
+                  }}
+                >
                   <MaterialCommunityIcons name="file-pdf-box" size={24} color="#E74C3C" />
-                  <Text style={styles.fileName}>{freshTask.submission.content}</Text>
-                </View>
+                  <Text style={[styles.fileName, { color: Colors.primary, flex: 1 }]} numberOfLines={1}>{freshTask.submission.content}</Text>
+                  {freshTask.submission.content.startsWith('http') && (
+                    <MaterialCommunityIcons name="download" size={18} color={Colors.primary} />
+                  )}
+                </Pressable>
               )}
             </View>
           )}

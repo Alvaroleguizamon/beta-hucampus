@@ -98,6 +98,7 @@ interface TasksState {
   deletePersonalTask: (taskId: string) => void;
   publishTask: (task: DocenteTask) => Promise<void>;
   updatePublishedTask: (id: string, updates: Partial<Pick<DocenteTask, 'title' | 'dueDate' | 'priority' | 'description' | 'attachments'>>) => void;
+  deletePublishedTask: (id: string) => void;
   saveDraft: (draft: Omit<DraftTask, 'id'>, editingId?: string) => void;
   removeDraft: (id: string) => void;
   submitDelivery: (taskId: string, studentId: string, content: string) => void;
@@ -301,6 +302,13 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       supabase.from('tasks').update(db).eq('id', id)
         .then(({ error }) => { if (error) console.error('[tasks-store] updatePublishedTask error:', error); });
     }
+  },
+
+  deletePublishedTask: (id) => {
+    set((s) => ({ publishedTasks: s.publishedTasks.filter((t) => t.id !== id) }));
+    supabase.from('task_deliveries').delete().eq('task_id', id)
+      .then(() => supabase.from('tasks').delete().eq('id', id))
+      .then(({ error }) => { if (error) console.error('[tasks-store] deletePublishedTask error:', error); });
   },
 
   saveDraft: (draftData, editingId) =>
