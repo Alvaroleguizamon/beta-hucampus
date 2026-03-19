@@ -1,5 +1,5 @@
 import React, { useLayoutEffect } from 'react';
-import { StyleSheet, View, FlatList, Pressable, Alert } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, Alert, Platform } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
@@ -22,10 +22,14 @@ export default function NoticiasScreen() {
   const canEdit = role === 'admin' || role === 'docente';
 
   const handleDelete = (id: string, title: string) => {
-    Alert.alert('Eliminar noticia', `¿Eliminar "${title}"?`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => deletePost(id) },
-    ]);
+    if (Platform.OS === 'web') {
+      if (window.confirm(`¿Eliminar "${title}"?`)) deletePost(id);
+    } else {
+      Alert.alert('Eliminar noticia', `¿Eliminar "${title}"?`, [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => deletePost(id) },
+      ]);
+    }
   };
 
   useLayoutEffect(() => {
