@@ -88,7 +88,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
+    alignSelf: 'center',
+    width: '100%',
     paddingHorizontal: Layout.paddingLarge,
+    ...(Platform.OS === 'web' ? { maxWidth: 400 } : {}),
   },
   logoContainer: {
     alignItems: 'center',
