@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { Colors } from '../../constants/colors';
 import { SIDEBAR_WIDTH } from '../../hooks/useBreakpoint';
 import { useAuthStore } from '../../lib/stores/auth-store';
+import { useCoursesStore } from '../../lib/stores/courses-store';
 import { Role } from '../../lib/types';
 import HuCampusLogo from '../ui/HuCampusLogo';
 
@@ -107,6 +108,10 @@ export default function DesktopSidebar() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const role = user?.role ?? 'alumno';
+  const courses = useCoursesStore((s) => s.courses);
+  const studentCourse = role === 'alumno' && user
+    ? courses.find((c) => c.students.some((s) => s.id === user.id))
+    : null;
   const tabs = tabsByRole[role].filter((t) => t.name !== 'grades');
   const apps = appsByRole[role];
 
@@ -114,6 +119,12 @@ export default function DesktopSidebar() {
     <View style={styles.sidebar}>
       <View style={styles.logoContainer}>
         <HuCampusLogo width={140} />
+        {studentCourse && (
+          <View style={styles.courseBadge}>
+            <MaterialCommunityIcons name="google-classroom" size={14} color={Colors.primary} />
+            <Text style={styles.courseBadgeText}>{studentCourse.grade}</Text>
+          </View>
+        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -164,17 +175,8 @@ export default function DesktopSidebar() {
         </View>
       </ScrollView>
 
-      <View style={styles.userCard}>
-        <View style={styles.userAvatar}>
-          <Text style={styles.userAvatarText}>
-            {(user?.name ?? 'U').charAt(0).toUpperCase()}
-          </Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.userName} numberOfLines={1}>{user?.name ?? '—'}</Text>
-          <Text style={styles.userRole}>{rolLabel[role]}</Text>
-        </View>
-      </View>
+
+
     </View>
   );
 }
@@ -189,11 +191,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 8,
     marginBottom: 24,
-    gap: 10,
+    gap: 8,
+  },
+  courseBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: `${Colors.primary}12`,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  courseBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
   },
   logoIcon: {
     width: 36,

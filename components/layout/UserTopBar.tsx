@@ -10,6 +10,7 @@ import { mockCourses, mockBirthdays } from '../../lib/mock-data';
 import { Colors } from '../../constants/colors';
 import { Role } from '../../lib/types';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
+import { useCoursesStore } from '../../lib/stores/courses-store';
 import HuCampusLogo from '../ui/HuCampusLogo';
 
 interface Notification {
@@ -51,6 +52,10 @@ const rolLabel: Record<Role, string> = {
 export default function UserTopBar() {
   const user = useAuthStore((s) => s.user);
   const role = user?.role ?? 'alumno';
+  const courses = useCoursesStore((s) => s.courses);
+  const studentCourse = role === 'alumno' && user
+    ? courses.find((c) => c.students.some((s) => s.id === user.id))
+    : null;
   const { selectedCourseId, setSelectedCourse } = useCourseStore();
   const logout = useAuthStore((s) => s.logout);
   const { isDesktop } = useBreakpoint();
@@ -269,6 +274,12 @@ export default function UserTopBar() {
                 <View>
                   <Text style={styles.dropdownUserName}>{user?.name ?? '—'}</Text>
                   <Text style={styles.dropdownUserRole}>{rolLabel[role]}</Text>
+                  {studentCourse && (
+                    <View style={styles.dropdownCourseBadge}>
+                      <MaterialCommunityIcons name="google-classroom" size={12} color={Colors.primary} />
+                      <Text style={styles.dropdownCourseText}>{studentCourse.grade}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
               <View style={styles.optionDivider} />
@@ -629,6 +640,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
     marginTop: 1,
+  },
+  dropdownCourseBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: `${Colors.primary}12`,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  dropdownCourseText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.primary,
   },
   optionDivider: {
     height: 1,
