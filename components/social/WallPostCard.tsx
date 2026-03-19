@@ -5,6 +5,48 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { WallPost, ReactionType } from '../../lib/types';
 
+// ─── Inline Markdown Renderer ────────────────────────────────────────────────
+// Handles **bold**, __underline__, _italic_ (in that order to avoid conflicts)
+type Segment = { text: string; bold?: boolean; italic?: boolean; underline?: boolean };
+
+function parseMarkdown(raw: string): Segment[] {
+  // Split on **bold**, __underline__, _italic_
+  const parts: Segment[] = [];
+  // Regex: match **...**, __...__, or _..._
+  const re = /(\*\*(.+?)\*\*|__(.+?)__|_(.+?)_)/gs;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(raw)) !== null) {
+    if (match.index > last) parts.push({ text: raw.slice(last, match.index) });
+    if (match[0].startsWith('**'))       parts.push({ text: match[2], bold: true });
+    else if (match[0].startsWith('__')) parts.push({ text: match[3], underline: true });
+    else                                parts.push({ text: match[4], italic: true });
+    last = match.index + match[0].length;
+  }
+  if (last < raw.length) parts.push({ text: raw.slice(last) });
+  return parts;
+}
+
+function RichText({ text, style, numberOfLines }: { text: string; style?: any; numberOfLines?: number }) {
+  const segments = parseMarkdown(text);
+  return (
+    <Text style={style} numberOfLines={numberOfLines}>
+      {segments.map((seg, i) => (
+        <Text
+          key={i}
+          style={[
+            seg.bold      && { fontWeight: '700' as const },
+            seg.italic    && { fontStyle: 'italic' as const },
+            seg.underline && { textDecorationLine: 'underline' as const },
+          ]}
+        >
+          {seg.text}
+        </Text>
+      ))}
+    </Text>
+  );
+}
+
 const REACTIONS: { type: ReactionType; emoji: string; label: string; color: string }[] = [
   { type: 'like', emoji: '👍', label: 'Me gusta', color: Colors.primary },
   { type: 'love', emoji: '❤️', label: 'Me encanta', color: '#E53935' },
@@ -124,9 +166,7 @@ export function WallPostCard({ post, currentUserId, canComment, canEdit, onReact
 
       {/* Body */}
       <View style={styles.body}>
-        <Text style={styles.bodyText} numberOfLines={expanded ? undefined : 4}>
-          {post.text}
-        </Text>
+        <RichText text={post.text} style={styles.bodyText} numberOfLines={expanded ? undefined : 4} />
         {isLongText && !expanded && (
           <Pressable onPress={() => setExpanded(true)}>
             <Text style={styles.verMas}>Ver más</Text>
