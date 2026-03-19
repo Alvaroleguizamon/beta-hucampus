@@ -18,6 +18,7 @@ import { useCoursesStore } from '../lib/stores/courses-store';
 import { useSubjectsStore } from '../lib/stores/subjects-store';
 import { useAttendanceStore } from '../lib/stores/attendance-store';
 import { useAdminStore } from '../lib/stores/admin-store';
+import { useMaterialStore } from '../lib/stores/material-store';
 
 const theme = {
   ...MD3LightTheme,
@@ -55,6 +56,7 @@ export default function RootLayout() {
     useSubjectsStore.getState().initialize();
     useAttendanceStore.getState().initialize();
     useAdminStore.getState().initialize();
+    useMaterialStore.getState().initialize();
   }, []);
 
   // Initialize user-scoped stores when logged in
