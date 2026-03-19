@@ -122,7 +122,6 @@ export default function AlumnosScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Alumnos</Text>
         <Text style={styles.headerSub}>{course.name} · {course.students.length} alumnos</Text>
       </View>
       <FlatList
@@ -172,7 +171,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
   headerSub: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
 
   list: { padding: 12 },

@@ -119,9 +119,10 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: Colors.textPrimary,
+    textAlign: 'left',
   },
   grid: {
     flexDirection: 'row',

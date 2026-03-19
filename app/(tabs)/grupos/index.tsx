@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
   newBtn: {
     flexDirection: 'row',
     alignItems: 'center',
