@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, View, FlatList, Pressable, ScrollView, Alert, Modal, Platform, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, FlatList, Pressable, ScrollView, Alert, Modal, Platform, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { Text, TextInput, IconButton, Chip } from 'react-native-paper';
+import * as DocumentPicker from 'expo-document-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { Colors } from '../../constants/colors';
@@ -8,7 +9,7 @@ import { useAuthStore } from '../../lib/stores/auth-store';
 import { useCoursesStore } from '../../lib/stores/courses-store';
 import { useSubjectsStore } from '../../lib/stores/subjects-store';
 import { useSocialStore } from '../../lib/stores/social-store';
-import { useTasksStore, DocenteTask, DraftTask, TaskAttachment, StudentDelivery } from '../../lib/stores/tasks-store';
+import { useTasksStore, DocenteTask, DraftTask, TaskAttachment, StudentDelivery, PersonalTask, uploadTaskFile } from '../../lib/stores/tasks-store';
 
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
@@ -39,13 +40,6 @@ interface Task {
   _fromDocente?: boolean;
 }
 
-// Personal tasks the alumno adds manually (not from docentes)
-const initialPersonalTasks: Task[] = [
-  { id: 't2', title: 'Leer capítulo 5 - Revolución de Mayo', subject: 'Historia', subjectColor: '#FF9800', teacher: 'Prof. López', dueDate: '2026-03-21', status: 'pendiente', priority: 'media', grupal: false, description: 'Leer el capítulo 5 del manual y responder las preguntas de la página 120.' },
-  { id: 't3', title: 'Trabajo práctico grupal - Análisis literario', subject: 'Lengua', subjectColor: '#0693E3', teacher: 'Prof. Martínez', dueDate: '2026-03-25', status: 'pendiente', priority: 'alta', grupal: true, integrantes: ['Lucía Gómez', 'Martín Ruiz', 'Sofía Díaz'], description: 'Elegir una obra del siglo XIX y realizar análisis de personajes, contexto histórico y estilo narrativo. Extensión: 3 a 5 páginas.' },
-  { id: 't4', title: 'Preparar herbario - 10 especies', subject: 'Biología', subjectColor: '#4CAF50', teacher: 'Prof. Fernández', dueDate: '2026-03-28', status: 'pendiente', priority: 'media', grupal: true, integrantes: ['Tomás López'], description: 'Recolectar y clasificar 10 especies de plantas. Presentar en carpeta con foto, nombre común y nombre científico.' },
-  { id: 't5', title: 'Reading comprehension Unit 3', subject: 'Inglés', subjectColor: '#9C27B0', teacher: 'Prof. Rodríguez', dueDate: '2026-03-22', status: 'entregado', priority: 'baja', grupal: false, description: 'Complete reading comprehension exercises from Unit 3, pages 30-35.', submission: { type: 'texto', content: 'Ejercicios resueltos y enviados por la plataforma.', date: '2026-03-19' } },
-];
 
 const priorityConfig = {
   alta: { color: Colors.error, label: 'Alta' },
@@ -83,10 +77,14 @@ export default function TareasScreen() {
   // ─── Tasks store ───
   const publishedTasks = useTasksStore((s) => s.publishedTasks);
   const storeDrafts = useTasksStore((s) => s.drafts);
+  const storePersonalTasks = useTasksStore((s) => s.personalTasks);
   const publishTask = useTasksStore((s) => s.publishTask);
   const saveDraftAction = useTasksStore((s) => s.saveDraft);
   const removeDraftAction = useTasksStore((s) => s.removeDraft);
   const storeSubmitDelivery = useTasksStore((s) => s.submitDelivery);
+  const loadPersonalTasksAction = useTasksStore((s) => s.loadPersonalTasks);
+  const addPersonalTaskAction = useTasksStore((s) => s.addPersonalTask);
+  const submitPersonalDeliveryAction = useTasksStore((s) => s.submitPersonalDelivery);
 
   // ─── Docente state ───
   const docenteTasks = publishedTasks;
@@ -126,9 +124,15 @@ export default function TareasScreen() {
   }, [courses]);
 
   // ─── Alumno/Padre state (must be before early returns for hooks consistency) ───
-  const userId = useAuthStore((s) => s.user?.id ?? 'u1');
-  const STUDENT_COURSE_ID = 'c1'; // Lucía Martínez is in 3ro A (c1)
-  const [personalTasks, setPersonalTasks] = useState<Task[]>(initialPersonalTasks);
+  const userId = useAuthStore((s) => s.user?.id ?? '');
+  const STUDENT_COURSE_ID = 'c1';
+  const [fileUploading, setFileUploading] = useState(false);
+  const [draftFileUploading, setDraftFileUploading] = useState(false);
+
+  // Load personal tasks from DB when userId is available
+  React.useEffect(() => {
+    if (userId) loadPersonalTasksAction(userId);
+  }, [userId]);
 
   const tasks = useMemo<Task[]>(() => {
     const fromDocente: Task[] = publishedTasks
@@ -155,8 +159,27 @@ export default function TareasScreen() {
         };
       });
     const docenteIds = new Set(fromDocente.map((t) => t.id));
-    return [...fromDocente, ...personalTasks.filter((t) => !docenteIds.has(t.id))];
-  }, [publishedTasks, personalTasks, userId]);
+    const fromPersonal: Task[] = storePersonalTasks
+      .filter((pt) => !docenteIds.has(pt.id))
+      .map((pt) => ({
+        id: pt.id,
+        title: pt.title,
+        subject: pt.subject,
+        subjectColor: pt.subjectColor,
+        teacher: pt.teacher,
+        dueDate: pt.dueDate,
+        status: pt.status,
+        priority: pt.priority,
+        grupal: pt.grupal,
+        integrantes: pt.integrantes.length > 0 ? pt.integrantes : undefined,
+        description: pt.description,
+        submission: pt.submissionDate
+          ? { type: (pt.submissionType ?? 'texto') as 'texto' | 'archivo', content: pt.submissionContent ?? '', date: pt.submissionDate }
+          : undefined,
+        _fromDocente: false,
+      }));
+    return [...fromDocente, ...fromPersonal];
+  }, [publishedTasks, storePersonalTasks, userId]);
   const [statusFilter, setStatusFilter] = useState<'todas' | 'pendientes' | 'entregadas'>('pendientes');
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -940,17 +963,32 @@ export default function TareasScreen() {
               )}
               <View style={docenteStyles.attachBtns}>
                 <Pressable
-                  style={docenteStyles.attachOptionBtn}
-                  onPress={() => {
-                    setDraftAttachments((prev) => [...prev, {
-                      id: `att${Date.now()}`,
-                      type: 'archivo',
-                      name: `Archivo_${prev.filter((a) => a.type === 'archivo').length + 1}.pdf`,
-                    }]);
+                  style={[docenteStyles.attachOptionBtn, draftFileUploading && { opacity: 0.6 }]}
+                  disabled={draftFileUploading}
+                  onPress={async () => {
+                    const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+                    if (result.canceled || !result.assets?.[0]) return;
+                    const asset = result.assets[0];
+                    setDraftFileUploading(true);
+                    try {
+                      const url = await uploadTaskFile(asset.uri, asset.name);
+                      setDraftAttachments((prev) => [...prev, {
+                        id: `att${Date.now()}`,
+                        type: 'archivo',
+                        name: asset.name,
+                        url,
+                      }]);
+                    } catch (e: any) {
+                      Alert.alert('Error al subir archivo', e.message ?? 'Intentá de nuevo.');
+                    } finally {
+                      setDraftFileUploading(false);
+                    }
                   }}
                 >
-                  <MaterialCommunityIcons name="paperclip" size={16} color={Colors.primary} />
-                  <Text style={docenteStyles.attachOptionText}>Adjuntar archivo</Text>
+                  {draftFileUploading
+                    ? <ActivityIndicator size={14} color={Colors.primary} />
+                    : <MaterialCommunityIcons name="paperclip" size={16} color={Colors.primary} />}
+                  <Text style={docenteStyles.attachOptionText}>{draftFileUploading ? 'Subiendo...' : 'Adjuntar archivo'}</Text>
                 </Pressable>
                 <Pressable
                   style={docenteStyles.attachOptionBtn}
@@ -1130,13 +1168,12 @@ export default function TareasScreen() {
     setShowCalendar(false);
   };
 
-  const addTask = () => {
-    if (!newTitle.trim()) return;
+  const addTask = async () => {
+    if (!newTitle.trim() || !userId) return;
     const subjectData = subjects.find((s) => s.name === newSubject);
-    const integrantes = newGrupal && selectedClassmates.length > 0 ? selectedClassmates : undefined;
+    const integrantes = newGrupal && selectedClassmates.length > 0 ? selectedClassmates : [];
 
-    setPersonalTasks((prev) => [{
-      id: `t${Date.now()}`,
+    await addPersonalTaskAction({
       title: newTitle,
       subject: newSubject || 'General',
       subjectColor: subjectData?.color ?? Colors.textSecondary,
@@ -1147,9 +1184,9 @@ export default function TareasScreen() {
       grupal: newGrupal,
       integrantes,
       description: newDescription || undefined,
-    }, ...prev]);
+    }, userId);
 
-    if (integrantes && integrantes.length > 0) {
+    if (integrantes.length > 0) {
       Alert.alert(
         'Tarea compartida',
         `Se envió una notificación a ${integrantes.join(', ')} para que confirmen agregar esta tarea.`,
@@ -1173,11 +1210,7 @@ export default function TareasScreen() {
     if (selectedTask._fromDocente) {
       storeSubmitDelivery(selectedTask.id, userId, submissionText);
     } else {
-      setPersonalTasks((prev) => prev.map((t) =>
-        t.id === selectedTask.id
-          ? { ...t, status: 'entregado' as const, submission: { type: 'texto' as const, content: submissionText, date: today } }
-          : t,
-      ));
+      submitPersonalDeliveryAction(selectedTask.id, submissionText, 'texto');
     }
     setSelectedTask({ ...selectedTask, status: 'entregado', submission: { type: 'texto', content: submissionText, date: today } });
     setSubmissionText('');
@@ -1186,33 +1219,28 @@ export default function TareasScreen() {
     Alert.alert('Entrega confirmada', `Tu tarea fue enviada${teacherMsg} correctamente.`);
   };
 
-  const handleAttachFile = () => {
+  const handleAttachFile = async () => {
     if (!selectedTask) return;
+    const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
     const today = new Date().toISOString().split('T')[0];
-    Alert.alert(
-      'Adjuntar archivo',
-      'Seleccioná el archivo a entregar',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Simular adjunto',
-          onPress: () => {
-            if (selectedTask._fromDocente) {
-              storeSubmitDelivery(selectedTask.id, userId, 'Tarea_TP.pdf');
-            } else {
-              setPersonalTasks((prev) => prev.map((t) =>
-                t.id === selectedTask.id
-                  ? { ...t, status: 'entregado' as const, submission: { type: 'archivo' as const, content: 'Tarea_TP.pdf', date: today } }
-                  : t,
-              ));
-            }
-            setSelectedTask({ ...selectedTask, status: 'entregado', submission: { type: 'archivo', content: 'Tarea_TP.pdf', date: today } });
-            const tMsg = selectedTask.teacher ? ` a ${selectedTask.teacher}` : '';
-            Alert.alert('Entrega confirmada', `Tu archivo fue enviado${tMsg} correctamente.`);
-          },
-        },
-      ],
-    );
+    setFileUploading(true);
+    try {
+      await uploadTaskFile(asset.uri, asset.name);
+      if (selectedTask._fromDocente) {
+        storeSubmitDelivery(selectedTask.id, userId, asset.name);
+      } else {
+        submitPersonalDeliveryAction(selectedTask.id, asset.name, 'archivo');
+      }
+      setSelectedTask({ ...selectedTask, status: 'entregado', submission: { type: 'archivo', content: asset.name, date: today } });
+      const tMsg = selectedTask.teacher ? ` a ${selectedTask.teacher}` : '';
+      Alert.alert('Entrega confirmada', `Tu archivo fue enviado${tMsg} correctamente.`);
+    } catch (e: any) {
+      Alert.alert('Error al subir archivo', e.message ?? 'Intentá de nuevo.');
+    } finally {
+      setFileUploading(false);
+    }
   };
 
   // ─── Task Detail View ───
@@ -1321,9 +1349,11 @@ export default function TareasScreen() {
                 activeOutlineColor={Colors.primary}
               />
               <View style={styles.submitButtons}>
-                <Pressable style={styles.attachBtn} onPress={handleAttachFile}>
-                  <MaterialCommunityIcons name="paperclip" size={20} color={Colors.primary} />
-                  <Text style={styles.attachBtnText}>Adjuntar archivo</Text>
+                <Pressable style={[styles.attachBtn, fileUploading && { opacity: 0.6 }]} onPress={handleAttachFile} disabled={fileUploading}>
+                  {fileUploading
+                    ? <ActivityIndicator size={18} color={Colors.primary} />
+                    : <MaterialCommunityIcons name="paperclip" size={20} color={Colors.primary} />}
+                  <Text style={styles.attachBtnText}>{fileUploading ? 'Subiendo...' : 'Adjuntar archivo'}</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.deliverBtn, !submissionText.trim() && styles.deliverBtnDisabled]}
